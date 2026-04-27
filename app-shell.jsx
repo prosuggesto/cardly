@@ -991,7 +991,7 @@ function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, on
           </div>
 
           {/* Panel */}
-          <div className="col gap-4">
+          <div className="col gap-4" style={{ justifyContent: "center" }}>
             <div className="card" style={{ padding: 20 }}>
               <div className="serif" style={{ fontSize: 17, marginBottom: 14 }}>Actions disponibles</div>
               <div className="col gap-1">
