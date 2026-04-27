@@ -204,8 +204,8 @@ a { color: inherit; text-decoration: none; }
 
 /* ----- Animations ----- */
 @keyframes float-card {
-  0%, 100% { transform: translateY(0) rotateX(8deg) rotateY(-12deg); }
-  50% { transform: translateY(-12px) rotateX(8deg) rotateY(-12deg); }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
 }
 @keyframes float-soft {
   0%, 100% { transform: translateY(0); }
@@ -234,6 +234,11 @@ a { color: inherit; text-decoration: none; }
 /* ----- 3D Card ----- */
 .scene-3d { perspective: 1600px; }
 
+.card-floater {
+  position: relative;
+  transform-style: preserve-3d;
+}
+.card-floater.floating { animation: float-card 6s ease-in-out infinite; }
 .card-3d {
   position: relative;
   width: 380px;
@@ -242,12 +247,8 @@ a { color: inherit; text-decoration: none; }
   transition: transform 800ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 .card-3d.flipped { transform: rotateY(180deg); }
-.card-3d.float { animation: float-card 6s ease-in-out infinite; }
-.card-3d.float.flipped { animation: float-card-flipped 6s ease-in-out infinite; }
-@keyframes float-card-flipped {
-  0%, 100% { transform: translateY(0) rotateX(8deg) rotateY(168deg); }
-  50% { transform: translateY(-12px) rotateX(8deg) rotateY(168deg); }
-}
+.card-3d.tilted { transform: rotateX(8deg) rotateY(-12deg); }
+.card-3d.tilted.flipped { transform: rotateX(8deg) rotateY(168deg); }
 
 .card-face {
   position: absolute; inset: 0;

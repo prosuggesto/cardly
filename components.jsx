@@ -288,20 +288,22 @@ function Card3D({
 
   return (
     <div className={`scene-3d ${className}`} style={{ width, height }}>
-      <div
-        className={`card-3d ${isFlipped ? "flipped" : ""} ${float ? "float" : ""}`}
-        style={{ width, height, cursor: onFlip ? "pointer" : "default" }}
-        onClick={() => { if (draggedRef.current) return; if (onFlip) onFlip(); }}
-      >
-        <div className="card-face">
-          {renderFront()}
-          <div className="card-overlay" />
-          <div className="card-shine" />
-        </div>
-        <div className="card-face card-face-back">
-          {renderBack()}
-          <div className="card-overlay" />
-          <div className="card-shine" />
+      <div className={`card-floater ${float ? "floating" : ""}`} style={{ width, height }}>
+        <div
+          className={`card-3d ${isFlipped ? "flipped" : ""} ${float ? "tilted" : ""}`}
+          style={{ width, height, cursor: onFlip ? "pointer" : "default" }}
+          onClick={() => { if (draggedRef.current) return; if (onFlip) onFlip(); }}
+        >
+          <div className="card-face">
+            {renderFront()}
+            <div className="card-overlay" />
+            <div className="card-shine" />
+          </div>
+          <div className="card-face card-face-back">
+            {renderBack()}
+            <div className="card-overlay" />
+            <div className="card-shine" />
+          </div>
         </div>
       </div>
     </div>
