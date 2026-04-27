@@ -975,16 +975,8 @@ function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, on
               </div>
               {(scanButtons.instagram || scanButtons.linkedin) && (
                 <div className="row gap-3" style={{ justifyContent: "center", marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--line)" }}>
-                  {scanButtons.instagram && (
-                    <a href="#" onClick={(e) => e.preventDefault()} style={{ width: 38, height: 38, borderRadius: "50%", background: "linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }} title="Instagram">
-                      <Icon.Instagram size={18} />
-                    </a>
-                  )}
-                  {scanButtons.linkedin && (
-                    <a href="#" onClick={(e) => e.preventDefault()} style={{ width: 38, height: 38, borderRadius: "50%", background: "#0a66c2", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }} title="LinkedIn">
-                      <Icon.Linkedin size={18} />
-                    </a>
-                  )}
+                  {scanButtons.instagram && <Icon.Instagram size={42} />}
+                  {scanButtons.linkedin && <Icon.Linkedin size={42} />}
                 </div>
               )}
             </div>
@@ -1022,9 +1014,7 @@ function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, on
                 <div className="col gap-2">
                   <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
                     <span className="row gap-2" style={{ alignItems: "center", fontSize: 14 }}>
-                      <span style={{ width: 24, height: 24, borderRadius: 6, background: "linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}>
-                        <Icon.Instagram size={13} />
-                      </span>
+                      <Icon.Instagram size={24} />
                       Instagram
                     </span>
                     <button onClick={() => toggleBtn("instagram")} style={{ background: "none", border: "none", padding: 0, display: "inline-flex", alignItems: "center", cursor: "pointer" }}>
@@ -1038,9 +1028,7 @@ function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, on
                 <div className="col gap-2">
                   <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
                     <span className="row gap-2" style={{ alignItems: "center", fontSize: 14 }}>
-                      <span style={{ width: 24, height: 24, borderRadius: 6, background: "#0a66c2", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}>
-                        <Icon.Linkedin size={13} />
-                      </span>
+                      <Icon.Linkedin size={24} />
                       LinkedIn
                     </span>
                     <button onClick={() => toggleBtn("linkedin")} style={{ background: "none", border: "none", padding: 0, display: "inline-flex", alignItems: "center", cursor: "pointer" }}>
