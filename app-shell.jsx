@@ -931,13 +931,27 @@ function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, on
       <div style={{ position: "relative" }}>
         {trialExpired && <LockedOverlay onUpgrade={onUpgrade} />}
         <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 28 }} className="cust-grid">
-          {/* Scanned card preview */}
-          <div className="card" style={{ padding: 28, display: "flex", flexDirection: "column", alignItems: "center", gap: 18, background: "linear-gradient(180deg, #fffdf6, #f7f2e6)" }}>
-            <Card3D card={card} width={320} float={false} />
-            <div className="card" style={{ padding: 20, width: "100%", maxWidth: 360, background: "var(--surface)" }}>
-              <div className="col gap-1" style={{ alignItems: "center", textAlign: "center", marginBottom: 14 }}>
-                <div className="serif" style={{ fontSize: 22, letterSpacing: "-0.01em" }}>{card.prenom_affiche} {card.nom_affiche}</div>
-                <div className="muted" style={{ fontSize: 13 }}>{card.poste_affiche} · {ent.nom_entreprise}</div>
+          {/* Scanned card preview — identique à PublicCardPage */}
+          <div className="card" style={{ padding: 28, display: "flex", flexDirection: "column", alignItems: "center", gap: 28, background: "linear-gradient(180deg, #fffdf6, #f7f2e6)" }}>
+            <Card3D card={card} width={360} float={true} />
+            <div className="card" style={{ padding: 24, width: "100%", maxWidth: 380, background: "var(--surface)" }}>
+              <div className="col gap-1" style={{ alignItems: "center", textAlign: "center", marginBottom: 18 }}>
+                <div className="serif" style={{ fontSize: 26, letterSpacing: "-0.01em" }}>{card.prenom_affiche} {card.nom_affiche}</div>
+                <div className="muted">{card.poste_affiche} · {ent.nom_entreprise}</div>
+              </div>
+              <div className="col gap-2" style={{ marginBottom: 16 }}>
+                <div className="row gap-3" style={{ padding: "10px 14px", background: "var(--surface-2)", borderRadius: 10, fontSize: 14 }}>
+                  <span className="dim"><Icon.Phone size={14} /></span>
+                  <span>{card.telephone_affiche}</span>
+                </div>
+                <div className="row gap-3" style={{ padding: "10px 14px", background: "var(--surface-2)", borderRadius: 10, fontSize: 14 }}>
+                  <span className="dim"><Icon.Mail size={14} /></span>
+                  <span>{card.email_affiche}</span>
+                </div>
+                <div className="row gap-3" style={{ padding: "10px 14px", background: "var(--surface-2)", borderRadius: 10, fontSize: 14 }}>
+                  <span className="dim"><Icon.Globe size={14} /></span>
+                  <span>{card.site_web}</span>
+                </div>
               </div>
               {scanButtons.contact && (
                 <button className="btn btn-primary btn-lg" style={{ width: "100%", justifyContent: "center", marginBottom: 10 }}>
@@ -955,16 +969,19 @@ function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, on
                     <Icon.Mail size={13} /> Email
                   </button>
                 )}
+                <button className="btn btn-sm" style={{ flex: 1, minWidth: 110, justifyContent: "center" }}>
+                  <Icon.Globe size={13} /> Site web
+                </button>
               </div>
               {(scanButtons.instagram || scanButtons.linkedin) && (
                 <div className="row gap-3" style={{ justifyContent: "center", marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--line)" }}>
                   {scanButtons.instagram && (
-                    <a href="#" onClick={(e) => e.preventDefault()} style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }} title="Instagram">
+                    <a href="#" onClick={(e) => e.preventDefault()} style={{ width: 38, height: 38, borderRadius: "50%", background: "linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }} title="Instagram">
                       <Icon.Instagram size={18} />
                     </a>
                   )}
                   {scanButtons.linkedin && (
-                    <a href="#" onClick={(e) => e.preventDefault()} style={{ width: 36, height: 36, borderRadius: "50%", background: "#0a66c2", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }} title="LinkedIn">
+                    <a href="#" onClick={(e) => e.preventDefault()} style={{ width: 38, height: 38, borderRadius: "50%", background: "#0a66c2", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }} title="LinkedIn">
                       <Icon.Linkedin size={18} />
                     </a>
                   )}
