@@ -435,10 +435,10 @@ function PublicCardPage({ navigate, params }) {
           </div>
           <div className="row gap-3" style={{ justifyContent: "center", marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--line)" }}>
             <a href="#" onClick={(e) => { e.preventDefault(); if (!inactive) toast.push("Instagram ouvert"); }} style={{ opacity: inactive ? 0.4 : 1, pointerEvents: inactive ? "none" : "auto", display: "flex", cursor: "pointer" }} title="Instagram">
-              <Icon.Instagram size={42} />
+              <Icon.Instagram size={46} />
             </a>
             <a href="#" onClick={(e) => { e.preventDefault(); if (!inactive) toast.push("LinkedIn ouvert"); }} style={{ opacity: inactive ? 0.4 : 1, pointerEvents: inactive ? "none" : "auto", display: "flex", cursor: "pointer" }} title="LinkedIn">
-              <Icon.Linkedin size={42} />
+              <Icon.Linkedin size={46} />
             </a>
           </div>
         </div>

@@ -975,8 +975,8 @@ function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, on
               </div>
               {(scanButtons.instagram || scanButtons.linkedin) && (
                 <div className="row gap-3" style={{ justifyContent: "center", marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--line)" }}>
-                  {scanButtons.instagram && <Icon.Instagram size={42} />}
-                  {scanButtons.linkedin && <Icon.Linkedin size={42} />}
+                  {scanButtons.instagram && <Icon.Instagram size={46} />}
+                  {scanButtons.linkedin && <Icon.Linkedin size={46} />}
                 </div>
               )}
             </div>
