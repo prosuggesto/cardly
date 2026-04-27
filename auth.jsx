@@ -224,6 +224,10 @@ function AdminForm({ onSubmit, onBack }) {
         <Field label="Nom de l'entreprise" placeholder="Immo Costa" onChange={set("entreprise")} required />
         <Field label="Site web" placeholder="immocosta.fr" onChange={set("web")} />
       </FieldRow>
+      <FieldRow>
+        <Field label="Instagram" placeholder="https://instagram.com/votre-compte" onChange={set("instagram")} />
+        <Field label="LinkedIn" placeholder="https://linkedin.com/in/votre-profil" onChange={set("linkedin")} />
+      </FieldRow>
       <Field label="Mot de passe" type="password" placeholder="••••••••" onChange={set("pwd")} required />
       <button type="submit" className="btn btn-primary" style={{ marginTop: 6, justifyContent: "center" }}>
         Créer mon entreprise <Icon.ArrowRight size={14} />
@@ -253,6 +257,10 @@ function CollabForm({ onSubmit, onBack }) {
       <FieldRow>
         <Field label="Poste" placeholder="Conseillère commerciale" required />
         <Field label="Code secret entreprise" placeholder="CARDLY-XXXX" required />
+      </FieldRow>
+      <FieldRow>
+        <Field label="Instagram" placeholder="https://instagram.com/votre-compte" />
+        <Field label="LinkedIn" placeholder="https://linkedin.com/in/votre-profil" />
       </FieldRow>
       <Field label="Mot de passe" type="password" placeholder="••••••••" required />
       <button type="submit" className="btn btn-primary" style={{ marginTop: 6, justifyContent: "center" }}>

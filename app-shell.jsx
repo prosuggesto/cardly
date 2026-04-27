@@ -911,8 +911,6 @@ function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, on
     instagram: true,
     linkedin: true,
   });
-  const [instagramUrl, setInstagramUrl] = useStateP("");
-  const [linkedinUrl, setLinkedinUrl] = useStateP("");
   const [flipped, setFlipped] = useStateP(false);
   const toggleBtn = (k) => setScanButtons(s => ({ ...s, [k]: !s[k] }));
 
@@ -1011,34 +1009,25 @@ function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, on
 
             <div className="card" style={{ padding: 20 }}>
               <div className="serif" style={{ fontSize: 17, marginBottom: 14 }}>Réseaux sociaux</div>
-              <div className="col gap-3">
-                <div className="col gap-2">
-                  <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-                    <span className="row gap-2" style={{ alignItems: "center", fontSize: 14 }}>
-                      <Icon.Instagram size={24} />
-                      Instagram
-                    </span>
-                    <button onClick={() => toggleBtn("instagram")} style={{ background: "none", border: "none", padding: 0, display: "inline-flex", alignItems: "center", cursor: "pointer" }}>
-                      <span className={`toggle ${scanButtons.instagram ? "on" : ""}`}></span>
-                    </button>
-                  </div>
-                  {scanButtons.instagram && (
-                    <input className="input" placeholder="https://instagram.com/votre-compte" value={instagramUrl} onChange={(e) => setInstagramUrl(e.target.value)} style={{ fontSize: 13 }} />
-                  )}
+              <p className="muted" style={{ fontSize: 12, marginTop: 0, marginBottom: 12 }}>Les liens Instagram / LinkedIn sont récupérés depuis votre profil. Activez ou masquez leur affichage sur la carte scannée.</p>
+              <div className="col gap-1">
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 4px", fontSize: 14, borderTop: "1px solid var(--line)" }}>
+                  <span className="row gap-2" style={{ alignItems: "center" }}>
+                    <Icon.Instagram size={24} />
+                    Instagram
+                  </span>
+                  <button onClick={() => toggleBtn("instagram")} style={{ background: "none", border: "none", padding: 0, display: "inline-flex", alignItems: "center", cursor: "pointer" }}>
+                    <span className={`toggle ${scanButtons.instagram ? "on" : ""}`}></span>
+                  </button>
                 </div>
-                <div className="col gap-2">
-                  <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-                    <span className="row gap-2" style={{ alignItems: "center", fontSize: 14 }}>
-                      <Icon.Linkedin size={24} />
-                      LinkedIn
-                    </span>
-                    <button onClick={() => toggleBtn("linkedin")} style={{ background: "none", border: "none", padding: 0, display: "inline-flex", alignItems: "center", cursor: "pointer" }}>
-                      <span className={`toggle ${scanButtons.linkedin ? "on" : ""}`}></span>
-                    </button>
-                  </div>
-                  {scanButtons.linkedin && (
-                    <input className="input" placeholder="https://linkedin.com/in/votre-profil" value={linkedinUrl} onChange={(e) => setLinkedinUrl(e.target.value)} style={{ fontSize: 13 }} />
-                  )}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 4px", fontSize: 14, borderTop: "1px solid var(--line)" }}>
+                  <span className="row gap-2" style={{ alignItems: "center" }}>
+                    <Icon.Linkedin size={24} />
+                    LinkedIn
+                  </span>
+                  <button onClick={() => toggleBtn("linkedin")} style={{ background: "none", border: "none", padding: 0, display: "inline-flex", alignItems: "center", cursor: "pointer" }}>
+                    <span className={`toggle ${scanButtons.linkedin ? "on" : ""}`}></span>
+                  </button>
                 </div>
               </div>
             </div>

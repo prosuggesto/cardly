@@ -88,7 +88,7 @@ function Card3D({
   onFlip,
   float = false,
   editable = false,
-  showQR = true,
+  showQR = false,
   onMove,            // (key, {x,y}) => void
   showFront,         // 'auto' (default), 'front', 'back'
   className = "",
