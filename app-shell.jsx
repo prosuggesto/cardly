@@ -730,6 +730,7 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
                       )}
                       <button disabled={!editable} onClick={() => setField(k, !card[k])} style={{
                         background: "none", border: "none", padding: 0,
+                        display: "inline-flex", alignItems: "center",
                         cursor: editable ? "pointer" : "not-allowed",
                       }}>
                         <span className={`toggle ${card[k] ? "on" : ""}`}></span>
