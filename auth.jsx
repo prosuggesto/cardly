@@ -39,72 +39,93 @@ function AuthPage({ navigate, params }) {
           </p>
         </div>
 
-        {/* Big card */}
-        <div className="scene-3d" style={{ perspective: 2200 }}>
+        {/* Login: simple form card. Signup: 3D flip card with role chooser. */}
+        {isLogin ? (
           <div
-            className="card-3d"
+            className="card"
             style={{
-              width: "min(640px, 92vw)",
-              height: "min(420px, 60vw)",
-              transform: flipped || isLogin ? "rotateY(180deg)" : "rotateY(0)",
-              animation: "float-soft 7s ease-in-out infinite",
+              width: "min(480px, 92vw)",
+              padding: "36px 36px",
+              borderRadius: 22,
+              background: "linear-gradient(135deg, #fdfbf3 0%, #f5edd9 100%)",
+              position: "relative", overflow: "hidden",
+              animation: "fade-up 600ms ease both",
             }}
           >
-            {/* FRONT — role chooser */}
-            <div className="card-face" style={{ borderRadius: 22, background: "linear-gradient(135deg, #fdfbf3 0%, #f5edd9 100%)" }}>
-              <img src="assets/card-back.png" alt="" style={{ opacity: 0.5 }} />
-              <div className="card-overlay" />
-              <div style={{
-                position: "absolute", inset: 0,
-                display: "flex", flexDirection: "column",
-                justifyContent: "center", alignItems: "center",
-                padding: "0 32px", gap: 24,
-                background: "rgba(253, 251, 243, 0.5)",
-                backdropFilter: "blur(2px)",
-              }}>
-                <div className="logo-mark" style={{ width: 44, height: 44, fontSize: 22 }}>C</div>
-                <div className="serif" style={{ fontSize: "clamp(24px, 3vw, 32px)", textAlign: "center", letterSpacing: "-0.01em" }}>
-                  Qui rejoint Cardly Pro&nbsp;?
+            <img src="assets/card-back.png" alt="" style={{
+              position: "absolute", inset: 0, width: "100%", height: "100%",
+              objectFit: "cover", opacity: 0.25, pointerEvents: "none",
+            }} />
+            <div style={{ position: "relative" }}>
+              <LoginForm onSubmit={() => navigate("/app")} />
+            </div>
+          </div>
+        ) : (
+          <div className="scene-3d" style={{ perspective: 2200 }}>
+            <div style={{ animation: "float-soft 7s ease-in-out infinite" }}>
+              <div
+                className="card-3d"
+                style={{
+                  width: "min(640px, 92vw)",
+                  height: "min(420px, 60vw)",
+                  transform: flipped ? "rotateY(180deg)" : "rotateY(0)",
+                }}
+              >
+              {/* FRONT — role chooser */}
+              <div className="card-face" style={{ borderRadius: 22, background: "linear-gradient(135deg, #fdfbf3 0%, #f5edd9 100%)" }}>
+                <img src="assets/card-back.png" alt="" style={{ opacity: 0.5 }} />
+                <div className="card-overlay" />
+                <div style={{
+                  position: "absolute", inset: 0,
+                  display: "flex", flexDirection: "column",
+                  justifyContent: "center", alignItems: "center",
+                  padding: "0 32px", gap: 24,
+                  background: "rgba(253, 251, 243, 0.5)",
+                  backdropFilter: "blur(2px)",
+                }}>
+                  <div className="logo-mark" style={{ width: 44, height: 44, fontSize: 22 }}>C</div>
+                  <div className="serif" style={{ fontSize: "clamp(24px, 3vw, 32px)", textAlign: "center", letterSpacing: "-0.01em" }}>
+                    Qui rejoint Cardly Pro&nbsp;?
+                  </div>
+                  <div className="row gap-3" style={{ flexWrap: "wrap", justifyContent: "center" }}>
+                    <RoleButton
+                      icon={<Icon.Crown size={16} />}
+                      title="Je suis chef / admin"
+                      desc="Je crée et je dirige une équipe."
+                      onClick={() => { setRole("admin"); setFlipped(true); }}
+                    />
+                    <RoleButton
+                      icon={<Icon.User size={16} />}
+                      title="Je suis collaborateur"
+                      desc="Je rejoins une équipe existante."
+                      onClick={() => { setRole("collaborator"); setFlipped(true); }}
+                    />
+                  </div>
                 </div>
-                <div className="row gap-3" style={{ flexWrap: "wrap", justifyContent: "center" }}>
-                  <RoleButton
-                    icon={<Icon.Crown size={16} />}
-                    title="Je suis chef / admin"
-                    desc="Je crée et je dirige une équipe."
-                    onClick={() => setRole("admin")}
-                  />
-                  <RoleButton
-                    icon={<Icon.User size={16} />}
-                    title="Je suis collaborateur"
-                    desc="Je rejoins une équipe existante."
-                    onClick={() => setRole("collaborator")}
-                  />
+                <div className="card-shine" />
+              </div>
+
+              {/* BACK — form */}
+              <div className="card-face card-face-back" style={{ borderRadius: 22, background: "linear-gradient(135deg, #fdfbf3 0%, #f5edd9 100%)" }}>
+                <img src="assets/card-back.png" alt="" style={{ opacity: 0.35 }} />
+                <div style={{
+                  position: "absolute", inset: 0,
+                  padding: "32px 36px",
+                  background: "rgba(253, 251, 243, 0.7)",
+                  backdropFilter: "blur(2px)",
+                  overflow: "auto",
+                }}>
+                  {role === "admin" ? (
+                    <AdminForm onSubmit={(code) => setShowSecretModal(code)} onBack={() => { setFlipped(false); setTimeout(() => setRole(null), 600); }} />
+                  ) : role === "collaborator" ? (
+                    <CollabForm onSubmit={() => setShowPendingModal(true)} onBack={() => { setFlipped(false); setTimeout(() => setRole(null), 600); }} />
+                  ) : null}
                 </div>
               </div>
-              <div className="card-shine" />
-            </div>
-
-            {/* BACK — form */}
-            <div className="card-face card-face-back" style={{ borderRadius: 22, background: "linear-gradient(135deg, #fdfbf3 0%, #f5edd9 100%)" }}>
-              <img src="assets/card-back.png" alt="" style={{ opacity: 0.35 }} />
-              <div style={{
-                position: "absolute", inset: 0,
-                padding: "32px 36px",
-                background: "rgba(253, 251, 243, 0.7)",
-                backdropFilter: "blur(2px)",
-                overflow: "auto",
-              }}>
-                {isLogin ? (
-                  <LoginForm onSubmit={() => navigate("/app")} />
-                ) : role === "admin" ? (
-                  <AdminForm onSubmit={(code) => setShowSecretModal(code)} onBack={() => { setFlipped(false); setTimeout(() => setRole(null), 600); }} />
-                ) : role === "collaborator" ? (
-                  <CollabForm onSubmit={() => setShowPendingModal(true)} onBack={() => { setFlipped(false); setTimeout(() => setRole(null), 600); }} />
-                ) : null}
               </div>
             </div>
           </div>
-        </div>
+        )}
 
         <div className="dim" style={{ fontSize: 12 }}>
           {isLogin ? (
@@ -248,6 +269,31 @@ function LoginForm({ onSubmit }) {
         <div className="serif" style={{ fontSize: 26, letterSpacing: "-0.01em" }}>Se connecter</div>
         <div className="dim" style={{ fontSize: 13 }}>Accédez à votre espace Cardly Pro.</div>
       </div>
+
+      <button
+        type="button"
+        onClick={onSubmit}
+        className="btn"
+        style={{
+          justifyContent: "center", height: 44, gap: 10,
+          background: "white", border: "1px solid var(--line)", fontWeight: 500,
+        }}
+      >
+        <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+          <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+          <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
+          <path d="M3.964 10.706A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.997 8.997 0 0 0 0 9c0 1.452.348 2.827.957 4.038l3.007-2.332z" fill="#FBBC05"/>
+          <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.962L3.964 7.294C4.672 5.166 6.656 3.58 9 3.58z" fill="#EA4335"/>
+        </svg>
+        Continuer avec Google
+      </button>
+
+      <div className="row gap-3" style={{ alignItems: "center", margin: "4px 0" }}>
+        <div style={{ flex: 1, height: 1, background: "var(--line)" }} />
+        <div className="dim" style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase" }}>ou</div>
+        <div style={{ flex: 1, height: 1, background: "var(--line)" }} />
+      </div>
+
       <Field label="Email" type="email" placeholder="vous@entreprise.fr" defaultValue="contact.cardly@gmail.com" required />
       <Field label="Mot de passe" type="password" placeholder="••••••••" defaultValue="demo1234" required />
       <button type="submit" className="btn btn-primary" style={{ marginTop: 6, justifyContent: "center" }}>

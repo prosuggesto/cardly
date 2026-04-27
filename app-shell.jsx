@@ -135,23 +135,47 @@ function MyCardsPage({ onCustomize, onShareCard, role, trialExpired, onUpgrade }
   const [cards, setCards] = useStateP(window.CARDLY_DATA.cards);
   const [showAdd, setShowAdd] = useStateP(false);
   const [newName, setNewName] = useStateP("");
+  const [newType, setNewType] = useStateP("personal"); // 'personal' | 'enterprise'
+  const [tags, setTags] = useStateP([
+    { id: "tg-1", label: "Salon Immobilier 2026" },
+    { id: "tg-2", label: "Réseau MEDEF" },
+    { id: "tg-3", label: "Portes ouvertes" },
+  ]);
+  const [selectedTagId, setSelectedTagId] = useStateP(null);
+  const [newTagInput, setNewTagInput] = useStateP("");
   const toast = useToast();
+
+  const isAdmin = role === "admin";
+
+  const createTag = () => {
+    const v = newTagInput.trim();
+    if (!v) return;
+    const t = { id: "tg-" + Math.random().toString(36).slice(2, 6), label: v };
+    setTags([...tags, t]);
+    setSelectedTagId(t.id);
+    setNewTagInput("");
+  };
 
   const addCard = () => {
     if (!newName.trim()) return;
     const designs = window.CARDLY_DATA.cardDesigns;
     const designId = designs[(cards.length) % designs.length].id;
+    const tag = tags.find(t => t.id === selectedTagId);
     const next = {
       ...window.CARDLY_DATA.cards[1],
       id: "card-" + Math.random().toString(36).slice(2, 6),
-      type: "personal",
+      type: newType,
       nom_carte: newName.trim(),
       design: designId,
       is_default: false,
+      tag: tag ? tag.label : null,
     };
     setCards([...cards, next]);
     setShowAdd(false);
     setNewName("");
+    setNewType("personal");
+    setSelectedTagId(null);
+    setNewTagInput("");
     toast.push("Carte créée");
   };
 
@@ -176,10 +200,93 @@ function MyCardsPage({ onCustomize, onShareCard, role, trialExpired, onUpgrade }
         </div>
       </div>
 
-      <Modal open={showAdd} onClose={() => setShowAdd(false)} title="Nouvelle carte personnelle">
-        <p className="muted" style={{ marginTop: 0, fontSize: 14 }}>Donnez un nom à votre nouvelle carte. Vous pourrez la personnaliser ensuite.</p>
+      <Modal open={showAdd} onClose={() => setShowAdd(false)} title={isAdmin ? "Nouvelle carte" : "Nouvelle carte personnelle"}>
+        <p className="muted" style={{ marginTop: 0, fontSize: 14 }}>
+          {isAdmin
+            ? "Configurez votre carte. Vous pourrez personnaliser le design ensuite."
+            : "Donnez un nom à votre nouvelle carte. Vous pourrez la personnaliser ensuite."}
+        </p>
         <Field label="Nom de la carte" placeholder="Ex : Salons & événements" value={newName} onChange={(e) => setNewName(e.target.value)} />
-        <div className="row gap-3" style={{ justifyContent: "flex-end", marginTop: 16 }}>
+
+        {isAdmin && (
+          <div className="col gap-2" style={{ marginTop: 14 }}>
+            <div style={{ fontSize: 12, color: "var(--ink-3)", fontWeight: 500, letterSpacing: "0.02em" }}>Type de carte</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              {[
+                { id: "enterprise", title: "Entreprise", desc: "Design partagé pour toute l'équipe.", icon: <Icon.Crown size={14} /> },
+                { id: "personal", title: "Personnelle", desc: "Pour un événement ou un projet.", icon: <Icon.User size={14} /> },
+              ].map(opt => {
+                const sel = newType === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setNewType(opt.id)}
+                    className="card"
+                    style={{
+                      padding: 14, textAlign: "left", cursor: "pointer",
+                      background: sel ? "linear-gradient(135deg, #fdf3df, #f1deb6)" : "var(--surface)",
+                      borderColor: sel ? "var(--gold)" : "var(--line)",
+                      borderWidth: sel ? 1.5 : 1,
+                      transition: "all 150ms",
+                    }}
+                  >
+                    <div className="row gap-2" style={{ alignItems: "center", marginBottom: 4 }}>
+                      <div style={{
+                        width: 24, height: 24, borderRadius: 7,
+                        background: sel ? "var(--gold)" : "var(--surface-2)",
+                        color: sel ? "white" : "var(--ink-3)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}>{opt.icon}</div>
+                      <div style={{ fontSize: 14, fontWeight: 500 }}>{opt.title}</div>
+                    </div>
+                    <div className="dim" style={{ fontSize: 11.5, lineHeight: 1.4 }}>{opt.desc}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <div className="col gap-2" style={{ marginTop: 14 }}>
+          <div style={{ fontSize: 12, color: "var(--ink-3)", fontWeight: 500, letterSpacing: "0.02em" }}>Étiquette événement <span className="dim" style={{ fontWeight: 400 }}>(optionnel)</span></div>
+          <div className="row" style={{ flexWrap: "wrap", gap: 6 }}>
+            {tags.map(t => {
+              const sel = selectedTagId === t.id;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setSelectedTagId(sel ? null : t.id)}
+                  className="chip"
+                  style={{
+                    cursor: "pointer", fontSize: 12,
+                    background: sel ? "var(--ink)" : "var(--surface-2)",
+                    color: sel ? "white" : "var(--ink)",
+                    borderColor: sel ? "var(--ink)" : "var(--line)",
+                  }}
+                >
+                  {sel && <Icon.Check size={11} />} {t.label}
+                </button>
+              );
+            })}
+          </div>
+          <div className="row gap-2" style={{ marginTop: 4 }}>
+            <input
+              className="input"
+              placeholder="Créer une nouvelle étiquette…"
+              value={newTagInput}
+              onChange={(e) => setNewTagInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); createTag(); } }}
+              style={{ flex: 1 }}
+            />
+            <button type="button" className="btn btn-sm" onClick={createTag} disabled={!newTagInput.trim()}>
+              <Icon.Plus size={12} /> Ajouter
+            </button>
+          </div>
+        </div>
+
+        <div className="row gap-3" style={{ justifyContent: "flex-end", marginTop: 20 }}>
           <button className="btn btn-sm" onClick={() => setShowAdd(false)}>Annuler</button>
           <button className="btn btn-primary btn-sm" onClick={addCard}>Créer la carte</button>
         </div>
@@ -198,6 +305,7 @@ function Field({ label, ...rest }) {
 function CardListItem({ card, onCustomize, onShare, role }) {
   const toast = useToast();
   const [presenting, setPresenting] = useStateP(false);
+  const [showStats, setShowStats] = useStateP(false);
   const isLocked = role === "collaborator" && card.type === "enterprise";
   return (
     <div className="card fade-up" style={{ padding: 24, display: "flex", flexDirection: "column", gap: 18 }}>
@@ -233,13 +341,74 @@ function CardListItem({ card, onCustomize, onShare, role }) {
         <button className="btn btn-primary btn-sm" style={{ flex: 1, minWidth: 140, justifyContent: "center" }} onClick={() => setPresenting(true)}>
           <Icon.QR size={13} /> Présenter au client
         </button>
-        <button className="btn btn-sm" style={{ flex: 1, minWidth: 120, justifyContent: "center" }} onClick={() => toast.push("WhatsApp ouvert", { icon: <Icon.WhatsApp size={13}/> })}>
-          <Icon.WhatsApp size={13} /> WhatsApp
+        <button className="btn btn-sm" style={{ flex: 1, minWidth: 120, justifyContent: "center" }} onClick={() => setShowStats(true)}>
+          <Icon.Chart size={13} /> Stats
         </button>
       </div>
 
       {presenting && ReactDOM.createPortal(<PresentCardModal card={card} onClose={() => setPresenting(false)} />, document.body)}
+      <CardStatsModal open={showStats} onClose={() => setShowStats(false)} card={card} />
     </div>
+  );
+}
+
+function CardStatsModal({ open, onClose, card }) {
+  if (!open) return null;
+  // Deterministic-ish numbers per card so it feels real
+  const seed = (card.id || "x").split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+  const rng = (n, mod) => ((seed * 9301 + n * 49297) % mod);
+  const saves = (card.leads != null ? card.leads : 32) + 10 + rng(1, 18);
+  const channels = [
+    { key: "mail", label: "Mail", icon: <Icon.Mail size={14} />, color: "#8a6d3b", clicks: 18 + rng(2, 30) },
+    { key: "whatsapp", label: "WhatsApp", icon: <Icon.WhatsApp size={14} />, color: "#25d366", clicks: 14 + rng(3, 28) },
+    { key: "instagram", label: "Instagram", icon: <Icon.Instagram size={14} />, color: "#c13584", clicks: 9 + rng(4, 22) },
+    { key: "linkedin", label: "LinkedIn", icon: <Icon.Linkedin size={14} />, color: "#0a66c2", clicks: 6 + rng(5, 18) },
+    { key: "website", label: "Site web", icon: <Icon.Globe size={14} />, color: "#1a1815", clicks: 4 + rng(6, 16) },
+  ];
+  const totalClicks = channels.reduce((s, c) => s + c.clicks, 0);
+  const max = Math.max(...channels.map(c => c.clicks));
+
+  return (
+    <Modal open={open} onClose={onClose} title={`Statistiques — ${card.nom_carte}`}>
+      <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>Performance des 30 derniers jours.</p>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 8 }}>
+        <div className="card" style={{ padding: 16, background: "linear-gradient(135deg, #fdf3df, #f1deb6)", borderColor: "var(--gold)" }}>
+          <div className="eyebrow" style={{ marginBottom: 6 }}>Enregistrements</div>
+          <div className="serif" style={{ fontSize: 32, lineHeight: 1, letterSpacing: "-0.02em" }}>{saves}</div>
+          <div className="dim" style={{ fontSize: 11, marginTop: 4 }}>contacts ajoutés au répertoire</div>
+        </div>
+        <div className="card" style={{ padding: 16 }}>
+          <div className="eyebrow" style={{ marginBottom: 6 }}>Clics totaux</div>
+          <div className="serif" style={{ fontSize: 32, lineHeight: 1, letterSpacing: "-0.02em" }}>{totalClicks}</div>
+          <div className="dim" style={{ fontSize: 11, marginTop: 4 }}>tous canaux confondus</div>
+        </div>
+      </div>
+
+      <div className="col gap-2" style={{ marginTop: 18 }}>
+        <div className="eyebrow">Détail par canal</div>
+        <div className="col gap-3" style={{ marginTop: 4 }}>
+          {channels.map(ch => (
+            <div key={ch.key} className="col gap-1">
+              <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+                <div className="row gap-2" style={{ alignItems: "center" }}>
+                  <div style={{ width: 26, height: 26, borderRadius: 7, background: "var(--surface-2)", color: ch.color, display: "flex", alignItems: "center", justifyContent: "center" }}>{ch.icon}</div>
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>{ch.label}</div>
+                </div>
+                <div className="serif" style={{ fontSize: 18 }}>{ch.clicks}</div>
+              </div>
+              <div style={{ height: 4, background: "var(--surface-2)", borderRadius: 999, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${(ch.clicks / max) * 100}%`, background: ch.color, borderRadius: 999, transition: "width 400ms" }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="row gap-3" style={{ justifyContent: "flex-end", marginTop: 20 }}>
+        <button className="btn btn-sm" onClick={onClose}>Fermer</button>
+      </div>
+    </Modal>
   );
 }
 

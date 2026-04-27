@@ -5,6 +5,7 @@ const { useState: useStateD } = React;
 // ---------- Dashboard ----------
 function DashboardPage({ role, trialExpired, onUpgrade }) {
   const [collabs, setCollabs] = useStateD(window.CARDLY_DATA.collaborators);
+  const [statsCollab, setStatsCollab] = useStateD(null);
   const toast = useToast();
   const active = collabs.filter(c => c.statut === "actif").sort((a,b) => b.leads - a.leads);
   const pending = collabs.filter(c => c.statut === "en_attente");
@@ -25,14 +26,18 @@ function DashboardPage({ role, trialExpired, onUpgrade }) {
       <div className="card" style={{ padding: 16 }}>
         <div className="row gap-3" style={{ flexWrap: "wrap" }}>
           <select className="select" style={{ width: "auto" }} defaultValue="01">
-            <option value="01">Janvier</option><option value="04">Avril</option><option value="12">Décembre</option>
+            {["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"].map((m, i) => (
+              <option key={m} value={String(i+1).padStart(2,"0")}>{m}</option>
+            ))}
           </select>
           <select className="select" style={{ width: "auto" }} defaultValue="2026">
             <option>2025</option><option>2026</option>
           </select>
           <span className="dim" style={{ alignSelf: "center" }}>→</span>
           <select className="select" style={{ width: "auto" }} defaultValue="04">
-            <option value="01">Janvier</option><option value="04">Avril</option><option value="12">Décembre</option>
+            {["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"].map((m, i) => (
+              <option key={m} value={String(i+1).padStart(2,"0")}>{m}</option>
+            ))}
           </select>
           <select className="select" style={{ width: "auto" }} defaultValue="2026">
             <option>2025</option><option>2026</option>
@@ -40,6 +45,13 @@ function DashboardPage({ role, trialExpired, onUpgrade }) {
           <select className="select" style={{ flex: 1, minWidth: 160 }} defaultValue="all">
             <option value="all">Toute l'équipe</option>
             {active.map(c => <option key={c.id}>{c.prenom} {c.nom}</option>)}
+          </select>
+          <select className="select" style={{ flex: 1, minWidth: 180 }} defaultValue="all">
+            <option value="all">Tous les événements</option>
+            <option>Salon Immobilier 2026</option>
+            <option>Réseau MEDEF</option>
+            <option>Portes ouvertes</option>
+            <option>Sans étiquette</option>
           </select>
           <button className="btn btn-primary btn-sm">Filtrer</button>
         </div>
@@ -121,7 +133,7 @@ function DashboardPage({ role, trialExpired, onUpgrade }) {
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
             <thead>
               <tr style={{ background: "var(--surface-2)" }}>
-                {["Collaborateur", "Poste", "Statut", "Leads", "Dernier clic", "Progression", role === "admin" ? "Actions" : ""].filter(Boolean).map(h => (
+                {["Collaborateur", "Poste", "Statut", "Leads", "Action contact", "Dernier clic", role === "admin" ? "Actions" : ""].filter(Boolean).map(h => (
                   <th key={h} style={{ textAlign: "left", padding: "12px 20px", fontWeight: 500, color: "var(--ink-3)", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</th>
                 ))}
               </tr>
@@ -148,12 +160,22 @@ function DashboardPage({ role, trialExpired, onUpgrade }) {
                     </span>
                   </td>
                   <td style={{ padding: "14px 20px" }}><span className="serif" style={{ fontSize: 18 }}>{c.leads}</span></td>
-                  <td style={{ padding: "14px 20px", color: "var(--ink-3)", fontSize: 12 }}>{c.last_click}</td>
-                  <td style={{ padding: "14px 20px", minWidth: 120 }}>
-                    <div style={{ height: 6, background: "var(--surface-2)", borderRadius: 999, overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: `${Math.min(100, (c.leads / 50) * 100)}%`, background: "linear-gradient(90deg, var(--gold-2), var(--gold))", borderRadius: 999 }} />
-                    </div>
+                  <td style={{ padding: "14px 20px" }}>
+                    <button
+                      type="button"
+                      onClick={() => setStatsCollab(c)}
+                      title="Voir le détail par canal"
+                      style={{
+                        background: "transparent", border: 0, padding: 0, cursor: "pointer",
+                        display: "inline-flex", alignItems: "center", gap: 6,
+                        color: "var(--ink)", borderBottom: "1px dashed var(--ink-4)",
+                      }}
+                    >
+                      <span className="serif" style={{ fontSize: 18 }}>{Math.round(c.leads * 1.4)}</span>
+                      <Icon.ChevronRight size={12} />
+                    </button>
                   </td>
+                  <td style={{ padding: "14px 20px", color: "var(--ink-3)", fontSize: 12 }}>{c.last_click}</td>
                   {role === "admin" && (
                     <td style={{ padding: "14px 20px" }}>
                       {c.statut === "actif" && (
@@ -167,10 +189,78 @@ function DashboardPage({ role, trialExpired, onUpgrade }) {
           </table>
         </div>
       </div>
+
+      <CollabStatsModal collab={statsCollab} onClose={() => setStatsCollab(null)} />
     </div>
   );
 }
 window.DashboardPage = DashboardPage;
+
+function CollabStatsModal({ collab, onClose }) {
+  if (!collab) return null;
+  const seed = (collab.id || "x").split("").reduce((a, ch) => a + ch.charCodeAt(0), 0);
+  const rng = (n, mod) => ((seed * 9301 + n * 49297) % mod);
+  const totalActions = Math.round(collab.leads * 1.4);
+  const channels = [
+    { key: "mail", label: "Mail", icon: <Icon.Mail size={14} />, color: "#8a6d3b", weight: 28 + rng(1, 12) },
+    { key: "whatsapp", label: "WhatsApp", icon: <Icon.WhatsApp size={14} />, color: "#25d366", weight: 24 + rng(2, 14) },
+    { key: "instagram", label: "Instagram", icon: <Icon.Instagram size={14} />, color: "#c13584", weight: 14 + rng(3, 12) },
+    { key: "linkedin", label: "LinkedIn", icon: <Icon.Linkedin size={14} />, color: "#0a66c2", weight: 10 + rng(4, 10) },
+    { key: "website", label: "Site web", icon: <Icon.Globe size={14} />, color: "#1a1815", weight: 6 + rng(5, 10) },
+  ];
+  const totalW = channels.reduce((s, c) => s + c.weight, 0);
+  const withClicks = channels.map(c => ({ ...c, clicks: Math.max(1, Math.round(totalActions * (c.weight / totalW) * 1.6)) }));
+  const totalClicks = withClicks.reduce((s, c) => s + c.clicks, 0);
+  const max = Math.max(...withClicks.map(c => c.clicks));
+
+  return (
+    <Modal open={!!collab} onClose={onClose} title={`Détail — ${collab.prenom} ${collab.nom}`}>
+      <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>{collab.poste} · 30 derniers jours</p>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginTop: 8 }}>
+        <div className="card" style={{ padding: 14 }}>
+          <div className="eyebrow" style={{ marginBottom: 4 }}>Leads</div>
+          <div className="serif" style={{ fontSize: 26, lineHeight: 1, letterSpacing: "-0.02em" }}>{collab.leads}</div>
+        </div>
+        <div className="card" style={{ padding: 14, background: "linear-gradient(135deg, #fdf3df, #f1deb6)", borderColor: "var(--gold)" }}>
+          <div className="eyebrow" style={{ marginBottom: 4 }}>Action contact</div>
+          <div className="serif" style={{ fontSize: 26, lineHeight: 1, letterSpacing: "-0.02em" }}>{totalActions}</div>
+        </div>
+        <div className="card" style={{ padding: 14 }}>
+          <div className="eyebrow" style={{ marginBottom: 4 }}>Clics canaux</div>
+          <div className="serif" style={{ fontSize: 26, lineHeight: 1, letterSpacing: "-0.02em" }}>{totalClicks}</div>
+        </div>
+      </div>
+
+      <div className="col gap-2" style={{ marginTop: 18 }}>
+        <div className="eyebrow">Détail par canal</div>
+        <div className="col gap-3" style={{ marginTop: 4 }}>
+          {withClicks.map(ch => (
+            <div key={ch.key} className="col gap-1">
+              <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+                <div className="row gap-2" style={{ alignItems: "center" }}>
+                  <div style={{ width: 26, height: 26, borderRadius: 7, background: "var(--surface-2)", color: ch.color, display: "flex", alignItems: "center", justifyContent: "center" }}>{ch.icon}</div>
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>{ch.label}</div>
+                </div>
+                <div className="row gap-2" style={{ alignItems: "baseline" }}>
+                  <span className="dim" style={{ fontSize: 11 }}>{Math.round((ch.clicks / totalClicks) * 100)}%</span>
+                  <span className="serif" style={{ fontSize: 18 }}>{ch.clicks}</span>
+                </div>
+              </div>
+              <div style={{ height: 4, background: "var(--surface-2)", borderRadius: 999, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${(ch.clicks / max) * 100}%`, background: ch.color, borderRadius: 999, transition: "width 400ms" }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="row gap-3" style={{ justifyContent: "flex-end", marginTop: 20 }}>
+        <button className="btn btn-sm" onClick={onClose}>Fermer</button>
+      </div>
+    </Modal>
+  );
+}
 
 // ---------- Code secret ----------
 function SecretCodePage({ role }) {
