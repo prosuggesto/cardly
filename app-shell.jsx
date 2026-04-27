@@ -910,9 +910,18 @@ function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, on
     mail: true,
     instagram: true,
     linkedin: true,
+    crm: true,
+  });
+  const [crmFields, setCrmFields] = useStateP({
+    nom: true,
+    prenom: true,
+    societe: true,
+    mail: true,
+    tel: true,
   });
   const [flipped, setFlipped] = useStateP(false);
   const toggleBtn = (k) => setScanButtons(s => ({ ...s, [k]: !s[k] }));
+  const toggleCrm = (k) => setCrmFields(f => ({ ...f, [k]: !f[k] }));
 
   return (
     <div className="col gap-6" style={{ position: "relative" }}>
@@ -966,6 +975,11 @@ function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, on
                 {scanButtons.mail && (
                   <button className="btn btn-sm" style={{ flex: 1, minWidth: 110, justifyContent: "center" }}>
                     <Icon.Mail size={13} /> Email
+                  </button>
+                )}
+                {scanButtons.crm && (
+                  <button className="btn btn-sm btn-gold" style={{ flex: 1, minWidth: 140, justifyContent: "center" }}>
+                    <Icon.User size={13} /> Partager mes infos
                   </button>
                 )}
                 <button className="btn btn-sm" style={{ flex: 1, minWidth: 110, justifyContent: "center" }}>
@@ -1030,6 +1044,39 @@ function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, on
                   </button>
                 </div>
               </div>
+            </div>
+
+            <div className="card" style={{ padding: 20 }}>
+              <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: scanButtons.crm ? 14 : 0 }}>
+                <div className="serif" style={{ fontSize: 17 }}>CRM</div>
+                <button onClick={() => toggleBtn("crm")} style={{ background: "none", border: "none", padding: 0, display: "inline-flex", alignItems: "center", cursor: "pointer" }}>
+                  <span className={`toggle ${scanButtons.crm ? "on" : ""}`}></span>
+                </button>
+              </div>
+              {scanButtons.crm && (
+                <>
+                  <p className="muted" style={{ fontSize: 12, marginTop: 0, marginBottom: 12 }}>Activez les champs demandés au visiteur lorsqu'il partage ses infos.</p>
+                  <div className="col gap-1">
+                    {[
+                      ["nom", "Nom"],
+                      ["prenom", "Prénom"],
+                      ["societe", "Société"],
+                      ["mail", "Email"],
+                      ["tel", "Téléphone"],
+                    ].map(([k, label]) => (
+                      <div key={k} style={{
+                        display: "flex", justifyContent: "space-between", alignItems: "center",
+                        padding: "10px 4px", fontSize: 14, borderTop: "1px solid var(--line)",
+                      }}>
+                        <span>{label}</span>
+                        <button onClick={() => toggleCrm(k)} style={{ background: "none", border: "none", padding: 0, display: "inline-flex", alignItems: "center", cursor: "pointer" }}>
+                          <span className={`toggle ${crmFields[k] ? "on" : ""}`}></span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
 
             <button className="btn btn-primary" onClick={() => toast.push("Personnalisation enregistrée")}>

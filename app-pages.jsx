@@ -429,6 +429,9 @@ function PublicCardPage({ navigate, params }) {
             <button disabled={inactive} className="btn btn-sm" style={{ flex: 1, minWidth: 110, justifyContent: "center" }} onClick={() => toast.push("Email préparé")}>
               <Icon.Mail size={13} /> Email
             </button>
+            <button disabled={inactive} className="btn btn-sm btn-gold" style={{ flex: 1, minWidth: 140, justifyContent: "center" }} onClick={() => toast.push("Partagez vos infos pour rester en contact")}>
+              <Icon.User size={13} /> Partager mes infos
+            </button>
             <button disabled={inactive} className="btn btn-sm" style={{ flex: 1, minWidth: 110, justifyContent: "center" }} onClick={() => toast.push("Site ouvert")}>
               <Icon.Globe size={13} /> Site web
             </button>
