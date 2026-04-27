@@ -93,6 +93,8 @@ function Card3D({
   showFront,         // 'auto' (default), 'front', 'back'
   className = "",
   logoUrl,           // if provided, draggable logo overlay (back face)
+  frontImageUrl,     // if provided, full-cover image on the front face
+  backImageUrl,      // if provided, full-cover image on the back face
 }) {
   const D = design || (card && window.CARDLY_DATA.getDesign(card.design)) || window.CARDLY_DATA.cardDesigns[0];
   const ratio = 0.63; // typical card aspect
@@ -152,6 +154,7 @@ function Card3D({
   ];
 
   const renderFront = () => {
+    if (frontImageUrl) return <img src={frontImageUrl} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} />;
     if (D.front) return <img src={D.front} alt="" />;
     return (
       <div style={{
@@ -200,7 +203,8 @@ function Card3D({
         position: "absolute", inset: 0,
         background: D.back ? "transparent" : (D.bg || "linear-gradient(135deg,#fff,#f6f3ec)"),
       }}>
-        {D.back && <img src={D.back} alt="" />}
+        {backImageUrl && <img src={backImageUrl} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} />}
+        {!backImageUrl && D.back && <img src={D.back} alt="" />}
         {/* draggable text fields */}
         {fields.filter(f => f.show && f.text).map(f => {
           const pos = positions[f.key] || { x: 50, y: 50 };

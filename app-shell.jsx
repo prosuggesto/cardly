@@ -600,6 +600,8 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
   const [aiLoading, setAILoading] = useStateP(false);
   const [aiPrompt, setAIPrompt] = useStateP("");
   const [logoUrl, setLogoUrl] = useStateP(null);
+  const [frontImageUrl, setFrontImageUrl] = useStateP(null);
+  const [backImageUrl, setBackImageUrl] = useStateP(null);
   const toast = useToast();
   const isAdminOnEnterprise = card.type === "enterprise" && role === "collaborator";
   const editable = !isAdminOnEnterprise;
@@ -654,6 +656,8 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
               onMove={movePos}
               float={false}
               logoUrl={logoUrl}
+              frontImageUrl={frontImageUrl}
+              backImageUrl={backImageUrl}
             />
             <div className="row gap-2">
               <button className="btn btn-sm" onClick={() => setFlipped(!flipped)}><Icon.Refresh size={13}/> Tester le flip</button>
@@ -715,6 +719,22 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
               <div className="serif" style={{ fontSize: 17, marginBottom: 14 }}>Identité</div>
               <div className="col gap-3">
                 <UploadZone disabled={!editable} onLogo={(url) => { setLogoUrl(url); setFlipped(true); }} hasLogo={!!logoUrl} onClear={() => setLogoUrl(null)} />
+                <CardImageUpload
+                  label="Image recto"
+                  hint="Cette image sera appliquée sur le recto de votre carte."
+                  disabled={!editable}
+                  imageUrl={frontImageUrl}
+                  onChange={(url) => { setFrontImageUrl(url); setFlipped(false); }}
+                  onClear={() => setFrontImageUrl(null)}
+                />
+                <CardImageUpload
+                  label="Image verso"
+                  hint="Cette image sera appliquée sur le verso de votre carte."
+                  disabled={!editable}
+                  imageUrl={backImageUrl}
+                  onChange={(url) => { setBackImageUrl(url); setFlipped(true); }}
+                  onClear={() => setBackImageUrl(null)}
+                />
                 <button className="btn" disabled={!editable} onClick={onAIClick}>
                   <Icon.Sparkle size={14} /> Générer une image IA
                   {plan !== "team" && <span className="chip chip-gold" style={{ marginLeft: "auto", fontSize: 10 }}>Team</span>}
@@ -802,6 +822,48 @@ function UploadZone({ disabled, onLogo, hasLogo, onClear }) {
       {hasLogo && (
         <button className="btn btn-ghost btn-sm" onClick={onClear} style={{ alignSelf: "flex-start", fontSize: 12 }}>
           <Icon.X size={12} /> Retirer le logo
+        </button>
+      )}
+    </div>
+  );
+}
+
+function CardImageUpload({ label, hint, disabled, imageUrl, onChange, onClear }) {
+  const [hover, setHover] = useStateP(false);
+  const [name, setName] = useStateP(null);
+  const handleFile = (file) => {
+    if (!file) return;
+    setName(file.name);
+    const reader = new FileReader();
+    reader.onload = (ev) => onChange && onChange(ev.target.result);
+    reader.readAsDataURL(file);
+  };
+  return (
+    <div className="col gap-2">
+      <label
+        onDragOver={(e) => { e.preventDefault(); setHover(true); }}
+        onDragLeave={() => setHover(false)}
+        onDrop={(e) => { e.preventDefault(); setHover(false); handleFile(e.dataTransfer.files[0]); }}
+        style={{
+          padding: 18, border: `1.5px dashed ${hover ? "var(--gold)" : "var(--line-2)"}`,
+          borderRadius: 12, background: hover ? "var(--surface-2)" : "transparent",
+          textAlign: "center", cursor: disabled ? "not-allowed" : "pointer",
+          opacity: disabled ? 0.5 : 1, transition: "all 150ms",
+        }}
+      >
+        <input type="file" hidden accept="image/*" disabled={disabled} onChange={(e) => handleFile(e.target.files[0])} />
+        {imageUrl ? (
+          <img src={imageUrl} alt="" style={{ width: "100%", maxHeight: 80, objectFit: "cover", borderRadius: 8, marginBottom: 6 }} />
+        ) : null}
+        <div className="row gap-2" style={{ justifyContent: "center", marginBottom: 4 }}>
+          <Icon.Upload size={16} />
+          <span style={{ fontSize: 14, fontWeight: 500 }}>{name || label}</span>
+        </div>
+        <div className="dim" style={{ fontSize: 12 }}>{imageUrl ? `Image appliquée · glissez pour remplacer.` : hint}</div>
+      </label>
+      {imageUrl && (
+        <button className="btn btn-ghost btn-sm" onClick={onClear} style={{ alignSelf: "flex-start", fontSize: 12 }}>
+          <Icon.X size={12} /> Retirer l'image
         </button>
       )}
     </div>
