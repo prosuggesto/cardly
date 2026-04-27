@@ -8,30 +8,8 @@ const Icon = {
   Mail: (p) => <svg width={p.size||16} height={p.size||16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 6 10-6"/></svg>,
   Globe: (p) => <svg width={p.size||16} height={p.size||16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 010 20M12 2a15 15 0 000 20"/></svg>,
   WhatsApp: (p) => <svg width={p.size||16} height={p.size||16} viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 018.413 3.488 11.824 11.824 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.86 9.86 0 001.6 5.444l-.999 3.648 3.888-.791zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.71.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/></svg>,
-  Instagram: (p) => (
-    <svg width={p.size||38} height={p.size||38} viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <radialGradient id="ig-bg" cx="28%" cy="110%" r="145%">
-          <stop offset="0%" stopColor="#FFE000"/>
-          <stop offset="18%" stopColor="#FFAA00"/>
-          <stop offset="38%" stopColor="#FF5B5B"/>
-          <stop offset="55%" stopColor="#FF0069"/>
-          <stop offset="72%" stopColor="#D300C5"/>
-          <stop offset="100%" stopColor="#7638FA"/>
-        </radialGradient>
-      </defs>
-      <rect width="200" height="200" rx="46" fill="url(#ig-bg)"/>
-      <rect x="38" y="38" width="124" height="124" rx="36" stroke="white" strokeWidth="12"/>
-      <circle cx="100" cy="100" r="32" stroke="white" strokeWidth="12"/>
-      <circle cx="144" cy="57" r="12" fill="white"/>
-    </svg>
-  ),
-  Linkedin: (p) => (
-    <svg width={p.size||38} height={p.size||38} viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="200" height="200" rx="36" fill="#0A66C2"/>
-      <path fill="white" d="M50 82h28v89H50V82zm14-46a16 16 0 110 32 16 16 0 010-32zm36 46h27v12c5-9 16-14 28-14 30 0 45 19 45 50v41h-28v-38c0-12-4-20-15-20s-19 8-19 21v37h-28V82z"/>
-    </svg>
-  ),
+  Instagram: (p) => <img src="./assets/instagram.webp" width={p.size||38} height={p.size||38} alt="Instagram" style={{ borderRadius: p.size > 28 ? 10 : 6, objectFit: "cover", display: "block" }} />,
+  Linkedin: (p) => <img src="./assets/linkedin.png" width={p.size||38} height={p.size||38} alt="LinkedIn" style={{ borderRadius: p.size > 28 ? 10 : 6, objectFit: "cover", display: "block" }} />,
   Plus: (p) => <svg width={p.size||16} height={p.size||16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>,
   Check: (p) => <svg width={p.size||16} height={p.size||16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>,
   X: (p) => <svg width={p.size||16} height={p.size||16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>,
