@@ -28,6 +28,7 @@ function App() {
 
   const [tab, setTabRaw] = useStateApp("cards");
   const [customizeId, setCustomizeId] = useStateApp(null);
+  const [scanCardId, setScanCardId] = useStateApp(null);
   const setTab = (t) => { setTabRaw(t); if (t !== "customize") setCustomizeId(null); };
   const [tweaksOpen, setTweaksOpen] = useStateApp(false);
 
@@ -76,6 +77,7 @@ function App() {
                 trialExpired={tweaks.trialExpired}
                 onUpgrade={() => setTab("subscription")}
                 onBack={() => setCustomizeId(null)}
+                onValidate={(id) => { setScanCardId(id); setTabRaw("scan"); setCustomizeId(null); }}
               />
             : <CustomizePickerPage
                 onPick={(id) => setCustomizeId(id)}
@@ -84,6 +86,14 @@ function App() {
                 onUpgrade={() => setTab("subscription")}
               />
         )}
+        {tab === "scan" && <ScanCustomizationPage
+          cardId={scanCardId}
+          role={tweaks.role}
+          plan={tweaks.plan}
+          trialExpired={tweaks.trialExpired}
+          onUpgrade={() => setTab("subscription")}
+          onBack={() => { setTabRaw("customize"); setCustomizeId(scanCardId); }}
+        />}
         {tab === "dashboard" && <DashboardPage role={tweaks.role} trialExpired={tweaks.trialExpired} onUpgrade={() => setTab("subscription")} />}
         {tab === "secret" && <SecretCodePage role={tweaks.role} />}
         {tab === "subscription" && <SubscriptionPage plan={tweaks.plan} onSetPlan={(p) => setTweak("plan", p)} />}

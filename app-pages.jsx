@@ -426,15 +426,20 @@ function PublicCardPage({ navigate, params }) {
             >
               <Icon.WhatsApp size={13} /> WhatsApp
             </button>
-            <button disabled={inactive} className="btn btn-sm" style={{ flex: 1, minWidth: 110, justifyContent: "center" }} onClick={() => toast.push("Appel en cours…")}>
-              <Icon.Phone size={13} /> Appeler
-            </button>
             <button disabled={inactive} className="btn btn-sm" style={{ flex: 1, minWidth: 110, justifyContent: "center" }} onClick={() => toast.push("Email préparé")}>
               <Icon.Mail size={13} /> Email
             </button>
             <button disabled={inactive} className="btn btn-sm" style={{ flex: 1, minWidth: 110, justifyContent: "center" }} onClick={() => toast.push("Site ouvert")}>
               <Icon.Globe size={13} /> Site web
             </button>
+          </div>
+          <div className="row gap-3" style={{ justifyContent: "center", marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--line)" }}>
+            <a href="#" onClick={(e) => { e.preventDefault(); if (!inactive) toast.push("Instagram ouvert"); }} style={{ width: 38, height: 38, borderRadius: "50%", background: "linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", opacity: inactive ? 0.4 : 1, pointerEvents: inactive ? "none" : "auto" }} title="Instagram">
+              <Icon.Instagram size={18} />
+            </a>
+            <a href="#" onClick={(e) => { e.preventDefault(); if (!inactive) toast.push("LinkedIn ouvert"); }} style={{ width: 38, height: 38, borderRadius: "50%", background: "#0a66c2", display: "flex", alignItems: "center", justifyContent: "center", color: "white", opacity: inactive ? 0.4 : 1, pointerEvents: inactive ? "none" : "auto" }} title="LinkedIn">
+              <Icon.Linkedin size={18} />
+            </a>
           </div>
         </div>
 

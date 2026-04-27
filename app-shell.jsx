@@ -7,7 +7,8 @@ function AppLayout({ navigate, params, children, tab, setTab, role, plan, trialE
   const [menuOpen, setMenuOpen] = useStateP(false);
   const tabs = [
     { id: "cards", label: "Mes cartes", icon: <Icon.Card size={16} /> },
-    { id: "customize", label: "Personnalisation", icon: <Icon.Brush size={16} /> },
+    { id: "customize", label: "Personnalisation carte", icon: <Icon.Brush size={16} /> },
+    { id: "scan", label: "Personnalisation scan", icon: <Icon.QR size={16} /> },
     { id: "dashboard", label: "Dashboard", icon: <Icon.Chart size={16} /> },
     { id: "secret", label: "Code secret", icon: <Icon.Key size={16} />, adminOnly: false },
     { id: "subscription", label: "Abonnement", icon: <Icon.Crown size={16} /> },
@@ -591,7 +592,7 @@ function CustomizePickerPage({ onPick, role, trialExpired, onUpgrade }) {
 window.CustomizePickerPage = CustomizePickerPage;
 
 // ---------- Personnalisation ----------
-function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack }) {
+function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack, onValidate }) {
   const original = window.CARDLY_DATA.cards.find(c => c.id === cardId) || window.CARDLY_DATA.cards[0];
   const [card, setCard] = useStateP({ ...original, positions: { ...original.positions } });
   const [flipped, setFlipped] = useStateP(true);
@@ -602,7 +603,7 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
   const [logoUrl, setLogoUrl] = useStateP(null);
   const [frontImageUrl, setFrontImageUrl] = useStateP(null);
   const [backImageUrl, setBackImageUrl] = useStateP(null);
-  const [fieldColors, setFieldColors] = useStateP({ name: "#2a241a", poste: "#b8843e", phone: "#2a241a", email: "#2a241a", web: "#2a241a" });
+  const [fieldColors, setFieldColors] = useStateP({ name: "#2a241a", entreprise: "#2a241a", poste: "#b8843e", phone: "#2a241a", email: "#2a241a", web: "#2a241a" });
   const [applyAllColor, setApplyAllColor] = useStateP("#2a241a");
   const setFieldColor = (key, color) => setFieldColors(fc => ({ ...fc, [key]: color }));
   const toast = useToast();
@@ -700,7 +701,7 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
                     <input type="color" value={applyAllColor} disabled={!editable} onChange={(e) => setApplyAllColor(e.target.value)} style={{ opacity: 0, position: "absolute", inset: 0, width: "100%", height: "100%", cursor: "pointer" }} />
                   </label>
                   <button className="btn btn-sm btn-ghost" disabled={!editable} style={{ fontSize: 12, padding: "4px 10px" }}
-                    onClick={() => setFieldColors({ name: applyAllColor, poste: applyAllColor, phone: applyAllColor, email: applyAllColor, web: applyAllColor })}>
+                    onClick={() => setFieldColors({ name: applyAllColor, entreprise: applyAllColor, poste: applyAllColor, phone: applyAllColor, email: applyAllColor, web: applyAllColor })}>
                     Appliquer à tous
                   </button>
                 </div>
@@ -709,7 +710,7 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
                 {[
                   ["afficher_prenom", "Prénom", "name"],
                   ["afficher_nom", "Nom", "name"],
-                  ["afficher_entreprise", "Nom de l'entreprise", null],
+                  ["afficher_entreprise", "Nom de l'entreprise", "entreprise"],
                   ["afficher_poste", "Poste", "poste"],
                   ["afficher_telephone", "Téléphone", "phone"],
                   ["afficher_email", "Email", "email"],
@@ -766,8 +767,8 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
                   <Icon.Sparkle size={14} /> Générer une image IA
                   {plan !== "team" && <span className="chip chip-gold" style={{ marginLeft: "auto", fontSize: 10 }}>Team</span>}
                 </button>
-                <button className="btn btn-primary" disabled={!editable} onClick={() => toast.push("Modifications sauvegardées")}>
-                  <Icon.Check size={14} /> Sauvegarder
+                <button className="btn btn-primary" disabled={!editable} onClick={() => { toast.push("Modifications sauvegardées"); onValidate && onValidate(cardId); }}>
+                  <Icon.Check size={14} /> Valider <Icon.ArrowRight size={13} />
                 </button>
               </div>
             </div>
@@ -896,6 +897,156 @@ function CardImageUpload({ label, hint, disabled, imageUrl, onChange, onClear })
     </div>
   );
 }
+
+// ---------- Personnalisation Scan ----------
+function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack }) {
+  const cards = window.CARDLY_DATA.cards;
+  const card = (cardId && cards.find(c => c.id === cardId)) || cards[0];
+  const ent = window.CARDLY_DATA.entreprise;
+  const toast = useToast();
+  const [scanButtons, setScanButtons] = useStateP({
+    contact: true,
+    whatsapp: true,
+    mail: true,
+    instagram: true,
+    linkedin: true,
+  });
+  const [instagramUrl, setInstagramUrl] = useStateP("");
+  const [linkedinUrl, setLinkedinUrl] = useStateP("");
+  const toggleBtn = (k) => setScanButtons(s => ({ ...s, [k]: !s[k] }));
+
+  return (
+    <div className="col gap-6" style={{ position: "relative" }}>
+      <div className="col gap-2">
+        {onBack && (
+          <button className="btn btn-ghost btn-sm" onClick={onBack} style={{ alignSelf: "flex-start", marginBottom: 4, padding: "6px 10px" }}>
+            <Icon.ArrowLeft size={13} /> Retour
+          </button>
+        )}
+        <div className="eyebrow">Personnalisation scan</div>
+        <h1 className="serif" style={{ fontSize: "clamp(28px, 4vw, 40px)", margin: 0, letterSpacing: "-0.02em" }}>{card.nom_carte}</h1>
+        <p className="muted" style={{ margin: 0, fontSize: 15 }}>Choisissez les actions disponibles lorsqu'on scanne votre carte.</p>
+      </div>
+
+      <div style={{ position: "relative" }}>
+        {trialExpired && <LockedOverlay onUpgrade={onUpgrade} />}
+        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 28 }} className="cust-grid">
+          {/* Scanned card preview */}
+          <div className="card" style={{ padding: 28, display: "flex", flexDirection: "column", alignItems: "center", gap: 18, background: "linear-gradient(180deg, #fffdf6, #f7f2e6)" }}>
+            <Card3D card={card} width={320} float={false} />
+            <div className="card" style={{ padding: 20, width: "100%", maxWidth: 360, background: "var(--surface)" }}>
+              <div className="col gap-1" style={{ alignItems: "center", textAlign: "center", marginBottom: 14 }}>
+                <div className="serif" style={{ fontSize: 22, letterSpacing: "-0.01em" }}>{card.prenom_affiche} {card.nom_affiche}</div>
+                <div className="muted" style={{ fontSize: 13 }}>{card.poste_affiche} · {ent.nom_entreprise}</div>
+              </div>
+              {scanButtons.contact && (
+                <button className="btn btn-primary btn-lg" style={{ width: "100%", justifyContent: "center", marginBottom: 10 }}>
+                  <Icon.User size={14} /> Enregistrer dans mes contacts
+                </button>
+              )}
+              <div className="row gap-2" style={{ flexWrap: "wrap" }}>
+                {scanButtons.whatsapp && (
+                  <button className="btn btn-sm" style={{ flex: 1, minWidth: 130, justifyContent: "center" }}>
+                    <Icon.WhatsApp size={13} /> WhatsApp
+                  </button>
+                )}
+                {scanButtons.mail && (
+                  <button className="btn btn-sm" style={{ flex: 1, minWidth: 110, justifyContent: "center" }}>
+                    <Icon.Mail size={13} /> Email
+                  </button>
+                )}
+              </div>
+              {(scanButtons.instagram || scanButtons.linkedin) && (
+                <div className="row gap-3" style={{ justifyContent: "center", marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--line)" }}>
+                  {scanButtons.instagram && (
+                    <a href="#" onClick={(e) => e.preventDefault()} style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }} title="Instagram">
+                      <Icon.Instagram size={18} />
+                    </a>
+                  )}
+                  {scanButtons.linkedin && (
+                    <a href="#" onClick={(e) => e.preventDefault()} style={{ width: 36, height: 36, borderRadius: "50%", background: "#0a66c2", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }} title="LinkedIn">
+                      <Icon.Linkedin size={18} />
+                    </a>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Panel */}
+          <div className="col gap-4">
+            <div className="card" style={{ padding: 20 }}>
+              <div className="serif" style={{ fontSize: 17, marginBottom: 14 }}>Actions disponibles</div>
+              <div className="col gap-1">
+                {[
+                  ["contact", "Enregistrer au contact", <Icon.User size={14} />],
+                  ["whatsapp", "WhatsApp", <Icon.WhatsApp size={14} />],
+                  ["mail", "Email", <Icon.Mail size={14} />],
+                ].map(([k, label, icon]) => (
+                  <div key={k} style={{
+                    display: "flex", justifyContent: "space-between", alignItems: "center",
+                    padding: "10px 4px", fontSize: 14, borderTop: "1px solid var(--line)",
+                  }}>
+                    <span className="row gap-2" style={{ alignItems: "center" }}>
+                      <span style={{ opacity: 0.6 }}>{icon}</span>
+                      {label}
+                    </span>
+                    <button onClick={() => toggleBtn(k)} style={{ background: "none", border: "none", padding: 0, display: "inline-flex", alignItems: "center", cursor: "pointer" }}>
+                      <span className={`toggle ${scanButtons[k] ? "on" : ""}`}></span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="card" style={{ padding: 20 }}>
+              <div className="serif" style={{ fontSize: 17, marginBottom: 14 }}>Réseaux sociaux</div>
+              <div className="col gap-3">
+                <div className="col gap-2">
+                  <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+                    <span className="row gap-2" style={{ alignItems: "center", fontSize: 14 }}>
+                      <span style={{ width: 24, height: 24, borderRadius: 6, background: "linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}>
+                        <Icon.Instagram size={13} />
+                      </span>
+                      Instagram
+                    </span>
+                    <button onClick={() => toggleBtn("instagram")} style={{ background: "none", border: "none", padding: 0, display: "inline-flex", alignItems: "center", cursor: "pointer" }}>
+                      <span className={`toggle ${scanButtons.instagram ? "on" : ""}`}></span>
+                    </button>
+                  </div>
+                  {scanButtons.instagram && (
+                    <input className="input" placeholder="https://instagram.com/votre-compte" value={instagramUrl} onChange={(e) => setInstagramUrl(e.target.value)} style={{ fontSize: 13 }} />
+                  )}
+                </div>
+                <div className="col gap-2">
+                  <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+                    <span className="row gap-2" style={{ alignItems: "center", fontSize: 14 }}>
+                      <span style={{ width: 24, height: 24, borderRadius: 6, background: "#0a66c2", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}>
+                        <Icon.Linkedin size={13} />
+                      </span>
+                      LinkedIn
+                    </span>
+                    <button onClick={() => toggleBtn("linkedin")} style={{ background: "none", border: "none", padding: 0, display: "inline-flex", alignItems: "center", cursor: "pointer" }}>
+                      <span className={`toggle ${scanButtons.linkedin ? "on" : ""}`}></span>
+                    </button>
+                  </div>
+                  {scanButtons.linkedin && (
+                    <input className="input" placeholder="https://linkedin.com/in/votre-profil" value={linkedinUrl} onChange={(e) => setLinkedinUrl(e.target.value)} style={{ fontSize: 13 }} />
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <button className="btn btn-primary" onClick={() => toast.push("Personnalisation enregistrée")}>
+              <Icon.Check size={14} /> Sauvegarder
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+window.ScanCustomizationPage = ScanCustomizationPage;
 
 window.CardListItem = CardListItem;
 window.AddCardTile = AddCardTile;
