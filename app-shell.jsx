@@ -913,6 +913,7 @@ function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, on
   });
   const [instagramUrl, setInstagramUrl] = useStateP("");
   const [linkedinUrl, setLinkedinUrl] = useStateP("");
+  const [flipped, setFlipped] = useStateP(false);
   const toggleBtn = (k) => setScanButtons(s => ({ ...s, [k]: !s[k] }));
 
   return (
@@ -933,7 +934,7 @@ function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, on
         <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 28 }} className="cust-grid">
           {/* Scanned card preview — identique à PublicCardPage */}
           <div className="card" style={{ padding: 28, display: "flex", flexDirection: "column", alignItems: "center", gap: 28, background: "linear-gradient(180deg, #fffdf6, #f7f2e6)" }}>
-            <Card3D card={card} width={360} float={true} />
+            <Card3D card={card} width={360} float={true} flipped={flipped} onFlip={() => setFlipped(!flipped)} />
             <div className="card" style={{ padding: 24, width: "100%", maxWidth: 380, background: "var(--surface)" }}>
               <div className="col gap-1" style={{ alignItems: "center", textAlign: "center", marginBottom: 18 }}>
                 <div className="serif" style={{ fontSize: 26, letterSpacing: "-0.01em" }}>{card.prenom_affiche} {card.nom_affiche}</div>
