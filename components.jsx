@@ -95,6 +95,7 @@ function Card3D({
   logoUrl,           // if provided, draggable logo overlay (back face)
   frontImageUrl,     // if provided, full-cover image on the front face
   backImageUrl,      // if provided, full-cover image on the back face
+  fieldColors,       // { name, poste, phone, email, web } — per-field text colors
 }) {
   const D = design || (card && window.CARDLY_DATA.getDesign(card.design)) || window.CARDLY_DATA.cardDesigns[0];
   const ratio = 0.63; // typical card aspect
@@ -215,7 +216,7 @@ function Card3D({
               onPointerDown={handlePointerDown(f.key)}
               style={{
                 left: `${pos.x}%`, top: `${pos.y}%`,
-                color: inkColor,
+                color: (fieldColors && fieldColors[f.key]) || inkColor,
                 ...f.style,
                 display: "inline-flex", alignItems: "center", gap: 6,
               }}

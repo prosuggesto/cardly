@@ -602,6 +602,9 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
   const [logoUrl, setLogoUrl] = useStateP(null);
   const [frontImageUrl, setFrontImageUrl] = useStateP(null);
   const [backImageUrl, setBackImageUrl] = useStateP(null);
+  const [fieldColors, setFieldColors] = useStateP({ name: "#2a241a", poste: "#b8843e", phone: "#2a241a", email: "#2a241a", web: "#2a241a" });
+  const [applyAllColor, setApplyAllColor] = useStateP("#2a241a");
+  const setFieldColor = (key, color) => setFieldColors(fc => ({ ...fc, [key]: color }));
   const toast = useToast();
   const isAdminOnEnterprise = card.type === "enterprise" && role === "collaborator";
   const editable = !isAdminOnEnterprise;
@@ -658,6 +661,7 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
               logoUrl={logoUrl}
               frontImageUrl={frontImageUrl}
               backImageUrl={backImageUrl}
+              fieldColors={fieldColors}
             />
             <div className="row gap-2">
               <button className="btn btn-sm" onClick={() => setFlipped(!flipped)}><Icon.Refresh size={13}/> Tester le flip</button>
@@ -689,27 +693,49 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
 
             {/* Visibility toggles */}
             <div className="card" style={{ padding: 20 }}>
-              <div className="serif" style={{ fontSize: 17, marginBottom: 14 }}>Champs visibles</div>
+              <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                <div className="serif" style={{ fontSize: 17 }}>Champs visibles</div>
+                <div className="row gap-2" style={{ alignItems: "center" }}>
+                  <label style={{ position: "relative", width: 22, height: 22, borderRadius: 6, border: "1.5px solid var(--line-2)", overflow: "hidden", cursor: editable ? "pointer" : "not-allowed", flexShrink: 0, background: applyAllColor }}>
+                    <input type="color" value={applyAllColor} disabled={!editable} onChange={(e) => setApplyAllColor(e.target.value)} style={{ opacity: 0, position: "absolute", inset: 0, width: "100%", height: "100%", cursor: "pointer" }} />
+                  </label>
+                  <button className="btn btn-sm btn-ghost" disabled={!editable} style={{ fontSize: 12, padding: "4px 10px" }}
+                    onClick={() => setFieldColors({ name: applyAllColor, poste: applyAllColor, phone: applyAllColor, email: applyAllColor, web: applyAllColor })}>
+                    Appliquer à tous
+                  </button>
+                </div>
+              </div>
               <div className="col gap-1">
                 {[
-                  ["afficher_prenom", "Prénom"],
-                  ["afficher_nom", "Nom"],
-                  ["afficher_entreprise", "Nom de l'entreprise"],
-                  ["afficher_poste", "Poste"],
-                  ["afficher_telephone", "Téléphone"],
-                  ["afficher_email", "Email"],
-                  ["afficher_site_web", "Site web"],
-                ].map(([k, label]) => (
-                  <button key={k} disabled={!editable} onClick={() => setField(k, !card[k])} style={{
+                  ["afficher_prenom", "Prénom", "name"],
+                  ["afficher_nom", "Nom", "name"],
+                  ["afficher_entreprise", "Nom de l'entreprise", null],
+                  ["afficher_poste", "Poste", "poste"],
+                  ["afficher_telephone", "Téléphone", "phone"],
+                  ["afficher_email", "Email", "email"],
+                  ["afficher_site_web", "Site web", "web"],
+                ].map(([k, label, colorKey]) => (
+                  <div key={k} style={{
                     display: "flex", justifyContent: "space-between", alignItems: "center",
                     padding: "10px 4px", fontSize: 14,
                     borderTop: "1px solid var(--line)",
-                    cursor: editable ? "pointer" : "not-allowed",
                     opacity: editable ? 1 : 0.6,
                   }}>
-                    <span>{label}</span>
-                    <span className={`toggle ${card[k] ? "on" : ""}`}></span>
-                  </button>
+                    <span style={{ flex: 1 }}>{label}</span>
+                    <div className="row gap-2" style={{ alignItems: "center" }}>
+                      {colorKey && (
+                        <label style={{ position: "relative", width: 20, height: 20, borderRadius: 5, border: "1.5px solid var(--line-2)", overflow: "hidden", cursor: editable ? "pointer" : "not-allowed", flexShrink: 0, background: fieldColors[colorKey] }}>
+                          <input type="color" value={fieldColors[colorKey]} disabled={!editable} onChange={(e) => setFieldColor(colorKey, e.target.value)} style={{ opacity: 0, position: "absolute", inset: 0, width: "100%", height: "100%", cursor: "pointer" }} />
+                        </label>
+                      )}
+                      <button disabled={!editable} onClick={() => setField(k, !card[k])} style={{
+                        background: "none", border: "none", padding: 0,
+                        cursor: editable ? "pointer" : "not-allowed",
+                      }}>
+                        <span className={`toggle ${card[k] ? "on" : ""}`}></span>
+                      </button>
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
