@@ -613,6 +613,20 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
   const setFieldColor = (key, color) => setFieldColors(fc => ({ ...fc, [key]: color }));
   const [fieldSides, setFieldSides] = useStateP({ name: "recto", entreprise: "recto", poste: "recto", phone: "recto", email: "recto", web: "recto" });
   const setFieldSide = (key, side) => setFieldSides(fs => ({ ...fs, [key]: side }));
+  const [fieldSizes, setFieldSizes] = useStateP({ name: 1, entreprise: 1, poste: 1, phone: 1, email: 1, web: 1 });
+  const bumpFieldSize = (key, delta) => setFieldSizes(fs => ({ ...fs, [key]: Math.max(0.5, Math.min(2, Math.round(((fs[key] || 1) + delta) * 10) / 10)) }));
+  const [fieldFonts, setFieldFonts] = useStateP({ name: "default", entreprise: "default", poste: "default", phone: "default", email: "default", web: "default" });
+  const setFieldFont = (key, font) => setFieldFonts(ff => ({ ...ff, [key]: font }));
+  const [logoSize, setLogoSize] = useStateP(1);
+  const bumpLogoSize = (delta) => setLogoSize(s => Math.max(0.5, Math.min(2, Math.round((s + delta) * 10) / 10)));
+  const FONT_OPTIONS = [
+    { value: "default", label: "Défaut" },
+    { value: "display", label: "Display" },
+    { value: "serif", label: "Serif" },
+    { value: "sans", label: "Sans" },
+    { value: "mono", label: "Mono" },
+    { value: "script", label: "Script" },
+  ];
   const toast = useToast();
   const isAdminOnEnterprise = card.type === "enterprise" && role === "collaborator";
   const editable = !isAdminOnEnterprise;
@@ -671,6 +685,9 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
               backImageUrl={backImageUrl}
               fieldColors={fieldColors}
               fieldSides={fieldSides}
+              fieldSizes={fieldSizes}
+              fieldFonts={fieldFonts}
+              logoSize={logoSize}
             />
             <div className="row gap-2">
               <button className="btn btn-sm" onClick={() => setFlipped(!flipped)}><Icon.Refresh size={13}/> Tester le flip</button>
@@ -785,6 +802,49 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
                           </div>
                         );
                       })()}
+                      {colorKey && (
+                        <div style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          border: "1px solid var(--line-2)",
+                          borderRadius: 7,
+                          overflow: "hidden",
+                          fontSize: 11,
+                          opacity: card[k] && editable ? 1 : 0.5,
+                        }}>
+                          <button
+                            type="button"
+                            disabled={!editable || !card[k]}
+                            onClick={() => bumpFieldSize(colorKey, -0.1)}
+                            style={{ padding: "4px 7px", background: "transparent", border: "none", cursor: editable && card[k] ? "pointer" : "not-allowed", fontWeight: 600 }}
+                            title="Réduire la taille"
+                          >−</button>
+                          <span style={{ minWidth: 32, textAlign: "center", fontSize: 10, color: "var(--ink-3)", fontVariantNumeric: "tabular-nums" }}>
+                            {Math.round((fieldSizes[colorKey] || 1) * 100)}%
+                          </span>
+                          <button
+                            type="button"
+                            disabled={!editable || !card[k]}
+                            onClick={() => bumpFieldSize(colorKey, 0.1)}
+                            style={{ padding: "4px 7px", background: "transparent", border: "none", cursor: editable && card[k] ? "pointer" : "not-allowed", fontWeight: 600 }}
+                            title="Agrandir"
+                          >+</button>
+                        </div>
+                      )}
+                      {colorKey && (
+                        <select
+                          disabled={!editable || !card[k]}
+                          value={fieldFonts[colorKey] || "default"}
+                          onChange={(e) => setFieldFont(colorKey, e.target.value)}
+                          className="input"
+                          style={{ padding: "3px 6px", fontSize: 11, height: 26, minWidth: 84, opacity: card[k] && editable ? 1 : 0.5 }}
+                          title="Police"
+                        >
+                          {FONT_OPTIONS.map(o => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
+                          ))}
+                        </select>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -796,6 +856,21 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
               <div className="serif" style={{ fontSize: 17, marginBottom: 14 }}>Identité</div>
               <div className="col gap-3">
                 <UploadZone disabled={!editable} onLogo={(url) => { setLogoUrl(url); setFlipped(true); }} hasLogo={!!logoUrl} onClear={() => setLogoUrl(null)} />
+                {logoUrl && (
+                  <div className="row" style={{ justifyContent: "space-between", alignItems: "center", padding: "4px 0" }}>
+                    <span style={{ fontSize: 13 }}>Taille du logo</span>
+                    <div style={{
+                      display: "inline-flex", alignItems: "center",
+                      border: "1px solid var(--line-2)", borderRadius: 7, overflow: "hidden",
+                    }}>
+                      <button type="button" onClick={() => bumpLogoSize(-0.1)} style={{ padding: "4px 9px", background: "transparent", border: "none", cursor: "pointer", fontWeight: 600 }}>−</button>
+                      <span style={{ minWidth: 38, textAlign: "center", fontSize: 11, color: "var(--ink-3)", fontVariantNumeric: "tabular-nums" }}>
+                        {Math.round(logoSize * 100)}%
+                      </span>
+                      <button type="button" onClick={() => bumpLogoSize(0.1)} style={{ padding: "4px 9px", background: "transparent", border: "none", cursor: "pointer", fontWeight: 600 }}>+</button>
+                    </div>
+                  </div>
+                )}
                 <CardImageUpload
                   label="Image recto"
                   hint="Cette image sera appliquée sur le recto de votre carte."

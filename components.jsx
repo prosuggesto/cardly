@@ -97,7 +97,18 @@ function Card3D({
   backImageUrl,      // if provided, full-cover image on the back face
   fieldColors,       // { name, poste, phone, email, web } — per-field text colors
   fieldSides,        // { name, entreprise, poste, phone, email, web } — "recto" | "verso"
+  fieldSizes,        // per-field font-size multiplier (default 1)
+  fieldFonts,        // per-field font family key
+  logoSize = 1,      // logo size multiplier
 }) {
+  const FONT_FAMILIES = {
+    default: undefined,
+    display: "var(--font-display), Georgia, 'Times New Roman', serif",
+    serif: "Georgia, 'Times New Roman', serif",
+    sans: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+    mono: "var(--font-mono), 'Courier New', monospace",
+    script: "'Brush Script MT', 'Lucida Handwriting', cursive",
+  };
   const D = design || (card && window.CARDLY_DATA.getDesign(card.design)) || window.CARDLY_DATA.cardDesigns[0];
   const ratio = 0.63; // typical card aspect
   const height = width * ratio;
@@ -166,6 +177,10 @@ function Card3D({
 
   const renderField = (f, side) => {
     const pos = positions[f.key] || { x: 50, y: 50 };
+    const sizeMul = (fieldSizes && fieldSizes[f.key]) || 1;
+    const fontKey = (fieldFonts && fieldFonts[f.key]) || "default";
+    const fontFamily = FONT_FAMILIES[fontKey];
+    const baseFontSize = f.style.fontSize;
     return (
       <div
         key={f.key}
@@ -175,6 +190,8 @@ function Card3D({
           left: `${pos.x}%`, top: `${pos.y}%`,
           color: (fieldColors && fieldColors[f.key]) || inkColorBack,
           ...f.style,
+          fontSize: baseFontSize * sizeMul,
+          ...(fontFamily ? { fontFamily } : {}),
           display: "inline-flex", alignItems: "center", gap: 6,
         }}
       >
@@ -187,7 +204,7 @@ function Card3D({
   const renderLogoOverlay = (draggable = false, side = "recto") => {
     if (!logoUrl) return null;
     const lp = positions.logo || { x: 18, y: 22 };
-    const ls = width * 0.18;
+    const ls = width * 0.18 * (logoSize || 1);
     return (
       <div
         onPointerDown={draggable ? handlePointerDown("logo", side) : undefined}
