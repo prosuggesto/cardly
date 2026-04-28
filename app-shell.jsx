@@ -721,14 +721,39 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
             <div className="card" style={{ padding: 20 }}>
               <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
                 <div className="serif" style={{ fontSize: 17 }}>Champs visibles</div>
-                <div className="row gap-2" style={{ alignItems: "center", paddingRight: 283 }}>
-                  <button className="btn btn-sm btn-ghost" disabled={!editable} style={{ fontSize: 12, padding: "4px 10px" }}
-                    onClick={() => setFieldColors({ name: applyAllColor, entreprise: applyAllColor, poste: applyAllColor, phone: applyAllColor, email: applyAllColor, web: applyAllColor })}>
-                    Appliquer à tous
-                  </button>
+                <div className="row gap-2" style={{ alignItems: "center", flexShrink: 0, position: "relative" }}>
                   <label style={{ position: "relative", width: 20, height: 20, borderRadius: 5, border: "1.5px solid var(--line-2)", overflow: "hidden", cursor: editable ? "pointer" : "not-allowed", flexShrink: 0, background: applyAllColor }}>
                     <input type="color" value={applyAllColor} disabled={!editable} onChange={(e) => setApplyAllColor(e.target.value)} style={{ opacity: 0, position: "absolute", inset: 0, width: "100%", height: "100%", cursor: "pointer" }} />
                   </label>
+                  {/* Invisible placeholders to mirror per-field row width — keeps color box aligned with column below */}
+                  <span className="toggle" style={{ visibility: "hidden" }} aria-hidden="true" />
+                  <div aria-hidden="true" style={{ visibility: "hidden", display: "inline-flex", border: "1px solid var(--line-2)", borderRadius: 7, fontSize: 11 }}>
+                    <span style={{ padding: "4px 9px" }}>Recto</span>
+                    <span style={{ padding: "4px 9px" }}>Verso</span>
+                  </div>
+                  <div aria-hidden="true" style={{ visibility: "hidden", display: "inline-flex", alignItems: "center", border: "1px solid var(--line-2)", borderRadius: 7, fontSize: 11 }}>
+                    <span style={{ width: 34, padding: "3px 4px", textAlign: "center" }}>100</span>
+                    <span style={{ fontSize: 10, paddingRight: 5 }}>%</span>
+                  </div>
+                  <span aria-hidden="true" style={{ visibility: "hidden", padding: "3px 4px", fontSize: 11, height: 26, width: 64, display: "inline-block" }} />
+                  {/* Apply-all button absolutely positioned to the right of the color box */}
+                  <button
+                    type="button"
+                    disabled={!editable}
+                    onClick={() => setFieldColors({ name: applyAllColor, entreprise: applyAllColor, poste: applyAllColor, phone: applyAllColor, email: applyAllColor, web: applyAllColor })}
+                    className="btn btn-sm btn-ghost"
+                    style={{
+                      position: "absolute",
+                      left: 28,
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      fontSize: 12,
+                      padding: "4px 10px",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    Appliquer à tous
+                  </button>
                 </div>
               </div>
               <div className="col gap-1">
@@ -814,8 +839,8 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
                         }}>
                           <input
                             type="number"
-                            min={50}
-                            max={200}
+                            min={0}
+                            max={300}
                             step={1}
                             className="no-spinner"
                             disabled={!editable || !card[k]}
@@ -823,7 +848,7 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
                             onChange={(e) => {
                               const v = parseInt(e.target.value, 10);
                               if (isNaN(v)) return;
-                              const clamped = Math.max(50, Math.min(200, v));
+                              const clamped = Math.max(0, Math.min(300, v));
                               setFieldSizes(fs => ({ ...fs, [colorKey]: clamped / 100 }));
                             }}
                             style={{ width: 34, padding: "3px 4px", fontSize: 11, textAlign: "center", background: "transparent", border: "none", outline: "none", fontVariantNumeric: "tabular-nums" }}
@@ -866,15 +891,15 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
                     }}>
                       <input
                         type="number"
-                        min={50}
-                        max={200}
+                        min={0}
+                        max={300}
                         step={1}
                         className="no-spinner"
                         value={Math.round(logoSize * 100)}
                         onChange={(e) => {
                           const v = parseInt(e.target.value, 10);
                           if (isNaN(v)) return;
-                          const clamped = Math.max(50, Math.min(200, v));
+                          const clamped = Math.max(0, Math.min(300, v));
                           setLogoSize(clamped / 100);
                         }}
                         style={{ width: 48, padding: "4px 4px", fontSize: 12, textAlign: "center", background: "transparent", border: "none", outline: "none", fontVariantNumeric: "tabular-nums" }}
