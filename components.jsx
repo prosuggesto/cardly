@@ -137,7 +137,7 @@ function Card3D({
     { key: "name",  show: card ? (card.afficher_nom || card.afficher_prenom) : true,
       text: card ? `${card.afficher_prenom ? card.prenom_affiche : ""} ${card.afficher_nom ? card.nom_affiche : ""}`.trim() : "Nom Prénom",
       style: { fontSize: width * 0.062, fontWeight: 500, letterSpacing: "-0.01em" } },
-    { key: "entreprise", show: card ? card.afficher_entreprise : true,
+    { key: "entreprise", show: true,
       text: window.CARDLY_DATA.entreprise.nom_entreprise,
       style: { fontSize: width * 0.038, fontWeight: 500, letterSpacing: "0.02em" } },
     { key: "poste", show: card ? card.afficher_poste : true,
@@ -157,23 +157,48 @@ function Card3D({
       style: { fontSize: width * 0.032 } },
   ];
 
+  const renderLogoOverlay = (draggable = false) => {
+    if (!logoUrl) return null;
+    const lp = positions.logo || { x: 18, y: 22 };
+    const ls = width * 0.18;
+    return (
+      <div
+        onPointerDown={draggable ? handlePointerDown("logo") : undefined}
+        className={draggable ? `${editable ? "editable" : ""} ${dragging === "logo" ? "dragging" : ""}` : undefined}
+        style={{
+          position: "absolute", left: `${lp.x}%`, top: `${lp.y}%`,
+          transform: "translate(-50%, -50%)",
+          width: ls, height: ls,
+          backgroundImage: `url(${logoUrl})`,
+          backgroundSize: "contain", backgroundRepeat: "no-repeat", backgroundPosition: "center",
+          cursor: draggable && editable ? (dragging === "logo" ? "grabbing" : "grab") : "default",
+          outline: draggable && editable ? "1px dashed transparent" : "none",
+          transition: "outline-color 150ms",
+        }}
+        onMouseEnter={(e) => { if (draggable && editable) e.currentTarget.style.outlineColor = "rgba(184,138,62,0.6)"; }}
+        onMouseLeave={(e) => { if (draggable && editable) e.currentTarget.style.outlineColor = "transparent"; }}
+      />
+    );
+  };
+
   const renderFront = () => {
-    if (frontImageUrl) return <img src={frontImageUrl} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} />;
-    if (D.front) return <img src={D.front} alt="" />;
+    if (frontImageUrl) return (
+      <div style={{ position: "absolute", inset: 0 }}>
+        <img src={frontImageUrl} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} />
+        {renderLogoOverlay(false)}
+      </div>
+    );
+    if (D.front) return (
+      <div style={{ position: "absolute", inset: 0 }}>
+        <img src={D.front} alt="" />
+        {renderLogoOverlay(false)}
+      </div>
+    );
     return (
       <div style={{
         position: "absolute", inset: 0,
         background: D.bg || "linear-gradient(135deg,#fff,#f6f3ec)",
       }}>
-        {/* decorative shapes */}
-        <div style={{
-          position: "absolute", top: "12%", left: "8%",
-          fontFamily: "var(--font-display)",
-          fontSize: width * 0.08, color: D.ink, opacity: 0.95,
-          letterSpacing: "0.02em",
-        }}>
-          {window.CARDLY_DATA.entreprise.nom_entreprise}
-        </div>
         <div style={{
           position: "absolute", bottom: "14%", left: "8%",
           fontFamily: "var(--font-mono)", fontSize: width * 0.025,
@@ -195,6 +220,7 @@ function Card3D({
           background: "radial-gradient(circle at 30% 30%, var(--gold-2), var(--gold))",
           opacity: 0.5,
         }} />
+        {renderLogoOverlay(false)}
       </div>
     );
   };
@@ -229,29 +255,8 @@ function Card3D({
             </div>
           );
         })}
-        {/* Logo overlay on back — draggable */}
-        {logoUrl && (() => {
-          const lp = positions.logo || { x: 18, y: 22 };
-          const ls = width * 0.18;
-          return (
-            <div
-              onPointerDown={handlePointerDown("logo")}
-              className={`${editable ? "editable" : ""} ${dragging === "logo" ? "dragging" : ""}`}
-              style={{
-                position: "absolute", left: `${lp.x}%`, top: `${lp.y}%`,
-                transform: "translate(-50%, -50%)",
-                width: ls, height: ls,
-                backgroundImage: `url(${logoUrl})`,
-                backgroundSize: "contain", backgroundRepeat: "no-repeat", backgroundPosition: "center",
-                cursor: editable ? (dragging === "logo" ? "grabbing" : "grab") : "default",
-                outline: editable ? "1px dashed transparent" : "none",
-                transition: "outline-color 150ms",
-              }}
-              onMouseEnter={(e) => { if (editable) e.currentTarget.style.outlineColor = "rgba(184,138,62,0.6)"; }}
-              onMouseLeave={(e) => { if (editable) e.currentTarget.style.outlineColor = "transparent"; }}
-            />
-          );
-        })()}
+        {/* Logo overlay on recto — draggable */}
+        {renderLogoOverlay(true)}
         {/* QR — also draggable when editable */}
         {showQR && (() => {
           const qrPos = positions.qr || { x: 88, y: 82 };

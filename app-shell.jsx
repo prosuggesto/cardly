@@ -366,8 +366,7 @@ function CardStatsModal({ open, onClose, card }) {
     { key: "instagram", label: "Instagram", icon: <Icon.Instagram size={14} />, color: "#c13584", clicks: 9 + rng(4, 22) },
     { key: "linkedin", label: "LinkedIn", icon: <Icon.Linkedin size={14} />, color: "#0a66c2", clicks: 6 + rng(5, 18) },
     { key: "website", label: "Site web", icon: <Icon.Globe size={14} />, color: "#1a1815", clicks: 4 + rng(6, 16) },
-    { key: "addcontact", label: "Add contact", icon: <Icon.User size={14} />, color: "#1a1815", clicks: 12 + rng(7, 20) },
-    { key: "crm", label: "CRM", icon: <Icon.User size={14} />, color: "#b8843e", clicks: 5 + rng(8, 14) },
+    { key: "crm", label: "CRM", icon: <Icon.User size={14} />, color: "#b8843e", clicks: 5 + rng(7, 14) },
   ];
   const totalClicks = channels.reduce((s, c) => s + c.clicks, 0);
   const max = Math.max(...channels.map(c => c.clicks));
@@ -757,17 +756,17 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
                   label="Image recto"
                   hint="Cette image sera appliquée sur le recto de votre carte."
                   disabled={!editable}
-                  imageUrl={frontImageUrl}
-                  onChange={(url) => { setFrontImageUrl(url); setFlipped(false); }}
-                  onClear={() => setFrontImageUrl(null)}
+                  imageUrl={backImageUrl}
+                  onChange={(url) => { setBackImageUrl(url); setFlipped(true); }}
+                  onClear={() => setBackImageUrl(null)}
                 />
                 <CardImageUpload
                   label="Image verso"
                   hint="Cette image sera appliquée sur le verso de votre carte."
                   disabled={!editable}
-                  imageUrl={backImageUrl}
-                  onChange={(url) => { setBackImageUrl(url); setFlipped(true); }}
-                  onClear={() => setBackImageUrl(null)}
+                  imageUrl={frontImageUrl}
+                  onChange={(url) => { setFrontImageUrl(url); setFlipped(false); }}
+                  onClear={() => setFrontImageUrl(null)}
                 />
                 <button className="btn" disabled={!editable} onClick={onAIClick}>
                   <Icon.Sparkle size={14} /> Générer une image IA
