@@ -619,6 +619,8 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
   const setFieldFont = (key, font) => setFieldFonts(ff => ({ ...ff, [key]: font }));
   const [logoSize, setLogoSize] = useStateP(1);
   const bumpLogoSize = (delta) => setLogoSize(s => Math.max(0.5, Math.min(2, Math.round((s + delta) * 10) / 10)));
+  const [sizeDrafts, setSizeDrafts] = useStateP({});
+  const [logoSizeDraft, setLogoSizeDraft] = useStateP(undefined);
   const FONT_OPTIONS = [
     { value: "default", label: "Défaut" },
     { value: "display", label: "Display" },
@@ -725,17 +727,21 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
                   <label style={{ position: "relative", width: 20, height: 20, borderRadius: 5, border: "1.5px solid var(--line-2)", overflow: "hidden", cursor: editable ? "pointer" : "not-allowed", flexShrink: 0, background: applyAllColor }}>
                     <input type="color" value={applyAllColor} disabled={!editable} onChange={(e) => setApplyAllColor(e.target.value)} style={{ opacity: 0, position: "absolute", inset: 0, width: "100%", height: "100%", cursor: "pointer" }} />
                   </label>
-                  {/* Invisible placeholders to mirror per-field row width — keeps color box aligned with column below */}
-                  <span className="toggle" style={{ visibility: "hidden" }} aria-hidden="true" />
-                  <div aria-hidden="true" style={{ visibility: "hidden", display: "inline-flex", border: "1px solid var(--line-2)", borderRadius: 7, fontSize: 11 }}>
-                    <span style={{ padding: "4px 9px" }}>Recto</span>
-                    <span style={{ padding: "4px 9px" }}>Verso</span>
+                  {/* Invisible clones of per-field controls — guarantees identical layout/widths */}
+                  <button aria-hidden="true" tabIndex={-1} style={{ background: "none", border: "none", padding: 0, display: "inline-flex", alignItems: "center", visibility: "hidden" }}>
+                    <span className="toggle on"></span>
+                  </button>
+                  <div aria-hidden="true" style={{ display: "inline-flex", border: "1px solid var(--line-2)", borderRadius: 7, overflow: "hidden", fontSize: 11, fontWeight: 500, visibility: "hidden" }}>
+                    <button tabIndex={-1} style={{ padding: "4px 9px", background: "var(--ink)", color: "white", border: "none" }}>Recto</button>
+                    <button tabIndex={-1} style={{ padding: "4px 9px", background: "transparent", color: "var(--ink-3)", border: "none" }}>Verso</button>
                   </div>
-                  <div aria-hidden="true" style={{ visibility: "hidden", display: "inline-flex", alignItems: "center", border: "1px solid var(--line-2)", borderRadius: 7, fontSize: 11 }}>
-                    <span style={{ width: 34, padding: "3px 4px", textAlign: "center" }}>100</span>
-                    <span style={{ fontSize: 10, paddingRight: 5 }}>%</span>
+                  <div aria-hidden="true" style={{ display: "inline-flex", alignItems: "center", border: "1px solid var(--line-2)", borderRadius: 7, overflow: "hidden", fontSize: 11, visibility: "hidden" }}>
+                    <input type="number" defaultValue={100} className="no-spinner" tabIndex={-1} readOnly style={{ width: 34, padding: "3px 4px", fontSize: 11, textAlign: "center", background: "transparent", border: "none", outline: "none", fontVariantNumeric: "tabular-nums" }} />
+                    <span style={{ fontSize: 10, color: "var(--ink-3)", paddingRight: 5 }}>%</span>
                   </div>
-                  <span aria-hidden="true" style={{ visibility: "hidden", padding: "3px 4px", fontSize: 11, height: 26, width: 64, display: "inline-block" }} />
+                  <select aria-hidden="true" tabIndex={-1} className="input" style={{ padding: "3px 4px", fontSize: 11, height: 26, width: 64, visibility: "hidden" }}>
+                    <option>Défaut</option>
+                  </select>
                   {/* Apply-all button absolutely positioned to the right of the color box */}
                   <button
                     type="button"
@@ -844,12 +850,18 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
                             step={1}
                             className="no-spinner"
                             disabled={!editable || !card[k]}
-                            value={Math.round((fieldSizes[colorKey] || 1) * 100)}
+                            value={sizeDrafts[colorKey] !== undefined ? sizeDrafts[colorKey] : Math.round((fieldSizes[colorKey] || 1) * 100)}
                             onChange={(e) => {
-                              const v = parseInt(e.target.value, 10);
+                              const txt = e.target.value;
+                              setSizeDrafts(d => ({ ...d, [colorKey]: txt }));
+                              if (txt === "") return;
+                              const v = parseInt(txt, 10);
                               if (isNaN(v)) return;
                               const clamped = Math.max(0, Math.min(300, v));
                               setFieldSizes(fs => ({ ...fs, [colorKey]: clamped / 100 }));
+                            }}
+                            onBlur={() => {
+                              setSizeDrafts(d => { const next = { ...d }; delete next[colorKey]; return next; });
                             }}
                             style={{ width: 34, padding: "3px 4px", fontSize: 11, textAlign: "center", background: "transparent", border: "none", outline: "none", fontVariantNumeric: "tabular-nums" }}
                             title="Taille (%)"
@@ -895,13 +907,17 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
                         max={300}
                         step={1}
                         className="no-spinner"
-                        value={Math.round(logoSize * 100)}
+                        value={logoSizeDraft !== undefined ? logoSizeDraft : Math.round(logoSize * 100)}
                         onChange={(e) => {
-                          const v = parseInt(e.target.value, 10);
+                          const txt = e.target.value;
+                          setLogoSizeDraft(txt);
+                          if (txt === "") return;
+                          const v = parseInt(txt, 10);
                           if (isNaN(v)) return;
                           const clamped = Math.max(0, Math.min(300, v));
                           setLogoSize(clamped / 100);
                         }}
+                        onBlur={() => setLogoSizeDraft(undefined)}
                         style={{ width: 48, padding: "4px 4px", fontSize: 12, textAlign: "center", background: "transparent", border: "none", outline: "none", fontVariantNumeric: "tabular-nums" }}
                       />
                       <span style={{ fontSize: 11, color: "var(--ink-3)", paddingRight: 8 }}>%</span>
