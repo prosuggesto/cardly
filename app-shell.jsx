@@ -812,23 +812,23 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
                           fontSize: 11,
                           opacity: card[k] && editable ? 1 : 0.5,
                         }}>
-                          <button
-                            type="button"
+                          <input
+                            type="number"
+                            min={50}
+                            max={200}
+                            step={1}
                             disabled={!editable || !card[k]}
-                            onClick={() => bumpFieldSize(colorKey, -0.1)}
-                            style={{ padding: "4px 7px", background: "transparent", border: "none", cursor: editable && card[k] ? "pointer" : "not-allowed", fontWeight: 600 }}
-                            title="Réduire la taille"
-                          >−</button>
-                          <span style={{ minWidth: 32, textAlign: "center", fontSize: 10, color: "var(--ink-3)", fontVariantNumeric: "tabular-nums" }}>
-                            {Math.round((fieldSizes[colorKey] || 1) * 100)}%
-                          </span>
-                          <button
-                            type="button"
-                            disabled={!editable || !card[k]}
-                            onClick={() => bumpFieldSize(colorKey, 0.1)}
-                            style={{ padding: "4px 7px", background: "transparent", border: "none", cursor: editable && card[k] ? "pointer" : "not-allowed", fontWeight: 600 }}
-                            title="Agrandir"
-                          >+</button>
+                            value={Math.round((fieldSizes[colorKey] || 1) * 100)}
+                            onChange={(e) => {
+                              const v = parseInt(e.target.value, 10);
+                              if (isNaN(v)) return;
+                              const clamped = Math.max(50, Math.min(200, v));
+                              setFieldSizes(fs => ({ ...fs, [colorKey]: clamped / 100 }));
+                            }}
+                            style={{ width: 38, padding: "3px 4px", fontSize: 11, textAlign: "center", background: "transparent", border: "none", outline: "none", fontVariantNumeric: "tabular-nums" }}
+                            title="Taille (%)"
+                          />
+                          <span style={{ fontSize: 10, color: "var(--ink-3)", paddingRight: 5 }}>%</span>
                         </div>
                       )}
                       {colorKey && (
@@ -837,7 +837,7 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
                           value={fieldFonts[colorKey] || "default"}
                           onChange={(e) => setFieldFont(colorKey, e.target.value)}
                           className="input"
-                          style={{ padding: "3px 6px", fontSize: 11, height: 26, minWidth: 84, opacity: card[k] && editable ? 1 : 0.5 }}
+                          style={{ padding: "3px 4px", fontSize: 11, height: 26, width: 64, opacity: card[k] && editable ? 1 : 0.5 }}
                           title="Police"
                         >
                           {FONT_OPTIONS.map(o => (
@@ -863,11 +863,21 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
                       display: "inline-flex", alignItems: "center",
                       border: "1px solid var(--line-2)", borderRadius: 7, overflow: "hidden",
                     }}>
-                      <button type="button" onClick={() => bumpLogoSize(-0.1)} style={{ padding: "4px 9px", background: "transparent", border: "none", cursor: "pointer", fontWeight: 600 }}>−</button>
-                      <span style={{ minWidth: 38, textAlign: "center", fontSize: 11, color: "var(--ink-3)", fontVariantNumeric: "tabular-nums" }}>
-                        {Math.round(logoSize * 100)}%
-                      </span>
-                      <button type="button" onClick={() => bumpLogoSize(0.1)} style={{ padding: "4px 9px", background: "transparent", border: "none", cursor: "pointer", fontWeight: 600 }}>+</button>
+                      <input
+                        type="number"
+                        min={50}
+                        max={200}
+                        step={1}
+                        value={Math.round(logoSize * 100)}
+                        onChange={(e) => {
+                          const v = parseInt(e.target.value, 10);
+                          if (isNaN(v)) return;
+                          const clamped = Math.max(50, Math.min(200, v));
+                          setLogoSize(clamped / 100);
+                        }}
+                        style={{ width: 48, padding: "4px 4px", fontSize: 12, textAlign: "center", background: "transparent", border: "none", outline: "none", fontVariantNumeric: "tabular-nums" }}
+                      />
+                      <span style={{ fontSize: 11, color: "var(--ink-3)", paddingRight: 8 }}>%</span>
                     </div>
                   </div>
                 )}
