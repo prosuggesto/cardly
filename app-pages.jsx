@@ -223,8 +223,9 @@ function CollabStatsModal({ collab, onClose }) {
           <div className="serif" style={{ fontSize: 26, lineHeight: 1, letterSpacing: "-0.02em" }}>{collab.leads}</div>
         </div>
         <div className="card" style={{ padding: 14, background: "linear-gradient(135deg, #fdf3df, #f1deb6)", borderColor: "var(--gold)" }}>
-          <div className="eyebrow" style={{ marginBottom: 4 }}>Action contact</div>
+          <div className="eyebrow" style={{ marginBottom: 4 }}>Action add contact</div>
           <div className="serif" style={{ fontSize: 26, lineHeight: 1, letterSpacing: "-0.02em" }}>{totalActions}</div>
+          <div className="dim" style={{ fontSize: 11, marginTop: 4 }}>clics sur le bouton</div>
         </div>
         <div className="card" style={{ padding: 14 }}>
           <div className="eyebrow" style={{ marginBottom: 4 }}>Clics canaux</div>

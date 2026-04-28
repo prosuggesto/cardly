@@ -312,9 +312,10 @@ function CardListItem({ card, onCustomize, onShare, role }) {
     <div className="card fade-up" style={{ padding: 24, display: "flex", flexDirection: "column", gap: 18 }}>
       <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
         <div className="col gap-1">
-          <div className="row gap-2" style={{ alignItems: "center" }}>
+          <div className="row gap-2" style={{ alignItems: "center", flexWrap: "wrap" }}>
             <div className="serif" style={{ fontSize: 20, letterSpacing: "-0.01em" }}>{card.nom_carte}</div>
-            {card.is_default && <span className="chip chip-gold">Défaut</span>}
+            {card.type === "enterprise" && <span className="chip chip-gold">Entreprise</span>}
+            {card.event && <span className="chip" style={{ background: "var(--surface-2)", color: "var(--ink-2)" }}>{card.event}</span>}
           </div>
           <div className="dim" style={{ fontSize: 12 }}>{card.type === "enterprise" ? "Carte entreprise" : "Carte personnelle"} · {window.CARDLY_DATA.getDesign(card.design).label}</div>
         </div>
@@ -368,20 +369,26 @@ function CardStatsModal({ open, onClose, card }) {
   ];
   const totalClicks = channels.reduce((s, c) => s + c.clicks, 0);
   const max = Math.max(...channels.map(c => c.clicks));
+  const addContacts = Math.round(saves * 0.85) + rng(3, 8);
 
   return (
     <Modal open={open} onClose={onClose} title={`Statistiques — ${card.nom_carte}`}>
       <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>Performance des 30 derniers jours.</p>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 8 }}>
-        <div className="card" style={{ padding: 16, background: "linear-gradient(135deg, #fdf3df, #f1deb6)", borderColor: "var(--gold)" }}>
-          <div className="eyebrow" style={{ marginBottom: 6 }}>Enregistrements</div>
-          <div className="serif" style={{ fontSize: 32, lineHeight: 1, letterSpacing: "-0.02em" }}>{saves}</div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginTop: 8 }}>
+        <div className="card" style={{ padding: 14, background: "linear-gradient(135deg, #fdf3df, #f1deb6)", borderColor: "var(--gold)" }}>
+          <div className="eyebrow" style={{ marginBottom: 4 }}>Enregistrements</div>
+          <div className="serif" style={{ fontSize: 26, lineHeight: 1, letterSpacing: "-0.02em" }}>{saves}</div>
           <div className="dim" style={{ fontSize: 11, marginTop: 4 }}>contacts ajoutés au répertoire</div>
         </div>
-        <div className="card" style={{ padding: 16 }}>
-          <div className="eyebrow" style={{ marginBottom: 6 }}>Clics totaux</div>
-          <div className="serif" style={{ fontSize: 32, lineHeight: 1, letterSpacing: "-0.02em" }}>{totalClicks}</div>
+        <div className="card" style={{ padding: 14 }}>
+          <div className="eyebrow" style={{ marginBottom: 4 }}>Add contact</div>
+          <div className="serif" style={{ fontSize: 26, lineHeight: 1, letterSpacing: "-0.02em" }}>{addContacts}</div>
+          <div className="dim" style={{ fontSize: 11, marginTop: 4 }}>clics sur le bouton</div>
+        </div>
+        <div className="card" style={{ padding: 14 }}>
+          <div className="eyebrow" style={{ marginBottom: 4 }}>Clics totaux</div>
+          <div className="serif" style={{ fontSize: 26, lineHeight: 1, letterSpacing: "-0.02em" }}>{totalClicks}</div>
           <div className="dim" style={{ fontSize: 11, marginTop: 4 }}>tous canaux confondus</div>
         </div>
       </div>
@@ -559,14 +566,17 @@ function CustomizePickerPage({ onPick, role, trialExpired, onUpgrade }) {
                 onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "var(--shadow-3)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = ""; }}
               >
-                <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-                  <div className="col gap-1">
+                <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                  <div className="col gap-1" style={{ flex: 1 }}>
                     <div className="serif" style={{ fontSize: 18, letterSpacing: "-0.01em" }}>{c.nom_carte}</div>
                     <div className="dim" style={{ fontSize: 12 }}>
                       {c.type === "enterprise" ? "Carte entreprise" : "Carte personnelle"} · {window.CARDLY_DATA.getDesign(c.design).label}
                     </div>
                   </div>
-                  {c.is_default && <span className="chip chip-gold">Défaut</span>}
+                  <div className="col gap-1" style={{ alignItems: "flex-end" }}>
+                    {c.type === "enterprise" && <span className="chip chip-gold">Entreprise</span>}
+                    {c.event && <span className="chip" style={{ background: "var(--surface-2)", color: "var(--ink-2)", fontSize: 11 }}>{c.event}</span>}
+                  </div>
                 </div>
                 <div style={{ display: "flex", justifyContent: "center", padding: "4px 0" }}>
                   <Card3D card={c} width={260} float={true} />

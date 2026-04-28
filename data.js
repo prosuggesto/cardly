@@ -120,6 +120,7 @@ window.CARDLY_DATA = (function() {
         web:        { x: 70, y: 80 },
       },
       is_default: true,
+      event: null,
       statut: "active",
     },
     {
@@ -150,6 +151,7 @@ window.CARDLY_DATA = (function() {
         web:        { x: 50, y: 82 },
       },
       is_default: false,
+      event: "Salon Immobilier 2026",
       statut: "active",
     },
   ];
