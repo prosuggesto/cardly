@@ -96,6 +96,7 @@ function Card3D({
   frontImageUrl,     // if provided, full-cover image on the front face
   backImageUrl,      // if provided, full-cover image on the back face
   fieldColors,       // { name, poste, phone, email, web } — per-field text colors
+  fieldSides,        // { name, entreprise, poste, phone, email, web } — "recto" | "verso"
 }) {
   const D = design || (card && window.CARDLY_DATA.getDesign(card.design)) || window.CARDLY_DATA.cardDesigns[0];
   const ratio = 0.63; // typical card aspect
@@ -104,17 +105,19 @@ function Card3D({
   useEffect(() => setInternalFlipped(flipped), [flipped]);
   const isFlipped = internalFlipped;
 
-  const dragRef = useRef(null);
+  const dragRefFront = useRef(null);
+  const dragRefBack = useRef(null);
   const [dragging, setDragging] = useState(null);
 
   const draggedRef = useRef(false);
-  const handlePointerDown = (key) => (e) => {
+  const handlePointerDown = (key, side = "recto") => (e) => {
     if (!editable) return;
     e.preventDefault();
     e.stopPropagation();
     setDragging(key);
     draggedRef.current = true;
-    const cardEl = dragRef.current;
+    const cardEl = side === "verso" ? dragRefFront.current : dragRefBack.current;
+    if (!cardEl) return;
     const rect = cardEl.getBoundingClientRect();
     const move = (ev) => {
       const x = ((ev.clientX - rect.left) / rect.width) * 100;
@@ -137,7 +140,7 @@ function Card3D({
     { key: "name",  show: card ? (card.afficher_nom || card.afficher_prenom) : true,
       text: card ? `${card.afficher_prenom ? card.prenom_affiche : ""} ${card.afficher_nom ? card.nom_affiche : ""}`.trim() : "Nom Prénom",
       style: { fontSize: width * 0.062, fontWeight: 500, letterSpacing: "-0.01em" } },
-    { key: "entreprise", show: true,
+    { key: "entreprise", show: card ? card.afficher_entreprise : true,
       text: window.CARDLY_DATA.entreprise.nom_entreprise,
       style: { fontSize: width * 0.038, fontWeight: 500, letterSpacing: "0.02em" } },
     { key: "poste", show: card ? card.afficher_poste : true,
@@ -157,13 +160,37 @@ function Card3D({
       style: { fontSize: width * 0.032 } },
   ];
 
-  const renderLogoOverlay = (draggable = false) => {
+  const inkColorBack = D.ink || "#2a241a";
+  const getSide = (key) => (fieldSides && fieldSides[key]) || "recto";
+  const fieldsForSide = (side) => fields.filter(f => f.show && f.text && getSide(f.key) === side);
+
+  const renderField = (f, side) => {
+    const pos = positions[f.key] || { x: 50, y: 50 };
+    return (
+      <div
+        key={f.key}
+        className={`card-el ${editable ? "editable" : ""} ${dragging === f.key ? "dragging" : ""}`}
+        onPointerDown={handlePointerDown(f.key, side)}
+        style={{
+          left: `${pos.x}%`, top: `${pos.y}%`,
+          color: (fieldColors && fieldColors[f.key]) || inkColorBack,
+          ...f.style,
+          display: "inline-flex", alignItems: "center", gap: 6,
+        }}
+      >
+        {f.icon && <span style={{ opacity: 0.7 }}>{f.icon}</span>}
+        <span>{f.text}</span>
+      </div>
+    );
+  };
+
+  const renderLogoOverlay = (draggable = false, side = "recto") => {
     if (!logoUrl) return null;
     const lp = positions.logo || { x: 18, y: 22 };
     const ls = width * 0.18;
     return (
       <div
-        onPointerDown={draggable ? handlePointerDown("logo") : undefined}
+        onPointerDown={draggable ? handlePointerDown("logo", side) : undefined}
         className={draggable ? `${editable ? "editable" : ""} ${dragging === "logo" ? "dragging" : ""}` : undefined}
         style={{
           position: "absolute", left: `${lp.x}%`, top: `${lp.y}%`,
@@ -182,45 +209,37 @@ function Card3D({
   };
 
   const renderFront = () => {
-    if (frontImageUrl) return (
-      <div style={{ position: "absolute", inset: 0 }}>
-        <img src={frontImageUrl} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} />
-        {renderLogoOverlay(false)}
-      </div>
-    );
-    if (D.front) return (
-      <div style={{ position: "absolute", inset: 0 }}>
-        <img src={D.front} alt="" />
-        {renderLogoOverlay(false)}
-      </div>
-    );
+    const versoFields = fieldsForSide("verso");
     return (
-      <div style={{
-        position: "absolute", inset: 0,
-        background: D.bg || "linear-gradient(135deg,#fff,#f6f3ec)",
-      }}>
-        <div style={{
-          position: "absolute", bottom: "14%", left: "8%",
-          fontFamily: "var(--font-mono)", fontSize: width * 0.025,
-          color: D.ink, opacity: 0.7, letterSpacing: "0.2em",
-          textTransform: "uppercase",
-        }}>
-          {D.tag}
-        </div>
-        {/* gold accent */}
-        <div style={{
-          position: "absolute", top: "50%", right: "10%",
-          width: width * 0.18, height: 1,
-          background: "linear-gradient(90deg, transparent, var(--gold))",
-        }} />
-        <div style={{
-          position: "absolute", top: "50%", right: "10%",
-          width: width * 0.06, height: width * 0.06,
-          borderRadius: "50%", marginTop: -width * 0.03,
-          background: "radial-gradient(circle at 30% 30%, var(--gold-2), var(--gold))",
-          opacity: 0.5,
-        }} />
-        {renderLogoOverlay(false)}
+      <div ref={dragRefFront} style={{ position: "absolute", inset: 0, overflow: "hidden", borderRadius: "inherit" }}>
+        {frontImageUrl ? (
+          <img src={frontImageUrl} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} />
+        ) : D.front ? (
+          <img src={D.front} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+        ) : (
+          <div style={{ position: "absolute", inset: 0, background: D.bg || "linear-gradient(135deg,#fff,#f6f3ec)" }}>
+            <div style={{
+              position: "absolute", bottom: "14%", left: "8%",
+              fontFamily: "var(--font-mono)", fontSize: width * 0.025,
+              color: D.ink, opacity: 0.7, letterSpacing: "0.2em",
+              textTransform: "uppercase",
+            }}>{D.tag}</div>
+            <div style={{
+              position: "absolute", top: "50%", right: "10%",
+              width: width * 0.18, height: 1,
+              background: "linear-gradient(90deg, transparent, var(--gold))",
+            }} />
+            <div style={{
+              position: "absolute", top: "50%", right: "10%",
+              width: width * 0.06, height: width * 0.06,
+              borderRadius: "50%", marginTop: -width * 0.03,
+              background: "radial-gradient(circle at 30% 30%, var(--gold-2), var(--gold))",
+              opacity: 0.5,
+            }} />
+          </div>
+        )}
+        {versoFields.map(f => renderField(f, "verso"))}
+        {renderLogoOverlay(editable, "verso")}
       </div>
     );
   };
@@ -228,42 +247,25 @@ function Card3D({
   const renderBack = () => {
     const isDarkBg = D.style === "noir-gold" || D.style === "blue-corporate";
     const inkColor = D.ink || "#2a241a";
+    const rectoFields = fieldsForSide("recto");
     return (
-      <div ref={dragRef} style={{
+      <div ref={dragRefBack} style={{
         position: "absolute", inset: 0,
         background: D.back ? "transparent" : (D.bg || "linear-gradient(135deg,#fff,#f6f3ec)"),
       }}>
         {backImageUrl && <img src={backImageUrl} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} />}
         {!backImageUrl && D.back && <img src={D.back} alt="" />}
-        {/* draggable text fields */}
-        {fields.filter(f => f.show && f.text).map(f => {
-          const pos = positions[f.key] || { x: 50, y: 50 };
-          return (
-            <div
-              key={f.key}
-              className={`card-el ${editable ? "editable" : ""} ${dragging === f.key ? "dragging" : ""}`}
-              onPointerDown={handlePointerDown(f.key)}
-              style={{
-                left: `${pos.x}%`, top: `${pos.y}%`,
-                color: (fieldColors && fieldColors[f.key]) || inkColor,
-                ...f.style,
-                display: "inline-flex", alignItems: "center", gap: 6,
-              }}
-            >
-              {f.icon && <span style={{ opacity: 0.7 }}>{f.icon}</span>}
-              <span>{f.text}</span>
-            </div>
-          );
-        })}
+        {/* draggable text fields on recto */}
+        {rectoFields.map(f => renderField(f, "recto"))}
         {/* Logo overlay on recto — draggable */}
-        {renderLogoOverlay(true)}
+        {renderLogoOverlay(editable, "recto")}
         {/* QR — also draggable when editable */}
         {showQR && (() => {
           const qrPos = positions.qr || { x: 88, y: 82 };
           const qrSize = width * 0.16;
           return (
             <div
-              onPointerDown={handlePointerDown("qr")}
+              onPointerDown={handlePointerDown("qr", "recto")}
               className={`${editable ? "editable" : ""} ${dragging === "qr" ? "dragging" : ""}`}
               style={{
                 position: "absolute",

@@ -611,6 +611,8 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
   const [fieldColors, setFieldColors] = useStateP({ name: "#2a241a", entreprise: "#2a241a", poste: "#b8843e", phone: "#2a241a", email: "#2a241a", web: "#2a241a" });
   const [applyAllColor, setApplyAllColor] = useStateP("#2a241a");
   const setFieldColor = (key, color) => setFieldColors(fc => ({ ...fc, [key]: color }));
+  const [fieldSides, setFieldSides] = useStateP({ name: "recto", entreprise: "recto", poste: "recto", phone: "recto", email: "recto", web: "recto" });
+  const setFieldSide = (key, side) => setFieldSides(fs => ({ ...fs, [key]: side }));
   const toast = useToast();
   const isAdminOnEnterprise = card.type === "enterprise" && role === "collaborator";
   const editable = !isAdminOnEnterprise;
@@ -668,6 +670,7 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
               frontImageUrl={frontImageUrl}
               backImageUrl={backImageUrl}
               fieldColors={fieldColors}
+              fieldSides={fieldSides}
             />
             <div className="row gap-2">
               <button className="btn btn-sm" onClick={() => setFlipped(!flipped)}><Icon.Refresh size={13}/> Tester le flip</button>
@@ -723,12 +726,12 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
                 ].map(([k, label, colorKey]) => (
                   <div key={k} style={{
                     display: "flex", justifyContent: "space-between", alignItems: "center",
-                    padding: "10px 4px", fontSize: 14,
+                    padding: "10px 4px", fontSize: 14, gap: 10,
                     borderTop: "1px solid var(--line)",
                     opacity: editable ? 1 : 0.6,
                   }}>
-                    <span style={{ flex: 1 }}>{label}</span>
-                    <div className="row gap-2" style={{ alignItems: "center" }}>
+                    <span style={{ flex: 1, minWidth: 0 }}>{label}</span>
+                    <div className="row gap-2" style={{ alignItems: "center", flexShrink: 0 }}>
                       {colorKey && (
                         <label style={{ position: "relative", width: 20, height: 20, borderRadius: 5, border: "1.5px solid var(--line-2)", overflow: "hidden", cursor: editable ? "pointer" : "not-allowed", flexShrink: 0, background: fieldColors[colorKey] }}>
                           <input type="color" value={fieldColors[colorKey]} disabled={!editable} onChange={(e) => setFieldColor(colorKey, e.target.value)} style={{ opacity: 0, position: "absolute", inset: 0, width: "100%", height: "100%", cursor: "pointer" }} />
@@ -741,6 +744,47 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
                       }}>
                         <span className={`toggle ${card[k] ? "on" : ""}`}></span>
                       </button>
+                      {colorKey && (() => {
+                        const side = fieldSides[colorKey] || "recto";
+                        return (
+                          <div style={{
+                            display: "inline-flex",
+                            border: "1px solid var(--line-2)",
+                            borderRadius: 7,
+                            overflow: "hidden",
+                            fontSize: 11,
+                            fontWeight: 500,
+                            opacity: card[k] && editable ? 1 : 0.5,
+                          }}>
+                            <button
+                              type="button"
+                              disabled={!editable || !card[k]}
+                              onClick={() => setFieldSide(colorKey, "recto")}
+                              style={{
+                                padding: "4px 9px",
+                                background: side === "recto" ? "var(--ink)" : "transparent",
+                                color: side === "recto" ? "white" : "var(--ink-3)",
+                                border: "none",
+                                cursor: editable && card[k] ? "pointer" : "not-allowed",
+                                transition: "background 150ms",
+                              }}
+                            >Recto</button>
+                            <button
+                              type="button"
+                              disabled={!editable || !card[k]}
+                              onClick={() => setFieldSide(colorKey, "verso")}
+                              style={{
+                                padding: "4px 9px",
+                                background: side === "verso" ? "var(--ink)" : "transparent",
+                                color: side === "verso" ? "white" : "var(--ink-3)",
+                                border: "none",
+                                cursor: editable && card[k] ? "pointer" : "not-allowed",
+                                transition: "background 150ms",
+                              }}
+                            >Verso</button>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 ))}
