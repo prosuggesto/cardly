@@ -377,6 +377,7 @@ function PublicCardPage({ navigate, params }) {
   const toast = useToast();
   const [savedCount, setSavedCount] = useStateD(0);
   const [flipped, setFlipped] = useStateD(false);
+  const [crmModalOpen, setCrmModalOpen] = useStateD(false);
 
   return (
     <div style={{ minHeight: "100vh", position: "relative", overflow: "hidden", paddingBottom: 60 }}>
@@ -429,7 +430,7 @@ function PublicCardPage({ navigate, params }) {
             <button disabled={inactive} className="btn btn-sm" style={{ flex: 1, minWidth: 110, justifyContent: "center" }} onClick={() => toast.push("Email préparé")}>
               <Icon.Mail size={13} /> Email
             </button>
-            <button disabled={inactive} className="btn btn-sm btn-gold" style={{ flex: 1, minWidth: 140, justifyContent: "center" }} onClick={() => toast.push("Partagez vos infos pour rester en contact")}>
+            <button disabled={inactive} className="btn btn-sm btn-gold" style={{ flex: 1, minWidth: 140, justifyContent: "center" }} onClick={() => setCrmModalOpen(true)}>
               <Icon.User size={13} /> Partager mes infos
             </button>
             <button disabled={inactive} className="btn btn-sm" style={{ flex: 1, minWidth: 110, justifyContent: "center" }} onClick={() => toast.push("Site ouvert")}>
@@ -450,6 +451,14 @@ function PublicCardPage({ navigate, params }) {
           Propulsé par <a href="#/" onClick={(e) => { e.preventDefault(); navigate("/"); }} style={{ color: "var(--ink)", textDecoration: "underline" }}>Cardly Pro</a> · La carte de visite qui ne finit pas dans une poche.
         </div>
       </div>
+
+      <CrmShareModal
+        open={crmModalOpen}
+        onClose={() => setCrmModalOpen(false)}
+        fields={{ nom: true, prenom: true, societe: true, mail: true, tel: true }}
+        onSubmit={() => { setCrmModalOpen(false); toast.push("Vos infos ont été envoyées"); }}
+        recipientName={`${card.prenom_affiche} ${card.nom_affiche}`}
+      />
     </div>
   );
 }

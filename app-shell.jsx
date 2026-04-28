@@ -920,6 +920,7 @@ function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, on
     tel: true,
   });
   const [flipped, setFlipped] = useStateP(false);
+  const [crmModalOpen, setCrmModalOpen] = useStateP(false);
   const toggleBtn = (k) => setScanButtons(s => ({ ...s, [k]: !s[k] }));
   const toggleCrm = (k) => setCrmFields(f => ({ ...f, [k]: !f[k] }));
 
@@ -978,7 +979,7 @@ function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, on
                   </button>
                 )}
                 {scanButtons.crm && (
-                  <button className="btn btn-sm btn-gold" style={{ flex: 1, minWidth: 140, justifyContent: "center" }}>
+                  <button className="btn btn-sm btn-gold" style={{ flex: 1, minWidth: 140, justifyContent: "center" }} onClick={() => setCrmModalOpen(true)}>
                     <Icon.User size={13} /> Partager mes infos
                   </button>
                 )}
@@ -1085,10 +1086,53 @@ function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, on
           </div>
         </div>
       </div>
+
+      <CrmShareModal
+        open={crmModalOpen}
+        onClose={() => setCrmModalOpen(false)}
+        fields={crmFields}
+        onSubmit={() => { setCrmModalOpen(false); toast.push("Vos infos ont été partagées"); }}
+        recipientName={`${card.prenom_affiche} ${card.nom_affiche}`}
+      />
     </div>
   );
 }
 window.ScanCustomizationPage = ScanCustomizationPage;
+
+function CrmShareModal({ open, onClose, fields, onSubmit, recipientName }) {
+  const [data, setData] = useStateP({});
+  const set = (k) => (e) => setData(d => ({ ...d, [k]: e.target.value }));
+  const fieldList = [
+    ["prenom", "Prénom", "text", "Lucas"],
+    ["nom", "Nom", "text", "Martin"],
+    ["societe", "Société", "text", "Immo Costa"],
+    ["mail", "Email", "email", "vous@exemple.com"],
+    ["tel", "Téléphone", "tel", "06 12 34 56 78"],
+  ].filter(([k]) => fields[k]);
+  return (
+    <Modal open={open} onClose={onClose} title="Partager mes infos">
+      <p className="muted" style={{ marginTop: 0, fontSize: 14 }}>Renseignez vos coordonnées pour les transmettre à {recipientName || "votre interlocuteur"}.</p>
+      <form onSubmit={(e) => { e.preventDefault(); onSubmit && onSubmit(data); }} className="col gap-3" style={{ marginTop: 12 }}>
+        {fieldList.map(([k, label, type, placeholder]) => (
+          <div key={k} className="col gap-1">
+            <label style={{ fontSize: 12, color: "var(--ink-3)", letterSpacing: "0.04em", textTransform: "uppercase" }}>{label}</label>
+            <input className="input" type={type} placeholder={placeholder} value={data[k] || ""} onChange={set(k)} required />
+          </div>
+        ))}
+        {fieldList.length === 0 && (
+          <p className="muted" style={{ fontSize: 13 }}>Aucun champ activé. Activez au moins un champ dans la configuration CRM.</p>
+        )}
+        <div className="row gap-3" style={{ justifyContent: "flex-end", marginTop: 8 }}>
+          <button type="button" className="btn btn-sm" onClick={onClose}>Annuler</button>
+          <button type="submit" className="btn btn-gold btn-sm" disabled={fieldList.length === 0}>
+            Envoyer <Icon.ArrowRight size={13} />
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+window.CrmShareModal = CrmShareModal;
 
 window.CardListItem = CardListItem;
 window.AddCardTile = AddCardTile;
