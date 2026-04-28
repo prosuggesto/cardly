@@ -366,29 +366,25 @@ function CardStatsModal({ open, onClose, card }) {
     { key: "instagram", label: "Instagram", icon: <Icon.Instagram size={14} />, color: "#c13584", clicks: 9 + rng(4, 22) },
     { key: "linkedin", label: "LinkedIn", icon: <Icon.Linkedin size={14} />, color: "#0a66c2", clicks: 6 + rng(5, 18) },
     { key: "website", label: "Site web", icon: <Icon.Globe size={14} />, color: "#1a1815", clicks: 4 + rng(6, 16) },
+    { key: "addcontact", label: "Add contact", icon: <Icon.User size={14} />, color: "#1a1815", clicks: 12 + rng(7, 20) },
+    { key: "crm", label: "CRM", icon: <Icon.User size={14} />, color: "#b8843e", clicks: 5 + rng(8, 14) },
   ];
   const totalClicks = channels.reduce((s, c) => s + c.clicks, 0);
   const max = Math.max(...channels.map(c => c.clicks));
-  const addContacts = Math.round(saves * 0.85) + rng(3, 8);
 
   return (
     <Modal open={open} onClose={onClose} title={`Statistiques — ${card.nom_carte}`}>
       <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>Performance des 30 derniers jours.</p>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginTop: 8 }}>
-        <div className="card" style={{ padding: 14, background: "linear-gradient(135deg, #fdf3df, #f1deb6)", borderColor: "var(--gold)" }}>
-          <div className="eyebrow" style={{ marginBottom: 4 }}>Enregistrements</div>
-          <div className="serif" style={{ fontSize: 26, lineHeight: 1, letterSpacing: "-0.02em" }}>{saves}</div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 8 }}>
+        <div className="card" style={{ padding: 16, background: "linear-gradient(135deg, #fdf3df, #f1deb6)", borderColor: "var(--gold)" }}>
+          <div className="eyebrow" style={{ marginBottom: 6 }}>Enregistrements</div>
+          <div className="serif" style={{ fontSize: 32, lineHeight: 1, letterSpacing: "-0.02em" }}>{saves}</div>
           <div className="dim" style={{ fontSize: 11, marginTop: 4 }}>contacts ajoutés au répertoire</div>
         </div>
-        <div className="card" style={{ padding: 14 }}>
-          <div className="eyebrow" style={{ marginBottom: 4 }}>Add contact</div>
-          <div className="serif" style={{ fontSize: 26, lineHeight: 1, letterSpacing: "-0.02em" }}>{addContacts}</div>
-          <div className="dim" style={{ fontSize: 11, marginTop: 4 }}>clics sur le bouton</div>
-        </div>
-        <div className="card" style={{ padding: 14 }}>
-          <div className="eyebrow" style={{ marginBottom: 4 }}>Clics totaux</div>
-          <div className="serif" style={{ fontSize: 26, lineHeight: 1, letterSpacing: "-0.02em" }}>{totalClicks}</div>
+        <div className="card" style={{ padding: 16 }}>
+          <div className="eyebrow" style={{ marginBottom: 6 }}>Clics totaux</div>
+          <div className="serif" style={{ fontSize: 32, lineHeight: 1, letterSpacing: "-0.02em" }}>{totalClicks}</div>
           <div className="dim" style={{ fontSize: 11, marginTop: 4 }}>tous canaux confondus</div>
         </div>
       </div>
