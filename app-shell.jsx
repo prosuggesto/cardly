@@ -721,14 +721,14 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
             <div className="card" style={{ padding: 20 }}>
               <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
                 <div className="serif" style={{ fontSize: 17 }}>Champs visibles</div>
-                <div className="row gap-2" style={{ alignItems: "center" }}>
-                  <label style={{ position: "relative", width: 22, height: 22, borderRadius: 6, border: "1.5px solid var(--line-2)", overflow: "hidden", cursor: editable ? "pointer" : "not-allowed", flexShrink: 0, background: applyAllColor }}>
-                    <input type="color" value={applyAllColor} disabled={!editable} onChange={(e) => setApplyAllColor(e.target.value)} style={{ opacity: 0, position: "absolute", inset: 0, width: "100%", height: "100%", cursor: "pointer" }} />
-                  </label>
+                <div className="row gap-2" style={{ alignItems: "center", paddingRight: 283 }}>
                   <button className="btn btn-sm btn-ghost" disabled={!editable} style={{ fontSize: 12, padding: "4px 10px" }}
                     onClick={() => setFieldColors({ name: applyAllColor, entreprise: applyAllColor, poste: applyAllColor, phone: applyAllColor, email: applyAllColor, web: applyAllColor })}>
                     Appliquer à tous
                   </button>
+                  <label style={{ position: "relative", width: 20, height: 20, borderRadius: 5, border: "1.5px solid var(--line-2)", overflow: "hidden", cursor: editable ? "pointer" : "not-allowed", flexShrink: 0, background: applyAllColor }}>
+                    <input type="color" value={applyAllColor} disabled={!editable} onChange={(e) => setApplyAllColor(e.target.value)} style={{ opacity: 0, position: "absolute", inset: 0, width: "100%", height: "100%", cursor: "pointer" }} />
+                  </label>
                 </div>
               </div>
               <div className="col gap-1">
@@ -817,6 +817,7 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
                             min={50}
                             max={200}
                             step={1}
+                            className="no-spinner"
                             disabled={!editable || !card[k]}
                             value={Math.round((fieldSizes[colorKey] || 1) * 100)}
                             onChange={(e) => {
@@ -825,7 +826,7 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
                               const clamped = Math.max(50, Math.min(200, v));
                               setFieldSizes(fs => ({ ...fs, [colorKey]: clamped / 100 }));
                             }}
-                            style={{ width: 38, padding: "3px 4px", fontSize: 11, textAlign: "center", background: "transparent", border: "none", outline: "none", fontVariantNumeric: "tabular-nums" }}
+                            style={{ width: 34, padding: "3px 4px", fontSize: 11, textAlign: "center", background: "transparent", border: "none", outline: "none", fontVariantNumeric: "tabular-nums" }}
                             title="Taille (%)"
                           />
                           <span style={{ fontSize: 10, color: "var(--ink-3)", paddingRight: 5 }}>%</span>
@@ -868,6 +869,7 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
                         min={50}
                         max={200}
                         step={1}
+                        className="no-spinner"
                         value={Math.round(logoSize * 100)}
                         onChange={(e) => {
                           const v = parseInt(e.target.value, 10);
@@ -945,7 +947,12 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
         </div>
       </Modal>
 
-      <style>{`@media (max-width: 900px) { .cust-grid { grid-template-columns: 1fr !important; } }`}</style>
+      <style>{`
+        @media (max-width: 900px) { .cust-grid { grid-template-columns: 1fr !important; } }
+        .no-spinner::-webkit-outer-spin-button,
+        .no-spinner::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .no-spinner { -moz-appearance: textfield; appearance: textfield; }
+      `}</style>
     </div>
   );
 }
