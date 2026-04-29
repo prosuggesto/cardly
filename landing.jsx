@@ -130,6 +130,8 @@ function HeroSection({ navigate }) {
             }} />
             <div
               onClick={() => setHeroFlipped(f => !f)}
+              onMouseEnter={() => setHeroFlipped(true)}
+              onMouseLeave={() => setHeroFlipped(false)}
               style={{ cursor: "pointer", position: "relative", zIndex: 1 }}
             >
               <Card3D

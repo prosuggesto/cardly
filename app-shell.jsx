@@ -417,6 +417,40 @@ function CardStatsModal({ open, onClose, card }) {
 }
 
 function PresentCardModal({ card, onClose }) {
+  const toast = useToast();
+  const design = window.CARDLY_DATA.getDesign(card.design);
+
+  const shareLink = () => {
+    const url = window.location.origin + window.location.pathname + `#/card?id=${card.id}`;
+    if (navigator.share) {
+      navigator.share({ title: card.nom_carte, url });
+    } else {
+      navigator.clipboard?.writeText(url);
+      toast.push("Lien copié dans le presse-papiers");
+    }
+  };
+
+  const downloadJpeg = () => {
+    const imgSrc = design.back || design.front;
+    if (!imgSrc) { toast.push("Aucune image disponible pour ce design"); return; }
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0);
+      const link = document.createElement("a");
+      link.download = `${card.nom_carte.replace(/\s+/g, "-").toLowerCase()}.jpg`;
+      link.href = canvas.toDataURL("image/jpeg", 0.92);
+      link.click();
+      toast.push("Carte téléchargée");
+    };
+    img.onerror = () => toast.push("Impossible de télécharger l'image");
+    img.src = imgSrc;
+  };
+
   return (
     <div
       onClick={onClose}
@@ -476,6 +510,21 @@ function PresentCardModal({ card, onClose }) {
               <div style={{ fontSize: 13, fontWeight: 500 }}>NFC actif</div>
               <div className="dim" style={{ fontSize: 12 }}>Le client peut aussi approcher son téléphone de votre carte physique.</div>
             </div>
+          </div>
+
+          {/* Share + Download */}
+          <div className="row gap-2" style={{ marginTop: 4 }}>
+            <button className="btn btn-sm" style={{ flex: 1, justifyContent: "center" }} onClick={shareLink}>
+              <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                <path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/>
+              </svg>
+              Partager le lien
+            </button>
+            <button className="btn btn-sm" style={{ flex: 1, justifyContent: "center" }} onClick={downloadJpeg}>
+              <Icon.Download size={13} />
+              Télécharger JPEG
+            </button>
           </div>
         </div>
       </div>
