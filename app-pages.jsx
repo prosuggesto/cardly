@@ -336,10 +336,10 @@ function SecretCodePage({ role, plan, onUpgrade }) {
     { k: "email", label: "Email" },
     { k: "telephone", label: "Téléphone" },
     { k: "poste", label: "Poste" },
+    ...(canManage ? [{ k: "nom_entreprise", label: "Nom entreprise" }] : []),
     { k: "site_web", label: "Site web" },
     { k: "instagram", label: "Instagram" },
     { k: "linkedin", label: "LinkedIn" },
-    ...(canManage ? [{ k: "nom_entreprise", label: "Nom entreprise" }] : []),
   ];
 
   return (
