@@ -95,7 +95,7 @@ function App() {
           onBack={() => { setTabRaw("customize"); setCustomizeId(scanCardId); }}
         />}
         {tab === "dashboard" && <DashboardPage role={tweaks.role} trialExpired={tweaks.trialExpired} onUpgrade={() => setTab("subscription")} />}
-        {tab === "secret" && <SecretCodePage role={tweaks.role} />}
+        {tab === "secret" && <SecretCodePage role={tweaks.role} plan={tweaks.plan} onUpgrade={() => setTab("subscription")} />}
         {tab === "subscription" && <SubscriptionPage plan={tweaks.plan} onSetPlan={(p) => setTweak("plan", p)} />}
       </AppLayout>
     );

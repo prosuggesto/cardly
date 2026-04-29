@@ -280,11 +280,26 @@ function CollabStatsModal({ collab, onClose }) {
   );
 }
 
-// ---------- Code secret ----------
-function SecretCodePage({ role }) {
+// ---------- Mon compte ----------
+function SecretCodePage({ role, plan, onUpgrade }) {
   const [code, setCode] = useStateD(window.CARDLY_DATA.entreprise.code_secret);
   const [showConfirm, setShowConfirm] = useStateD(false);
   const toast = useToast();
+
+  const meInit = window.CARDLY_DATA.profileMe;
+  const entInit = window.CARDLY_DATA.entreprise;
+  const [profile, setProfile] = useStateD({
+    prenom: meInit.prenom,
+    nom: meInit.nom,
+    email: meInit.email,
+    telephone: meInit.telephone,
+    poste: meInit.poste,
+    nom_entreprise: entInit.nom_entreprise,
+  });
+  const setField = (k, v) => setProfile(p => ({ ...p, [k]: v }));
+
+  const canManage = role === "admin" || role === "manager";
+
   const regen = () => {
     const seg = () => Math.random().toString(36).slice(2, 6).toUpperCase();
     setCode(`CARDLY-${seg()}`);
@@ -292,43 +307,90 @@ function SecretCodePage({ role }) {
     toast.push("Nouveau code généré");
   };
 
-  if (role === "collaborator") {
-    return (
-      <div className="col gap-6" style={{ alignItems: "center" }}>
-        <div className="col gap-2" style={{ alignItems: "center", textAlign: "center" }}>
-          <div className="eyebrow">Code secret</div>
-          <h1 className="serif" style={{ fontSize: 36, margin: 0, letterSpacing: "-0.02em" }}>Vous êtes rattaché à</h1>
-          <div className="serif" style={{ fontSize: 32, color: "var(--gold)", fontStyle: "italic" }}>{window.CARDLY_DATA.entreprise.nom_entreprise}</div>
-          <p className="muted" style={{ marginTop: 12, maxWidth: 480 }}>Seul un administrateur peut régénérer le code secret de votre entreprise.</p>
-        </div>
-      </div>
-    );
-  }
+  const PLAN_LABELS = { solo: "Solo — 9€/mois", team: "Team — 49,99€/mois", enterprise: "Enterprise — Sur devis" };
 
   return (
     <div className="col gap-6">
       <div className="col gap-2">
-        <div className="eyebrow">Administration</div>
-        <h1 className="serif" style={{ fontSize: "clamp(28px, 4vw, 40px)", margin: 0, letterSpacing: "-0.02em" }}>Code secret entreprise</h1>
-        <p className="muted" style={{ margin: 0, fontSize: 15 }}>Transmettez ce code à vos collaborateurs pour qu'ils puissent rejoindre votre espace Cardly Pro.</p>
+        <div className="eyebrow">Compte</div>
+        <h1 className="serif" style={{ fontSize: "clamp(28px, 4vw, 40px)", margin: 0, letterSpacing: "-0.02em" }}>Mon compte</h1>
+        <p className="muted" style={{ margin: 0, fontSize: 15 }}>Gérez vos informations personnelles et votre abonnement.</p>
       </div>
 
-      <div className="card" style={{ padding: 40, textAlign: "center", background: "linear-gradient(180deg, #fffdf6 0%, #f7f2e6 100%)", maxWidth: 560 }}>
-        <div className="logo-mark" style={{ width: 52, height: 52, fontSize: 22, margin: "0 auto 18px" }}>C</div>
-        <div className="dim" style={{ fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 10 }}>Code secret</div>
-        <div className="mono" style={{ fontSize: 40, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 20 }}>{code}</div>
-        <div className="row gap-2" style={{ justifyContent: "center" }}>
-          <button className="btn btn-sm" onClick={() => { navigator.clipboard?.writeText(code); toast.push("Code copié"); }}><Icon.Copy size={13} /> Copier le code</button>
-          <button className="btn btn-sm" onClick={() => setShowConfirm(true)}><Icon.Refresh size={13} /> Régénérer</button>
-        </div>
-      </div>
+      <div style={{ display: "grid", gridTemplateColumns: canManage ? "1fr 1.4fr" : "1fr", gap: 24, alignItems: "start" }} className="account-grid">
 
-      <div className="card" style={{ padding: 18, background: "#fff8eb", borderColor: "#f0d99c", maxWidth: 560 }}>
-        <div className="row gap-3">
-          <div style={{ color: "var(--gold)" }}>⚠</div>
-          <div className="col" style={{ fontSize: 13 }}>
-            <div style={{ fontWeight: 500 }}>Attention</div>
-            <div className="muted">Si vous régénérez le code, l'ancien ne pourra plus être utilisé par de nouveaux collaborateurs. Ceux déjà rattachés ne sont pas impactés.</div>
+        {/* Left — code secret (admins/managers only) */}
+        {canManage && (
+          <div className="col gap-4">
+            <div className="card" style={{ padding: 32, textAlign: "center", background: "linear-gradient(180deg, #fffdf6 0%, #f7f2e6 100%)" }}>
+              <div className="logo-mark" style={{ width: 48, height: 48, fontSize: 20, margin: "0 auto 16px" }}>C</div>
+              <div className="dim" style={{ fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 8 }}>Code secret</div>
+              <div className="mono" style={{ fontSize: 34, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 18 }}>{code}</div>
+              <p className="muted" style={{ fontSize: 12, marginBottom: 16, marginTop: 0 }}>Transmettez ce code à vos membres pour rejoindre votre espace.</p>
+              <div className="row gap-2" style={{ justifyContent: "center" }}>
+                <button className="btn btn-sm" onClick={() => { navigator.clipboard?.writeText(code); toast.push("Code copié"); }}><Icon.Copy size={13} /> Copier</button>
+                <button className="btn btn-sm" onClick={() => setShowConfirm(true)}><Icon.Refresh size={13} /> Régénérer</button>
+              </div>
+            </div>
+            <div className="card" style={{ padding: 16, background: "#fff8eb", borderColor: "#f0d99c" }}>
+              <div className="row gap-3">
+                <div style={{ color: "var(--gold)", flexShrink: 0 }}>⚠</div>
+                <div className="col" style={{ fontSize: 12 }}>
+                  <div style={{ fontWeight: 500 }}>Attention</div>
+                  <div className="muted">Régénérer invalide l'ancien code pour les nouveaux membres. Ceux déjà rattachés ne sont pas impactés.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Right — profile + plan */}
+        <div className="col gap-4">
+          {/* Profile fields */}
+          <div className="card" style={{ padding: 24 }}>
+            <div className="serif" style={{ fontSize: 17, marginBottom: 18 }}>Informations personnelles</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              {[
+                { k: "prenom", label: "Prénom" },
+                { k: "nom", label: "Nom" },
+                { k: "email", label: "Email" },
+                { k: "telephone", label: "Téléphone" },
+                { k: "poste", label: "Poste" },
+              ].map(({ k, label }) => (
+                <div key={k} className="field" style={{ margin: 0 }}>
+                  <label style={{ fontSize: 11, fontWeight: 500, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 5 }}>{label}</label>
+                  <input className="input" style={{ fontSize: 13 }} value={profile[k]} onChange={(e) => setField(k, e.target.value)} />
+                </div>
+              ))}
+              {canManage && (
+                <div className="field" style={{ margin: 0 }}>
+                  <label style={{ fontSize: 11, fontWeight: 500, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 5 }}>Nom entreprise</label>
+                  <input className="input" style={{ fontSize: 13 }} value={profile.nom_entreprise} onChange={(e) => setField("nom_entreprise", e.target.value)} />
+                </div>
+              )}
+            </div>
+            <div style={{ marginTop: 18, display: "flex", justifyContent: "flex-end" }}>
+              <button className="btn btn-primary btn-sm" onClick={() => toast.push("Informations mises à jour")}><Icon.Check size={13} /> Enregistrer</button>
+            </div>
+          </div>
+
+          {/* Plan */}
+          <div className="card" style={{ padding: 24 }}>
+            <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <div className="serif" style={{ fontSize: 17 }}>Abonnement</div>
+              <span className="chip chip-gold" style={{ fontSize: 11 }}>{plan === "team" ? "Team" : plan === "solo" ? "Solo" : "Enterprise"}</span>
+            </div>
+            <div className="col gap-1" style={{ marginBottom: 18 }}>
+              <div style={{ fontSize: 14 }}>Plan actuel : <strong>{PLAN_LABELS[plan] || plan}</strong></div>
+              <div className="muted" style={{ fontSize: 12 }}>
+                {plan === "solo" && "1 utilisateur · Carte personnelle · QR code · Stats personnelles"}
+                {plan === "team" && "Jusqu'à 10 membres · Cartes entreprise · Dashboard · Génération IA"}
+                {plan === "enterprise" && "Plus de 10 membres · Design personnalisé · Support prioritaire"}
+              </div>
+            </div>
+            <div className="row gap-2">
+              <button className="btn btn-sm btn-primary" onClick={onUpgrade}><Icon.Crown size={13} /> Gérer l'abonnement</button>
+            </div>
           </div>
         </div>
       </div>

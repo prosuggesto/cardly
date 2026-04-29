@@ -8,9 +8,8 @@ function AppLayout({ navigate, params, children, tab, setTab, role, plan, trialE
   const tabs = [
     { id: "cards", label: "Mes cartes", icon: <Icon.Card size={16} /> },
     { id: "customize", label: "Personnalisation carte", icon: <Icon.Brush size={16} /> },
-    { id: "scan", label: "Personnalisation scan", icon: <Icon.QR size={16} /> },
     { id: "dashboard", label: "Dashboard", icon: <Icon.Chart size={16} /> },
-    { id: "secret", label: "Code secret", icon: <Icon.Key size={16} />, adminOnly: false },
+    { id: "secret", label: "Mon compte", icon: <Icon.User size={16} /> },
     { id: "subscription", label: "Abonnement", icon: <Icon.Crown size={16} /> },
   ];
   const visibleTabs = tabs;
@@ -1049,6 +1048,7 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
 
       <style>{`
         @media (max-width: 900px) { .cust-grid { grid-template-columns: 1fr !important; } }
+        @media (max-width: 860px) { .account-grid { grid-template-columns: 1fr !important; } }
         .no-spinner::-webkit-outer-spin-button,
         .no-spinner::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .no-spinner { -moz-appearance: textfield; appearance: textfield; }
