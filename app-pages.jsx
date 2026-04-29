@@ -303,6 +303,7 @@ function SecretCodePage({ role, plan, onUpgrade }) {
     nom_entreprise: entInit.nom_entreprise,
   });
   const setField = (k, v) => setProfile(p => ({ ...p, [k]: v }));
+  const [langue, setLangue] = useStateD("fr");
 
   const canManage = role === "admin" || role === "manager";
 
@@ -390,6 +391,35 @@ function SecretCodePage({ role, plan, onUpgrade }) {
                 </div>
               ))}
             </div>
+            {/* Language selector */}
+            <div style={{ marginTop: 18, paddingTop: 18, borderTop: "1px solid var(--line)" }}>
+              <div style={{ fontSize: 11, fontWeight: 500, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>Langue de l'interface</div>
+              <div className="row gap-2">
+                {[
+                  { code: "fr", flag: "🇫🇷", label: "Français" },
+                  { code: "en", flag: "🇬🇧", label: "English" },
+                  { code: "es", flag: "🇪🇸", label: "Español" },
+                ].map(({ code, flag, label }) => (
+                  <button
+                    key={code}
+                    onClick={() => setLangue(code)}
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: 7,
+                      padding: "7px 14px", borderRadius: 20, cursor: "pointer",
+                      fontSize: 13, fontWeight: langue === code ? 600 : 400,
+                      border: langue === code ? "1.5px solid var(--ink)" : "1px solid var(--line-2)",
+                      background: langue === code ? "var(--ink)" : "var(--surface)",
+                      color: langue === code ? "white" : "var(--ink-3)",
+                      transition: "all 140ms",
+                    }}
+                  >
+                    <span style={{ fontSize: 16, lineHeight: 1 }}>{flag}</span>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div style={{ marginTop: 18, display: "flex", justifyContent: "flex-end" }}>
               <button className="btn btn-primary btn-sm" onClick={() => toast.push("Informations mises à jour")}><Icon.Check size={13} /> Enregistrer</button>
             </div>
