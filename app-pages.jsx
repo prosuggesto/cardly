@@ -2,6 +2,35 @@
 
 const { useState: useStateD } = React;
 
+// ---------- FilterSelect — compact select with tight chevron ----------
+function FilterSelect({ value, onChange, children }) {
+  return (
+    <div style={{ position: "relative", display: "inline-flex", alignItems: "center", flexShrink: 0 }}>
+      <select
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        style={{
+          height: 44, paddingLeft: 14, paddingRight: 32,
+          background: "var(--surface)", border: "1px solid var(--line)",
+          borderRadius: 12, fontSize: 13, color: "var(--ink)",
+          appearance: "none", WebkitAppearance: "none", MozAppearance: "none",
+          cursor: "pointer", outline: "none",
+        }}
+      >
+        {children}
+      </select>
+      {/* Custom chevron tight after text */}
+      <svg
+        width={13} height={13} viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
+        style={{ position: "absolute", right: 10, pointerEvents: "none", opacity: 0.5, color: "var(--ink)" }}
+      >
+        <path d="M6 9l6 6 6-6"/>
+      </svg>
+    </div>
+  );
+}
+
 // ---------- CRM ----------
 function CrmPage({ role }) {
   const allContacts = window.CARDLY_DATA.crmContacts || [];
@@ -51,15 +80,15 @@ function CrmPage({ role }) {
           onChange={e => setSearch(e.target.value)}
         />
         {canManage && (
-          <select className="select" style={{ width: "auto", minWidth: 160, fontSize: 13, paddingRight: 36 }} value={filterMembre} onChange={e => setFilterMembre(e.target.value)}>
+          <FilterSelect value={filterMembre} onChange={setFilterMembre}>
             <option value="all">Tous les membres</option>
             {collabs.map(c => <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>)}
-          </select>
+          </FilterSelect>
         )}
-        <select className="select" style={{ width: "auto", minWidth: 180, fontSize: 13, paddingRight: 36 }} value={filterEvent} onChange={e => setFilterEvent(e.target.value)}>
+        <FilterSelect value={filterEvent} onChange={setFilterEvent}>
           <option value="all">Tous les événements</option>
           {events.map(ev => <option key={ev} value={ev}>{ev}</option>)}
-        </select>
+        </FilterSelect>
         <button className="btn btn-sm" onClick={exportCSV} style={{ whiteSpace: "nowrap", marginLeft: "auto" }}>
           <Icon.Download size={13} /> Exporter CSV
         </button>
