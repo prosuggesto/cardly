@@ -431,24 +431,27 @@ function PresentCardModal({ card, onClose }) {
   };
 
   const downloadJpeg = () => {
-    const imgSrc = design.back || design.front;
-    if (!imgSrc) { toast.push("Aucune image disponible pour ce design"); return; }
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0);
-      const link = document.createElement("a");
-      link.download = `${card.nom_carte.replace(/\s+/g, "-").toLowerCase()}.jpg`;
-      link.href = canvas.toDataURL("image/jpeg", 0.92);
-      link.click();
-      toast.push("Carte téléchargée");
+    if (!design.front && !design.back) { toast.push("Aucune image disponible pour ce design"); return; }
+    const base = card.nom_carte.replace(/\s+/g, "-").toLowerCase();
+    const downloadImg = (src, filename) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        canvas.getContext("2d").drawImage(img, 0, 0);
+        const link = document.createElement("a");
+        link.download = filename;
+        link.href = canvas.toDataURL("image/jpeg", 0.92);
+        link.click();
+      };
+      img.onerror = () => toast.push(`Impossible de télécharger : ${filename}`);
+      img.src = src;
     };
-    img.onerror = () => toast.push("Impossible de télécharger l'image");
-    img.src = imgSrc;
+    if (design.front) downloadImg(design.front, `${base}-recto.jpg`);
+    if (design.back)  downloadImg(design.back,  `${base}-verso.jpg`);
+    toast.push("Téléchargement en cours…");
   };
 
   return (
@@ -758,7 +761,7 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
                 <div className="serif" style={{ fontSize: 17 }}>Modèle</div>
                 <span className="chip">{window.CARDLY_DATA.getDesign(card.design).label}</span>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, maxHeight: 280, overflowY: "auto", paddingRight: 4 }}>
                 {designs.map(d => (
                   <button key={d.id} disabled={!editable} onClick={() => setField("design", d.id)} style={{
                     aspectRatio: "1.6/1", borderRadius: 10,
