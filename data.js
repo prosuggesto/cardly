@@ -20,6 +20,8 @@ window.CARDLY_DATA = (function() {
     poste: "Directeur commercial",
     role: "admin", // 'admin' | 'collaborator'
     site_web: "immocosta.fr",
+    instagram: "immocosta",
+    linkedin: "lucas-martin-immocosta",
   };
 
   const collaborators = [

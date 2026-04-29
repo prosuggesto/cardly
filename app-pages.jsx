@@ -283,7 +283,10 @@ function CollabStatsModal({ collab, onClose }) {
 // ---------- Mon compte ----------
 function SecretCodePage({ role, plan, onUpgrade }) {
   const [code, setCode] = useStateD(window.CARDLY_DATA.entreprise.code_secret);
-  const [showConfirm, setShowConfirm] = useStateD(false);
+  const [showRegenConfirm, setShowRegenConfirm] = useStateD(false);
+  // manageModal steps: null | "choice" | "cancel-confirm" | "cancel-reason" | "cancel-done"
+  const [manageStep, setManageStep] = useStateD(null);
+  const [cancelReason, setCancelReason] = useStateD(null);
   const toast = useToast();
 
   const meInit = window.CARDLY_DATA.profileMe;
@@ -294,6 +297,9 @@ function SecretCodePage({ role, plan, onUpgrade }) {
     email: meInit.email,
     telephone: meInit.telephone,
     poste: meInit.poste,
+    site_web: meInit.site_web || "",
+    instagram: meInit.instagram || "",
+    linkedin: meInit.linkedin || "",
     nom_entreprise: entInit.nom_entreprise,
   });
   const setField = (k, v) => setProfile(p => ({ ...p, [k]: v }));
@@ -303,11 +309,38 @@ function SecretCodePage({ role, plan, onUpgrade }) {
   const regen = () => {
     const seg = () => Math.random().toString(36).slice(2, 6).toUpperCase();
     setCode(`CARDLY-${seg()}`);
-    setShowConfirm(false);
+    setShowRegenConfirm(false);
     toast.push("Nouveau code généré");
   };
 
   const PLAN_LABELS = { solo: "Solo — 9€/mois", team: "Team — 49,99€/mois", enterprise: "Enterprise — Sur devis" };
+  const PLAN_DESC = {
+    solo: ["1 utilisateur", "Carte personnelle", "QR code", "Stats personnelles"],
+    team: ["Jusqu'à 10 membres", "Cartes entreprise", "Dashboard", "Génération IA", "Personnalisation avancée"],
+    enterprise: ["Membres illimités", "Design personnalisé", "Support prioritaire", "Accompagnement dédié"],
+  };
+  const RENEWAL_DATE = "28/05/2026";
+
+  const CANCEL_REASONS = [
+    "Trop cher pour mon usage",
+    "Je n'utilise pas assez les fonctionnalités",
+    "Je passe sur une solution concurrente",
+    "Mon équipe ne l'utilise pas",
+    "Problème technique non résolu",
+    "Je n'ai plus besoin de cartes digitales",
+  ];
+
+  const profileFields = [
+    { k: "prenom", label: "Prénom" },
+    { k: "nom", label: "Nom" },
+    { k: "email", label: "Email" },
+    { k: "telephone", label: "Téléphone" },
+    { k: "poste", label: "Poste" },
+    { k: "site_web", label: "Site web" },
+    { k: "instagram", label: "Instagram" },
+    { k: "linkedin", label: "LinkedIn" },
+    ...(canManage ? [{ k: "nom_entreprise", label: "Nom entreprise" }] : []),
+  ];
 
   return (
     <div className="col gap-6">
@@ -319,7 +352,7 @@ function SecretCodePage({ role, plan, onUpgrade }) {
 
       <div style={{ display: "grid", gridTemplateColumns: canManage ? "1fr 1.4fr" : "1fr", gap: 24, alignItems: "start" }} className="account-grid">
 
-        {/* Left — code secret (admins/managers only) */}
+        {/* Left — code secret */}
         {canManage && (
           <div className="col gap-4">
             <div className="card" style={{ padding: 32, textAlign: "center", background: "linear-gradient(180deg, #fffdf6 0%, #f7f2e6 100%)" }}>
@@ -329,7 +362,7 @@ function SecretCodePage({ role, plan, onUpgrade }) {
               <p className="muted" style={{ fontSize: 12, marginBottom: 16, marginTop: 0 }}>Transmettez ce code à vos membres pour rejoindre votre espace.</p>
               <div className="row gap-2" style={{ justifyContent: "center" }}>
                 <button className="btn btn-sm" onClick={() => { navigator.clipboard?.writeText(code); toast.push("Code copié"); }}><Icon.Copy size={13} /> Copier</button>
-                <button className="btn btn-sm" onClick={() => setShowConfirm(true)}><Icon.Refresh size={13} /> Régénérer</button>
+                <button className="btn btn-sm" onClick={() => setShowRegenConfirm(true)}><Icon.Refresh size={13} /> Régénérer</button>
               </div>
             </div>
             <div className="card" style={{ padding: 16, background: "#fff8eb", borderColor: "#f0d99c" }}>
@@ -350,24 +383,12 @@ function SecretCodePage({ role, plan, onUpgrade }) {
           <div className="card" style={{ padding: 24 }}>
             <div className="serif" style={{ fontSize: 17, marginBottom: 18 }}>Informations personnelles</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-              {[
-                { k: "prenom", label: "Prénom" },
-                { k: "nom", label: "Nom" },
-                { k: "email", label: "Email" },
-                { k: "telephone", label: "Téléphone" },
-                { k: "poste", label: "Poste" },
-              ].map(({ k, label }) => (
+              {profileFields.map(({ k, label }) => (
                 <div key={k} className="field" style={{ margin: 0 }}>
                   <label style={{ fontSize: 11, fontWeight: 500, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 5 }}>{label}</label>
-                  <input className="input" style={{ fontSize: 13 }} value={profile[k]} onChange={(e) => setField(k, e.target.value)} />
+                  <input className="input" style={{ fontSize: 13 }} value={profile[k] || ""} onChange={(e) => setField(k, e.target.value)} />
                 </div>
               ))}
-              {canManage && (
-                <div className="field" style={{ margin: 0 }}>
-                  <label style={{ fontSize: 11, fontWeight: 500, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 5 }}>Nom entreprise</label>
-                  <input className="input" style={{ fontSize: 13 }} value={profile.nom_entreprise} onChange={(e) => setField("nom_entreprise", e.target.value)} />
-                </div>
-              )}
             </div>
             <div style={{ marginTop: 18, display: "flex", justifyContent: "flex-end" }}>
               <button className="btn btn-primary btn-sm" onClick={() => toast.push("Informations mises à jour")}><Icon.Check size={13} /> Enregistrer</button>
@@ -380,26 +401,117 @@ function SecretCodePage({ role, plan, onUpgrade }) {
               <div className="serif" style={{ fontSize: 17 }}>Abonnement</div>
               <span className="chip chip-gold" style={{ fontSize: 11 }}>{plan === "team" ? "Team" : plan === "solo" ? "Solo" : "Enterprise"}</span>
             </div>
-            <div className="col gap-1" style={{ marginBottom: 18 }}>
-              <div style={{ fontSize: 14 }}>Plan actuel : <strong>{PLAN_LABELS[plan] || plan}</strong></div>
-              <div className="muted" style={{ fontSize: 12 }}>
-                {plan === "solo" && "1 utilisateur · Carte personnelle · QR code · Stats personnelles"}
-                {plan === "team" && "Jusqu'à 10 membres · Cartes entreprise · Dashboard · Génération IA"}
-                {plan === "enterprise" && "Plus de 10 membres · Design personnalisé · Support prioritaire"}
-              </div>
+            <div className="row gap-3" style={{ alignItems: "baseline", marginBottom: 6, flexWrap: "wrap" }}>
+              <div style={{ fontSize: 14 }}><strong>{PLAN_LABELS[plan] || plan}</strong></div>
+              <div className="muted" style={{ fontSize: 12 }}>· Renouvellement le {RENEWAL_DATE}</div>
             </div>
-            <div className="row gap-2">
-              <button className="btn btn-sm btn-primary" onClick={onUpgrade}><Icon.Crown size={13} /> Gérer l'abonnement</button>
+            <div className="muted" style={{ fontSize: 12, marginBottom: 18 }}>
+              {(PLAN_DESC[plan] || []).join(" · ")}
             </div>
+            <button className="btn btn-sm btn-primary" onClick={() => setManageStep("choice")}><Icon.Crown size={13} /> Gérer l'abonnement</button>
           </div>
         </div>
       </div>
 
-      <Modal open={showConfirm} onClose={() => setShowConfirm(false)} title="Régénérer le code ?">
+      {/* Regen confirm modal */}
+      <Modal open={showRegenConfirm} onClose={() => setShowRegenConfirm(false)} title="Régénérer le code ?">
         <p className="muted" style={{ marginTop: 0 }}>Cette action est définitive. L'ancien code <span className="mono">{code}</span> ne pourra plus être utilisé.</p>
         <div className="row gap-3" style={{ justifyContent: "flex-end", marginTop: 16 }}>
-          <button className="btn btn-sm" onClick={() => setShowConfirm(false)}>Annuler</button>
+          <button className="btn btn-sm" onClick={() => setShowRegenConfirm(false)}>Annuler</button>
           <button className="btn btn-primary btn-sm" onClick={regen}>Confirmer</button>
+        </div>
+      </Modal>
+
+      {/* Gérer l'abonnement — step 1: choice */}
+      <Modal open={manageStep === "choice"} onClose={() => setManageStep(null)} title="Gérer l'abonnement">
+        <p className="muted" style={{ marginTop: 0, marginBottom: 20, fontSize: 14 }}>Que souhaitez-vous faire avec votre abonnement {plan === "team" ? "Team" : plan === "solo" ? "Solo" : "Enterprise"} ?</p>
+        <div className="col gap-3">
+          <button className="btn btn-primary" style={{ justifyContent: "center" }} onClick={() => { setManageStep(null); onUpgrade(); }}>
+            <Icon.Crown size={14} /> Voir les plans — Upgrade
+          </button>
+          <button className="btn" style={{ justifyContent: "center", color: "var(--bad, #c0392b)", borderColor: "var(--bad, #c0392b)" }} onClick={() => setManageStep("cancel-confirm")}>
+            Annuler mon abonnement
+          </button>
+        </div>
+      </Modal>
+
+      {/* Step 2: cancel confirmation — show what they lose */}
+      <Modal open={manageStep === "cancel-confirm"} onClose={() => setManageStep(null)} title="Annuler l'abonnement ?">
+        <p className="muted" style={{ marginTop: 0, fontSize: 14 }}>Êtes-vous sûr de vouloir annuler ? Vous perdrez l'accès à :</p>
+        <div className="col gap-2" style={{ marginBottom: 20 }}>
+          {(PLAN_DESC[plan] || []).map((f, i) => (
+            <div key={i} className="row gap-2" style={{ fontSize: 13, color: "var(--ink-2)", alignItems: "center" }}>
+              <span style={{ color: "var(--bad, #c0392b)", fontSize: 16, lineHeight: 1 }}>✕</span>
+              {f}
+            </div>
+          ))}
+        </div>
+        <p className="muted" style={{ fontSize: 12, marginBottom: 20 }}>Votre abonnement restera actif jusqu'au {RENEWAL_DATE}.</p>
+        <div className="row gap-3" style={{ justifyContent: "flex-end" }}>
+          <button className="btn btn-sm" onClick={() => setManageStep("choice")}>Retour</button>
+          <button className="btn btn-sm" style={{ background: "var(--bad, #c0392b)", color: "white", border: "none" }} onClick={() => setManageStep("cancel-reason")}>
+            Oui, annuler
+          </button>
+        </div>
+      </Modal>
+
+      {/* Step 3: reason */}
+      <Modal open={manageStep === "cancel-reason"} onClose={() => setManageStep(null)} title="Pourquoi nous quittez-vous ?">
+        <p className="muted" style={{ marginTop: 0, fontSize: 14, marginBottom: 16 }}>Aidez-nous à nous améliorer. Choisissez la raison principale :</p>
+        <div className="col gap-2" style={{ marginBottom: 20 }}>
+          {CANCEL_REASONS.map((r) => (
+            <button
+              key={r}
+              onClick={() => setCancelReason(r)}
+              className="card"
+              style={{
+                padding: "10px 14px", textAlign: "left", cursor: "pointer", fontSize: 13,
+                background: cancelReason === r ? "var(--surface-2)" : "var(--surface)",
+                borderColor: cancelReason === r ? "var(--ink)" : "var(--line)",
+                borderWidth: cancelReason === r ? 1.5 : 1,
+                transition: "all 120ms",
+              }}
+            >
+              <div className="row gap-2" style={{ alignItems: "center" }}>
+                <div style={{
+                  width: 16, height: 16, borderRadius: "50%", flexShrink: 0,
+                  border: cancelReason === r ? "4px solid var(--ink)" : "1.5px solid var(--line-2)",
+                  background: "white",
+                  transition: "all 120ms",
+                }} />
+                {r}
+              </div>
+            </button>
+          ))}
+        </div>
+        <div className="row gap-3" style={{ justifyContent: "flex-end" }}>
+          <button className="btn btn-sm" onClick={() => setManageStep("cancel-confirm")}>Retour</button>
+          <button
+            className="btn btn-sm"
+            style={{ background: "var(--bad, #c0392b)", color: "white", border: "none", opacity: cancelReason ? 1 : 0.5 }}
+            disabled={!cancelReason}
+            onClick={() => setManageStep("cancel-done")}
+          >
+            Confirmer l'annulation
+          </button>
+        </div>
+      </Modal>
+
+      {/* Step 4: done */}
+      <Modal open={manageStep === "cancel-done"} onClose={() => setManageStep(null)} title="">
+        <div className="col gap-4" style={{ alignItems: "center", textAlign: "center", padding: "8px 0 16px" }}>
+          <div style={{ fontSize: 40 }}>👋</div>
+          <div className="serif" style={{ fontSize: 22 }}>Abonnement annulé</div>
+          <p className="muted" style={{ fontSize: 13, margin: 0, maxWidth: 360 }}>
+            Votre abonnement <strong>{plan === "team" ? "Team" : plan === "solo" ? "Solo" : "Enterprise"}</strong> a bien été annulé.
+            Vous conservez l'accès jusqu'au <strong>{RENEWAL_DATE}</strong>. Merci d'avoir utilisé Cardly Pro.
+          </p>
+          <button className="btn btn-primary" style={{ marginTop: 8 }} onClick={() => { setManageStep(null); setCancelReason(null); onUpgrade(); }}>
+            <Icon.Crown size={14} /> Voir les autres plans
+          </button>
+          <button className="btn btn-ghost btn-sm" onClick={() => { setManageStep(null); setCancelReason(null); }}>
+            Fermer
+          </button>
         </div>
       </Modal>
     </div>
