@@ -35,7 +35,36 @@ function PublicHeader({ navigate }) {
   );
 }
 
+const HERO_CARD = {
+  id: "card-chinois-demo",
+  design: "design-blossom",
+  nom_affiche: "Nakamura",
+  prenom_affiche: "Yuki",
+  entreprise_affiche: "Shin-Toku Studio",
+  poste_affiche: "Directrice artistique",
+  telephone_affiche: "06 42 87 31 09",
+  email_affiche: "yuki@shintoku.co",
+  site_web: "shintoku.co",
+  afficher_nom: true,
+  afficher_prenom: true,
+  afficher_entreprise: true,
+  afficher_poste: true,
+  afficher_telephone: true,
+  afficher_email: true,
+  afficher_site_web: true,
+  positions: {
+    name:       { x: 68, y: 28 },
+    entreprise: { x: 68, y: 38 },
+    poste:      { x: 68, y: 47 },
+    phone:      { x: 68, y: 60 },
+    email:      { x: 68, y: 69 },
+    web:        { x: 68, y: 78 },
+  },
+};
+
 function HeroSection({ navigate }) {
+  const [heroFlipped, setHeroFlipped] = useStateL(false);
+
   return (
     <section style={{ position: "relative", paddingTop: 60, paddingBottom: 100, overflow: "hidden" }}>
       <div className="hero-bg" />
@@ -91,12 +120,28 @@ function HeroSection({ navigate }) {
               filter: "blur(20px)",
             }} />
             <Card3D
-              card={window.CARDLY_DATA.cards[0]}
+              card={HERO_CARD}
               width={420}
               float={true}
-              showQR={true}
-              flipped={false}
+              showQR={false}
+              flipped={heroFlipped}
+              onFlip={() => setHeroFlipped(f => !f)}
+              frontImageUrl="assets/card-chinois-recto.png"
+              backImageUrl="assets/card-chinois-verso.png"
             />
+            {/* Flip hint */}
+            <div style={{
+              position: "absolute", bottom: "2%", left: "50%", transform: "translateX(-50%)",
+              display: "flex", alignItems: "center", gap: 6,
+              fontSize: 12, color: "var(--ink-3)", opacity: 0.7,
+              pointerEvents: "none",
+              animation: "float-soft 4s ease-in-out infinite",
+            }}>
+              <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 12a9 9 0 0115-6.7L21 8M21 3v5h-5M21 12a9 9 0 01-15 6.7L3 16M3 21v-5h5"/>
+              </svg>
+              Cliquez pour retourner
+            </div>
             <FloatingBadge style={{ top: "8%", left: "-2%" }} delay={0}>
               <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#4f8a5f" }}></span>
               QR scanné
