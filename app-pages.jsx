@@ -1017,7 +1017,7 @@ function PublicCardPage({ navigate, params }) {
   const ent = window.CARDLY_DATA.entreprise;
   const toast = useToast();
   const [savedCount, setSavedCount] = useStateD(0);
-  const [flipped, setFlipped] = useStateD(false);
+  const [flipped, setFlipped] = useStateD(true);
   const [crmModalOpen, setCrmModalOpen] = useStateD(false);
 
   return (

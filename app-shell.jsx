@@ -331,7 +331,7 @@ function CardListItem({ card, onCustomize, onShare, role }) {
         style={{ display: "flex", justifyContent: "center", padding: "8px 0", background: "transparent", border: 0, cursor: "pointer" }}
         title="Présenter au client"
       >
-        <Card3D card={card} width={320} float={true} />
+        <Card3D card={card} width={320} float={true} flipped={true} />
       </button>
 
       {isLocked && (
@@ -1216,7 +1216,7 @@ function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, on
     mail: true,
     tel: true,
   });
-  const [flipped, setFlipped] = useStateP(false);
+  const [flipped, setFlipped] = useStateP(true);
   const [crmModalOpen, setCrmModalOpen] = useStateP(false);
   const toggleBtn = (k) => setScanButtons(s => ({ ...s, [k]: !s[k] }));
   const toggleCrm = (k) => setCrmFields(f => ({ ...f, [k]: !f[k] }));
