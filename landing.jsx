@@ -35,6 +35,14 @@ function PublicHeader({ navigate }) {
   );
 }
 
+// Simple SVG monogram logo for the demo card
+const STUDIO_LOGO_URL = "data:image/svg+xml," + encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+    <circle cx="24" cy="24" r="24" fill="#2a241a"/>
+    <text x="24" y="32" font-family="Georgia,serif" font-size="26" fill="#f1deb6" text-anchor="middle" font-weight="400">S</text>
+  </svg>`
+);
+
 const HERO_CARD = {
   id: "card-chinois-demo",
   design: "design-blossom",
@@ -54,11 +62,12 @@ const HERO_CARD = {
   afficher_site_web: true,
   positions: {
     name:       { x: 68, y: 28 },
-    entreprise: { x: 68, y: 38 },
+    entreprise: { x: 60, y: 86 },  // front face — bas de la carte
     poste:      { x: 68, y: 47 },
     phone:      { x: 68, y: 60 },
     email:      { x: 68, y: 69 },
     web:        { x: 68, y: 78 },
+    logoVerso:  { x: 17, y: 84 },  // logo sur le recto (face avant)
   },
 };
 
@@ -131,6 +140,12 @@ function HeroSection({ navigate }) {
                 flipped={heroFlipped}
                 frontImageUrl="assets/card-chinois-recto.png"
                 backImageUrl="assets/card-chinois-verso.png"
+                logoUrl={STUDIO_LOGO_URL}
+                logoSide="verso"
+                logoSizeVerso={0.52}
+                fieldSides={{ name: "recto", entreprise: "verso", poste: "recto", phone: "recto", email: "recto", web: "recto" }}
+                fieldSizes={{ entreprise: 1.15 }}
+                fieldColors={{ entreprise: "#2a241a" }}
               />
             </div>
             {/* Flip hint */}
@@ -146,20 +161,23 @@ function HeroSection({ navigate }) {
               </svg>
               Cliquez pour retourner
             </div>
-            <FloatingBadge style={{ top: "8%", left: "-2%" }} delay={0}>
-              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#4f8a5f" }}></span>
-              QR scanné
-            </FloatingBadge>
-            <FloatingBadge style={{ top: "20%", right: "-4%" }} delay={1.5}>
-              <Icon.User size={12} />
-              +1 contact enregistré
-            </FloatingBadge>
-            <FloatingBadge style={{ bottom: "22%", left: "-6%" }} delay={2.5}>
-              <Icon.WhatsApp size={12} /> WhatsApp ouvert
-            </FloatingBadge>
-            <FloatingBadge style={{ bottom: "8%", right: "0%" }} delay={1}>
-              <Icon.Sparkle size={12} /> Lead généré
-            </FloatingBadge>
+            {/* Badges always rendered above the 3D card */}
+            <div style={{ position: "absolute", inset: 0, zIndex: 10, pointerEvents: "none" }}>
+              <FloatingBadge style={{ top: "8%", left: "-2%", pointerEvents: "auto" }} delay={0}>
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#4f8a5f" }}></span>
+                QR scanné
+              </FloatingBadge>
+              <FloatingBadge style={{ top: "20%", right: "-4%", pointerEvents: "auto" }} delay={1.5}>
+                <Icon.User size={12} />
+                +1 contact enregistré
+              </FloatingBadge>
+              <FloatingBadge style={{ bottom: "22%", left: "-6%", pointerEvents: "auto" }} delay={2.5}>
+                <Icon.WhatsApp size={12} /> WhatsApp ouvert
+              </FloatingBadge>
+              <FloatingBadge style={{ bottom: "8%", right: "0%", pointerEvents: "auto" }} delay={1}>
+                <Icon.Sparkle size={12} /> Lead généré
+              </FloatingBadge>
+            </div>
           </div>
         </div>
       </div>

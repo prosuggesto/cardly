@@ -158,7 +158,7 @@ function Card3D({
       text: card ? `${card.afficher_prenom ? card.prenom_affiche : ""} ${card.afficher_nom ? card.nom_affiche : ""}`.trim() : "Nom Prénom",
       style: { fontSize: width * 0.062, fontWeight: 500, letterSpacing: "-0.01em" } },
     { key: "entreprise", show: card ? card.afficher_entreprise : true,
-      text: window.CARDLY_DATA.entreprise.nom_entreprise,
+      text: (card && card.entreprise_affiche) ? card.entreprise_affiche : window.CARDLY_DATA.entreprise.nom_entreprise,
       style: { fontSize: width * 0.038, fontWeight: 500, letterSpacing: "0.02em" } },
     { key: "poste", show: card ? card.afficher_poste : true,
       text: card ? card.poste_affiche : "Fonction",
