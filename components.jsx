@@ -99,7 +99,10 @@ function Card3D({
   fieldSides,        // { name, entreprise, poste, phone, email, web } — "recto" | "verso"
   fieldSizes,        // per-field font-size multiplier (default 1)
   fieldFonts,        // per-field font family key
-  logoSize = 1,      // logo size multiplier
+  logoSize = 1,      // [legacy] logo size multiplier — used as fallback if no per-side size
+  logoSide = "both", // "recto" | "verso" | "both"
+  logoSizeRecto,     // recto-side size multiplier
+  logoSizeVerso,     // verso-side size multiplier
 }) {
   const FONT_FAMILIES = {
     default: undefined,
@@ -203,19 +206,23 @@ function Card3D({
 
   const renderLogoOverlay = (draggable = false, side = "recto") => {
     if (!logoUrl) return null;
-    const lp = positions.logo || { x: 18, y: 22 };
-    const ls = width * 0.18 * (logoSize || 1);
+    if (logoSide === "recto" && side !== "recto") return null;
+    if (logoSide === "verso" && side !== "verso") return null;
+    const posKey = side === "verso" ? "logoVerso" : "logoRecto";
+    const lp = positions[posKey] || positions.logo || { x: 18, y: 22 };
+    const sideSize = side === "verso" ? logoSizeVerso : logoSizeRecto;
+    const ls = width * 0.18 * (sideSize != null ? sideSize : (logoSize || 1));
     return (
       <div
-        onPointerDown={draggable ? handlePointerDown("logo", side) : undefined}
-        className={draggable ? `${editable ? "editable" : ""} ${dragging === "logo" ? "dragging" : ""}` : undefined}
+        onPointerDown={draggable ? handlePointerDown(posKey, side) : undefined}
+        className={draggable ? `${editable ? "editable" : ""} ${dragging === posKey ? "dragging" : ""}` : undefined}
         style={{
           position: "absolute", left: `${lp.x}%`, top: `${lp.y}%`,
           transform: "translate(-50%, -50%)",
           width: ls, height: ls,
           backgroundImage: `url(${logoUrl})`,
           backgroundSize: "contain", backgroundRepeat: "no-repeat", backgroundPosition: "center",
-          cursor: draggable && editable ? (dragging === "logo" ? "grabbing" : "grab") : "default",
+          cursor: draggable && editable ? (dragging === posKey ? "grabbing" : "grab") : "default",
           outline: draggable && editable ? "1px dashed transparent" : "none",
           transition: "outline-color 150ms",
         }}

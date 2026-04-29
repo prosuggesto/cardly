@@ -617,10 +617,12 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
   const bumpFieldSize = (key, delta) => setFieldSizes(fs => ({ ...fs, [key]: Math.max(0.5, Math.min(2, Math.round(((fs[key] || 1) + delta) * 10) / 10)) }));
   const [fieldFonts, setFieldFonts] = useStateP({ name: "default", entreprise: "default", poste: "default", phone: "default", email: "default", web: "default" });
   const setFieldFont = (key, font) => setFieldFonts(ff => ({ ...ff, [key]: font }));
-  const [logoSize, setLogoSize] = useStateP(1);
-  const bumpLogoSize = (delta) => setLogoSize(s => Math.max(0.5, Math.min(2, Math.round((s + delta) * 10) / 10)));
+  const [logoSide, setLogoSide] = useStateP("both"); // "recto" | "verso" | "both"
+  const [logoSizeRecto, setLogoSizeRecto] = useStateP(1);
+  const [logoSizeVerso, setLogoSizeVerso] = useStateP(1);
   const [sizeDrafts, setSizeDrafts] = useStateP({});
-  const [logoSizeDraft, setLogoSizeDraft] = useStateP(undefined);
+  const [logoSizeRectoDraft, setLogoSizeRectoDraft] = useStateP(undefined);
+  const [logoSizeVersoDraft, setLogoSizeVersoDraft] = useStateP(undefined);
   const FONT_OPTIONS = [
     { value: "default", label: "Défaut" },
     { value: "display", label: "Display" },
@@ -689,7 +691,9 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
               fieldSides={fieldSides}
               fieldSizes={fieldSizes}
               fieldFonts={fieldFonts}
-              logoSize={logoSize}
+              logoSide={logoSide}
+              logoSizeRecto={logoSizeRecto}
+              logoSizeVerso={logoSizeVerso}
             />
             <div className="row gap-2">
               <button className="btn btn-sm" onClick={() => setFlipped(!flipped)}><Icon.Refresh size={13}/> Tester le flip</button>
@@ -895,33 +899,88 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
               <div className="col gap-3">
                 <UploadZone disabled={!editable} onLogo={(url) => { setLogoUrl(url); setFlipped(true); }} hasLogo={!!logoUrl} onClear={() => setLogoUrl(null)} />
                 {logoUrl && (
-                  <div className="row" style={{ justifyContent: "space-between", alignItems: "center", padding: "4px 0" }}>
-                    <span style={{ fontSize: 13 }}>Taille du logo</span>
-                    <div style={{
-                      display: "inline-flex", alignItems: "center",
-                      border: "1px solid var(--line-2)", borderRadius: 7, overflow: "hidden",
-                    }}>
-                      <input
-                        type="number"
-                        min={0}
-                        max={300}
-                        step={1}
-                        className="no-spinner"
-                        value={logoSizeDraft !== undefined ? logoSizeDraft : Math.round(logoSize * 100)}
-                        onChange={(e) => {
-                          const txt = e.target.value;
-                          setLogoSizeDraft(txt);
-                          if (txt === "") return;
-                          const v = parseInt(txt, 10);
-                          if (isNaN(v)) return;
-                          const clamped = Math.max(0, Math.min(300, v));
-                          setLogoSize(clamped / 100);
-                        }}
-                        onBlur={() => setLogoSizeDraft(undefined)}
-                        style={{ width: 48, padding: "4px 4px", fontSize: 12, textAlign: "center", background: "transparent", border: "none", outline: "none", fontVariantNumeric: "tabular-nums" }}
-                      />
-                      <span style={{ fontSize: 11, color: "var(--ink-3)", paddingRight: 8 }}>%</span>
+                  <div className="col gap-2" style={{ padding: "4px 0" }}>
+                    <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 13 }}>Affichage du logo</span>
+                      <div style={{ display: "inline-flex", border: "1px solid var(--line-2)", borderRadius: 7, overflow: "hidden", fontSize: 11, fontWeight: 500 }}>
+                        {[
+                          { id: "recto", label: "Recto" },
+                          { id: "verso", label: "Verso" },
+                          { id: "both", label: "Les deux" },
+                        ].map(opt => (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => setLogoSide(opt.id)}
+                            style={{
+                              padding: "4px 10px",
+                              background: logoSide === opt.id ? "var(--ink)" : "transparent",
+                              color: logoSide === opt.id ? "white" : "var(--ink-3)",
+                              border: "none",
+                              cursor: "pointer",
+                              transition: "background 150ms",
+                            }}
+                          >{opt.label}</button>
+                        ))}
+                      </div>
                     </div>
+                    {(logoSide === "recto" || logoSide === "both") && (
+                      <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 13 }}>Taille recto</span>
+                        <div style={{ display: "inline-flex", alignItems: "center", border: "1px solid var(--line-2)", borderRadius: 7, overflow: "hidden" }}>
+                          <input
+                            type="number"
+                            min={0}
+                            max={300}
+                            step={1}
+                            className="no-spinner"
+                            value={logoSizeRectoDraft !== undefined ? logoSizeRectoDraft : Math.round(logoSizeRecto * 100)}
+                            onChange={(e) => {
+                              const txt = e.target.value;
+                              setLogoSizeRectoDraft(txt);
+                              if (txt === "") return;
+                              const v = parseInt(txt, 10);
+                              if (isNaN(v)) return;
+                              const clamped = Math.max(0, Math.min(300, v));
+                              setLogoSizeRecto(clamped / 100);
+                            }}
+                            onBlur={() => setLogoSizeRectoDraft(undefined)}
+                            style={{ width: 48, padding: "4px 4px", fontSize: 12, textAlign: "center", background: "transparent", border: "none", outline: "none", fontVariantNumeric: "tabular-nums" }}
+                          />
+                          <span style={{ fontSize: 11, color: "var(--ink-3)", paddingRight: 8 }}>%</span>
+                        </div>
+                      </div>
+                    )}
+                    {(logoSide === "verso" || logoSide === "both") && (
+                      <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 13 }}>Taille verso</span>
+                        <div style={{ display: "inline-flex", alignItems: "center", border: "1px solid var(--line-2)", borderRadius: 7, overflow: "hidden" }}>
+                          <input
+                            type="number"
+                            min={0}
+                            max={300}
+                            step={1}
+                            className="no-spinner"
+                            value={logoSizeVersoDraft !== undefined ? logoSizeVersoDraft : Math.round(logoSizeVerso * 100)}
+                            onChange={(e) => {
+                              const txt = e.target.value;
+                              setLogoSizeVersoDraft(txt);
+                              if (txt === "") return;
+                              const v = parseInt(txt, 10);
+                              if (isNaN(v)) return;
+                              const clamped = Math.max(0, Math.min(300, v));
+                              setLogoSizeVerso(clamped / 100);
+                            }}
+                            onBlur={() => setLogoSizeVersoDraft(undefined)}
+                            style={{ width: 48, padding: "4px 4px", fontSize: 12, textAlign: "center", background: "transparent", border: "none", outline: "none", fontVariantNumeric: "tabular-nums" }}
+                          />
+                          <span style={{ fontSize: 11, color: "var(--ink-3)", paddingRight: 8 }}>%</span>
+                        </div>
+                      </div>
+                    )}
+                    <p className="muted" style={{ fontSize: 11, margin: 0 }}>
+                      Glissez le logo sur chaque face pour fixer sa position. Les positions et tailles sont indépendantes entre recto et verso.
+                    </p>
                   </div>
                 )}
                 <CardImageUpload
@@ -1027,7 +1086,7 @@ function UploadZone({ disabled, onLogo, hasLogo, onClear }) {
           <Icon.Upload size={16} />
           <span style={{ fontSize: 14, fontWeight: 500 }}>{name ? name : "Importer mon logo"}</span>
         </div>
-        <div className="dim" style={{ fontSize: 12 }}>{hasLogo ? "Logo visible sur le verso · glissez-le pour le replacer." : "Glissez votre logo ici ou cliquez pour importer."}</div>
+        <div className="dim" style={{ fontSize: 12 }}>{hasLogo ? "Logo importé · choisissez son côté et sa taille ci-dessous." : "Glissez votre logo ici ou cliquez pour importer."}</div>
       </label>
       {hasLogo && (
         <button className="btn btn-ghost btn-sm" onClick={onClear} style={{ alignSelf: "flex-start", fontSize: 12 }}>
