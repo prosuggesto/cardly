@@ -3,7 +3,7 @@
 const { useState: useStateD } = React;
 
 // ---------- FilterSelect — liquid glass dropdown ----------
-function FilterSelect({ value, onChange, options }) {
+function FilterSelect({ value, onChange, options, btnStyle }) {
   const [open, setOpen] = useStateD(false);
   const ref = React.useRef(null);
   const current = options.find(o => o.value === value) || options[0];
@@ -30,7 +30,7 @@ function FilterSelect({ value, onChange, options }) {
           ...glass, display: "inline-flex", alignItems: "center", gap: 8,
           padding: "9px 14px", borderRadius: 14, cursor: "pointer",
           fontSize: 13, fontWeight: 500, color: "var(--ink)", whiteSpace: "nowrap",
-          height: 44,
+          height: 44, ...btnStyle,
         }}
       >
         {current?.label}
@@ -232,13 +232,13 @@ function DashboardPage({ role, trialExpired, onUpgrade }) {
       </div>
 
       {/* Filters */}
-      <div className="card" style={{ padding: 16 }}>
+      <div className="card" style={{ padding: 16, width: "fit-content" }}>
         <div className="row gap-3" style={{ flexWrap: "wrap", alignItems: "center" }}>
-          <FilterSelect value={mDebut} onChange={setMDebut} options={monthOpts} />
-          <FilterSelect value={yDebut} onChange={setYDebut} options={yearOpts} />
+          <FilterSelect value={mDebut} onChange={setMDebut} options={monthOpts} btnStyle={{ minWidth: 110 }} />
+          <FilterSelect value={yDebut} onChange={setYDebut} options={yearOpts} btnStyle={{ minWidth: 80 }} />
           <span className="dim" style={{ alignSelf: "center" }}>→</span>
-          <FilterSelect value={mFin} onChange={setMFin} options={monthOpts} />
-          <FilterSelect value={yFin} onChange={setYFin} options={yearOpts} />
+          <FilterSelect value={mFin} onChange={setMFin} options={monthOpts} btnStyle={{ minWidth: 110 }} />
+          <FilterSelect value={yFin} onChange={setYFin} options={yearOpts} btnStyle={{ minWidth: 80 }} />
           <FilterSelect
             value={fMembre}
             onChange={setFMembre}
