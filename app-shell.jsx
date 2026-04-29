@@ -1186,7 +1186,7 @@ function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, on
           {/* Scanned card preview — identique à PublicCardPage */}
           <div className="card" style={{ padding: 28, display: "flex", flexDirection: "column", alignItems: "center", gap: 28, background: "linear-gradient(180deg, #fffdf6, #f7f2e6)" }}>
             <Card3D card={card} width={360} float={true} flipped={flipped} onFlip={() => setFlipped(!flipped)} />
-            <div className="card" style={{ padding: 24, width: "100%", maxWidth: 380, background: "var(--surface)" }}>
+            <div className="card" style={{ padding: 24, width: "100%", maxWidth: 440, background: "var(--surface)" }}>
               <div className="col gap-1" style={{ alignItems: "center", textAlign: "center", marginBottom: 18 }}>
                 <div className="serif" style={{ fontSize: 26, letterSpacing: "-0.01em" }}>{card.prenom_affiche} {card.nom_affiche}</div>
                 <div className="muted">{card.poste_affiche} · {ent.nom_entreprise}</div>
@@ -1230,7 +1230,7 @@ function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, on
                   <Icon.Globe size={13} /> Site web
                 </button>
                 {scanButtons.rdv && (
-                  <button className="btn btn-sm btn-gold" style={{ flex: 1, minWidth: 130, justifyContent: "center" }}>
+                  <button className="btn btn-sm" style={{ flex: 1, minWidth: 130, justifyContent: "center" }}>
                     <Icon.Calendar size={13} /> Prendre RDV
                   </button>
                 )}

@@ -438,6 +438,11 @@ function PublicCardPage({ navigate, params }) {
             <button disabled={inactive} className="btn btn-sm" style={{ flex: 1, minWidth: 110, justifyContent: "center" }} onClick={() => toast.push("Site ouvert")}>
               <Icon.Globe size={13} /> Site web
             </button>
+            {card.rdv_actif && card.rdv_url && (
+              <button disabled={inactive} className="btn btn-sm" style={{ flex: 1, minWidth: 130, justifyContent: "center" }} onClick={() => { window.open(card.rdv_url, "_blank"); toast.push("Calendrier ouvert"); }}>
+                <Icon.Calendar size={13} /> Prendre RDV
+              </button>
+            )}
           </div>
           <div className="row gap-3" style={{ justifyContent: "center", marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--line)" }}>
             <a href="#" onClick={(e) => { e.preventDefault(); if (!inactive) toast.push("Instagram ouvert"); }} style={{ opacity: inactive ? 0.4 : 1, pointerEvents: inactive ? "none" : "auto", display: "flex", cursor: "pointer" }} title="Instagram">
