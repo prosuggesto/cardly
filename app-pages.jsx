@@ -204,6 +204,16 @@ function DashboardPage({ role, trialExpired, onUpgrade }) {
   const [statsCollab, setStatsCollab] = useStateD(null);
   const toast = useToast();
   const canManage = role === "admin" || role === "manager";
+
+  const MONTHS = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+  const monthOpts = MONTHS.map((m, i) => ({ value: String(i+1).padStart(2,"0"), label: m }));
+  const yearOpts = [{ value: "2025", label: "2025" }, { value: "2026", label: "2026" }];
+  const [mDebut, setMDebut] = useStateD("01");
+  const [yDebut, setYDebut] = useStateD("2026");
+  const [mFin, setMFin] = useStateD("04");
+  const [yFin, setYFin] = useStateD("2026");
+  const [fMembre, setFMembre] = useStateD("all");
+  const [fEvent, setFEvent] = useStateD("all");
   const active = collabs.filter(c => c.statut === "actif").sort((a,b) => b.leads - a.leads);
   const tableMembers = collabs.filter(c => c.statut !== "en_attente");
   const pending = collabs.filter(c => c.statut === "en_attente");
@@ -223,35 +233,28 @@ function DashboardPage({ role, trialExpired, onUpgrade }) {
 
       {/* Filters */}
       <div className="card" style={{ padding: 16 }}>
-        <div className="row gap-3" style={{ flexWrap: "wrap" }}>
-          <select className="select" style={{ width: "auto" }} defaultValue="01">
-            {["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"].map((m, i) => (
-              <option key={m} value={String(i+1).padStart(2,"0")}>{m}</option>
-            ))}
-          </select>
-          <select className="select" style={{ width: "auto" }} defaultValue="2026">
-            <option>2025</option><option>2026</option>
-          </select>
+        <div className="row gap-3" style={{ flexWrap: "wrap", alignItems: "center" }}>
+          <FilterSelect value={mDebut} onChange={setMDebut} options={monthOpts} />
+          <FilterSelect value={yDebut} onChange={setYDebut} options={yearOpts} />
           <span className="dim" style={{ alignSelf: "center" }}>→</span>
-          <select className="select" style={{ width: "auto" }} defaultValue="04">
-            {["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"].map((m, i) => (
-              <option key={m} value={String(i+1).padStart(2,"0")}>{m}</option>
-            ))}
-          </select>
-          <select className="select" style={{ width: "auto" }} defaultValue="2026">
-            <option>2025</option><option>2026</option>
-          </select>
-          <select className="select" style={{ flex: 1, minWidth: 160 }} defaultValue="all">
-            <option value="all">Tous les membres</option>
-            {active.map(c => <option key={c.id}>{c.prenom} {c.nom}</option>)}
-          </select>
-          <select className="select" style={{ flex: 1, minWidth: 180 }} defaultValue="all">
-            <option value="all">Tous les événements</option>
-            <option>Salon Immobilier 2026</option>
-            <option>Réseau MEDEF</option>
-            <option>Portes ouvertes</option>
-            <option>Sans étiquette</option>
-          </select>
+          <FilterSelect value={mFin} onChange={setMFin} options={monthOpts} />
+          <FilterSelect value={yFin} onChange={setYFin} options={yearOpts} />
+          <FilterSelect
+            value={fMembre}
+            onChange={setFMembre}
+            options={[{ value: "all", label: "Tous les membres" }, ...active.map(c => ({ value: c.id, label: `${c.prenom} ${c.nom}` }))]}
+          />
+          <FilterSelect
+            value={fEvent}
+            onChange={setFEvent}
+            options={[
+              { value: "all", label: "Tous les événements" },
+              { value: "Salon Immobilier 2026", label: "Salon Immobilier 2026" },
+              { value: "Réseau MEDEF", label: "Réseau MEDEF" },
+              { value: "Portes ouvertes", label: "Portes ouvertes" },
+              { value: "Sans étiquette", label: "Sans étiquette" },
+            ]}
+          />
           <button className="btn btn-primary btn-sm">Filtrer</button>
         </div>
       </div>
