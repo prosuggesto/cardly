@@ -158,8 +158,23 @@ window.CARDLY_DATA = (function() {
     },
   ];
 
+  const crmContacts = [
+    { id: "c-001", nom: "Dupont",    prenom: "Marie",    email: "marie.dupont@nexity.fr",      tel: "06 11 22 33 44", entreprise: "Nexity",        membre_id: "u-002", membre: "Emma Laurent",   date: "28/04/2026", event: "Salon Immobilier 2026" },
+    { id: "c-002", nom: "Renard",    prenom: "Thomas",   email: "thomas.renard@bouygues.fr",   tel: "06 55 44 33 22", entreprise: "Bouygues",      membre_id: "u-003", membre: "Hugo Bernard",   date: "27/04/2026", event: "Réseau MEDEF" },
+    { id: "c-003", nom: "Lefebvre",  prenom: "Sophie",   email: "s.lefebvre@gmail.com",        tel: "07 12 34 56 78", entreprise: "Indépendante",  membre_id: "u-002", membre: "Emma Laurent",   date: "26/04/2026", event: "Salon Immobilier 2026" },
+    { id: "c-004", nom: "Moreau",    prenom: "Julien",   email: "jmoreau@seloger.com",          tel: "06 98 76 54 32", entreprise: "SeLoger",       membre_id: "u-005", membre: "Nathan Morel",   date: "25/04/2026", event: "Portes ouvertes" },
+    { id: "c-005", nom: "Bernard",   prenom: "Claire",   email: "claire.b@orpi.com",           tel: "07 65 43 21 09", entreprise: "Orpi",          membre_id: "u-002", membre: "Emma Laurent",   date: "24/04/2026", event: "Salon Immobilier 2026" },
+    { id: "c-006", nom: "Petit",     prenom: "Antoine",  email: "apetit@century21.fr",         tel: "06 22 33 44 55", entreprise: "Century 21",    membre_id: "u-003", membre: "Hugo Bernard",   date: "24/04/2026", event: "Réseau MEDEF" },
+    { id: "c-007", nom: "Martin",    prenom: "Laure",    email: "lmartin@laforet.com",         tel: "07 88 77 66 55", entreprise: "Laforêt",       membre_id: "u-005", membre: "Nathan Morel",   date: "23/04/2026", event: "Portes ouvertes" },
+    { id: "c-008", nom: "Simon",     prenom: "Nicolas",  email: "n.simon@lcl.fr",              tel: "06 44 55 66 77", entreprise: "LCL",           membre_id: "u-003", membre: "Hugo Bernard",   date: "22/04/2026", event: "Réseau MEDEF" },
+    { id: "c-009", nom: "Garcia",    prenom: "Isabelle", email: "igarcia@groupeama.fr",        tel: "07 33 22 11 00", entreprise: "Groupama",      membre_id: "u-002", membre: "Emma Laurent",   date: "21/04/2026", event: "Salon Immobilier 2026" },
+    { id: "c-010", nom: "Laurent",   prenom: "Pierre",   email: "plaurent@bnpparibas.com",     tel: "06 77 88 99 00", entreprise: "BNP Paribas",   membre_id: "u-005", membre: "Nathan Morel",   date: "20/04/2026", event: "Sans étiquette" },
+    { id: "c-011", nom: "Fontaine",  prenom: "Céline",   email: "cfontaine@axa.fr",            tel: "07 56 45 34 23", entreprise: "AXA",           membre_id: "u-003", membre: "Hugo Bernard",   date: "19/04/2026", event: "Réseau MEDEF" },
+    { id: "c-012", nom: "Rousseau",  prenom: "Marc",     email: "marc.rousseau@free.fr",       tel: "06 13 24 35 46", entreprise: "Freelance",     membre_id: "u-002", membre: "Emma Laurent",   date: "18/04/2026", event: "Salon Immobilier 2026" },
+  ];
+
   return {
-    entreprise, profileMe, collaborators, cardDesigns, cards,
+    entreprise, profileMe, collaborators, cardDesigns, cards, crmContacts,
     // helpers
     getDesign: (id) => cardDesigns.find(d => d.id === id) || cardDesigns[0],
     leadsThisMonth: 142,

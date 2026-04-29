@@ -2,6 +2,121 @@
 
 const { useState: useStateD } = React;
 
+// ---------- CRM ----------
+function CrmPage({ role }) {
+  const allContacts = window.CARDLY_DATA.crmContacts || [];
+  const collabs = window.CARDLY_DATA.collaborators.filter(c => c.statut === "actif");
+  const [filterMembre, setFilterMembre] = useStateD("all");
+  const [search, setSearch] = useStateD("");
+
+  const canManage = role === "admin" || role === "manager";
+
+  const filtered = allContacts.filter(c => {
+    const matchMembre = filterMembre === "all" || c.membre_id === filterMembre;
+    const q = search.toLowerCase();
+    const matchSearch = !q || [c.nom, c.prenom, c.email, c.entreprise, c.membre].some(f => f && f.toLowerCase().includes(q));
+    return matchMembre && matchSearch;
+  });
+
+  const exportCSV = () => {
+    const headers = ["Prénom", "Nom", "Email", "Téléphone", "Entreprise", "Membre", "Événement", "Date"];
+    const rows = filtered.map(c => [c.prenom, c.nom, c.email, c.tel, c.entreprise, c.membre, c.event, c.date]);
+    const csv = [headers, ...rows].map(r => r.map(v => `"${(v||"").replace(/"/g,'""')}"`).join(",")).join("\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = "contacts-crm.csv"; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const COLS = ["Prénom", "Nom", "Email", "Téléphone", "Entreprise", canManage ? "Membre" : null, "Événement", "Date"].filter(Boolean);
+
+  return (
+    <div className="col gap-6">
+      <div className="col gap-2">
+        <div className="eyebrow">CRM · Avril 2026</div>
+        <h1 className="serif" style={{ fontSize: "clamp(28px,4vw,40px)", margin: 0, letterSpacing: "-0.02em" }}>Contacts</h1>
+        <p className="muted" style={{ margin: 0, fontSize: 15 }}>Leads collectés via le bouton « Partager mes infos » sur les cartes scannées.</p>
+      </div>
+
+      {/* Toolbar */}
+      <div className="row gap-3" style={{ flexWrap: "wrap" }}>
+        <input
+          className="input"
+          style={{ flex: 1, minWidth: 200, fontSize: 13 }}
+          placeholder="Rechercher un contact…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
+        {canManage && (
+          <select className="select" style={{ width: "auto", fontSize: 13 }} value={filterMembre} onChange={e => setFilterMembre(e.target.value)}>
+            <option value="all">Tous les membres</option>
+            {collabs.map(c => <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>)}
+          </select>
+        )}
+        <button className="btn btn-sm" onClick={exportCSV} style={{ whiteSpace: "nowrap" }}>
+          <Icon.Download size={13} /> Exporter CSV
+        </button>
+      </div>
+
+      {/* Stats strip */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 14 }}>
+        <Metric label="Total contacts" value={String(allContacts.length)} delta={`${filtered.length} affiché${filtered.length > 1 ? "s" : ""}`} trend="neutral" />
+        <Metric label="Ce mois" value={String(allContacts.filter(c => c.date.includes("/04/2026")).length)} delta="Avril 2026" trend="up" />
+        {canManage && <Metric label="Meilleur membre" value={collabs[0] ? `${collabs[0].prenom} ${collabs[0].nom[0]}.` : "—"} delta={`${collabs[0]?.leads || 0} leads`} trend="neutral" />}
+      </div>
+
+      {/* Table */}
+      <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+        <div className="row" style={{ justifyContent: "space-between", padding: "16px 24px", borderBottom: "1px solid var(--line)", alignItems: "center" }}>
+          <div className="serif" style={{ fontSize: 16 }}>Tous les contacts</div>
+          <span className="dim" style={{ fontSize: 12 }}>{filtered.length} entrée{filtered.length > 1 ? "s" : ""}</span>
+        </div>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13.5 }}>
+            <thead>
+              <tr style={{ background: "var(--surface-2)" }}>
+                {COLS.map(h => (
+                  <th key={h} style={{ textAlign: "left", padding: "11px 20px", fontWeight: 500, color: "var(--ink-3)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
+                <tr><td colSpan={COLS.length} style={{ padding: "32px 20px", textAlign: "center", color: "var(--ink-4)", fontSize: 13 }}>Aucun contact trouvé.</td></tr>
+              ) : filtered.map(c => (
+                <tr key={c.id} style={{ borderTop: "1px solid var(--line)" }}>
+                  <td style={{ padding: "13px 20px", fontWeight: 500 }}>{c.prenom}</td>
+                  <td style={{ padding: "13px 20px", fontWeight: 500 }}>{c.nom}</td>
+                  <td style={{ padding: "13px 20px" }}>
+                    <a href={`mailto:${c.email}`} style={{ color: "var(--ink)", textDecoration: "none", borderBottom: "1px dashed var(--line-2)" }}>{c.email}</a>
+                  </td>
+                  <td style={{ padding: "13px 20px", color: "var(--ink-3)" }}>{c.tel}</td>
+                  <td style={{ padding: "13px 20px", color: "var(--ink-3)" }}>{c.entreprise}</td>
+                  {canManage && (
+                    <td style={{ padding: "13px 20px" }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12 }}>
+                        <span style={{ width: 22, height: 22, borderRadius: "50%", background: "var(--surface-3)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 600 }}>
+                          {c.membre.split(" ").map(w => w[0]).join("")}
+                        </span>
+                        {c.membre}
+                      </span>
+                    </td>
+                  )}
+                  <td style={{ padding: "13px 20px" }}>
+                    <span className="chip" style={{ fontSize: 11, padding: "3px 8px" }}>{c.event}</span>
+                  </td>
+                  <td style={{ padding: "13px 20px", color: "var(--ink-4)", fontSize: 12 }}>{c.date}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+window.CrmPage = CrmPage;
+
 // ---------- Dashboard ----------
 function DashboardPage({ role, trialExpired, onUpgrade }) {
   const [collabs, setCollabs] = useStateD(window.CARDLY_DATA.collaborators);
