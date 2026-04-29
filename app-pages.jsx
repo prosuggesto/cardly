@@ -7,18 +7,21 @@ function DashboardPage({ role, trialExpired, onUpgrade }) {
   const [collabs, setCollabs] = useStateD(window.CARDLY_DATA.collaborators);
   const [statsCollab, setStatsCollab] = useStateD(null);
   const toast = useToast();
+  const canManage = role === "admin" || role === "manager";
   const active = collabs.filter(c => c.statut === "actif").sort((a,b) => b.leads - a.leads);
+  const tableMembers = collabs.filter(c => c.statut !== "en_attente");
   const pending = collabs.filter(c => c.statut === "en_attente");
 
-  const accept = (id) => { setCollabs(c => c.map(x => x.id === id ? { ...x, statut: "actif" } : x)); toast.push("Collaborateur accepté"); };
+  const accept = (id) => { setCollabs(c => c.map(x => x.id === id ? { ...x, statut: "actif" } : x)); toast.push("Membre accepté"); };
   const refuse = (id) => { setCollabs(c => c.filter(x => x.id !== id)); toast.push("Demande refusée"); };
   const remove = (id) => { setCollabs(c => c.map(x => x.id === id ? { ...x, statut: "inactif", leads: 0 } : x)); toast.push("Accès supprimé"); };
+  const toggleRole = (id) => { setCollabs(c => c.map(x => x.id === id ? { ...x, role_membre: x.role_membre === "responsable" ? "collaborateur" : "responsable" } : x)); toast.push("Rôle mis à jour"); };
 
   return (
     <div className="col gap-6">
       <div className="col gap-2">
         <div className="eyebrow">Dashboard · Avril 2026</div>
-        <h1 className="serif" style={{ fontSize: "clamp(28px, 4vw, 40px)", margin: 0, letterSpacing: "-0.02em" }}>Performance équipe</h1>
+        <h1 className="serif" style={{ fontSize: "clamp(28px, 4vw, 40px)", margin: 0, letterSpacing: "-0.02em" }}>Performance des membres</h1>
         <p className="muted" style={{ margin: 0, fontSize: 15 }}>Chaque clic sur « Enregistrer dans mes contacts » est comptabilisé comme un lead généré.</p>
       </div>
 
@@ -43,7 +46,7 @@ function DashboardPage({ role, trialExpired, onUpgrade }) {
             <option>2025</option><option>2026</option>
           </select>
           <select className="select" style={{ flex: 1, minWidth: 160 }} defaultValue="all">
-            <option value="all">Toute l'équipe</option>
+            <option value="all">Tous les membres</option>
             {active.map(c => <option key={c.id}>{c.prenom} {c.nom}</option>)}
           </select>
           <select className="select" style={{ flex: 1, minWidth: 180 }} defaultValue="all">
@@ -61,7 +64,7 @@ function DashboardPage({ role, trialExpired, onUpgrade }) {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
         <Metric label="Total leads ce mois" value="142" delta="+24 vs mois dernier" trend="up" />
         <Metric label="Meilleur collaborateur" value={active[0] ? `${active[0].prenom} ${active[0].nom[0]}.` : "—"} delta={active[0] ? `${active[0].leads} leads` : ""} trend="neutral" />
-        <Metric label="Collaborateurs actifs" value={`${active.length}`} delta={`sur ${collabs.length}`} trend="neutral" />
+        <Metric label="Membres actifs" value={`${active.length}`} delta={`sur ${collabs.length}`} trend="neutral" />
       </div>
 
       {/* Top 3 podium */}
@@ -94,11 +97,11 @@ function DashboardPage({ role, trialExpired, onUpgrade }) {
         </div>
       </div>
 
-      {/* Pending requests — admin only */}
-      {role === "admin" && pending.length > 0 && (
+      {/* Pending requests — admin & responsable */}
+      {canManage && pending.length > 0 && (
         <div className="card" style={{ padding: 24 }}>
           <div className="row" style={{ justifyContent: "space-between", marginBottom: 16 }}>
-            <div className="serif" style={{ fontSize: 18 }}>Demandes collaborateurs</div>
+            <div className="serif" style={{ fontSize: 18 }}>Demandes membres</div>
             <span className="chip">{pending.length} en attente</span>
           </div>
           <div className="col gap-2">
@@ -126,20 +129,22 @@ function DashboardPage({ role, trialExpired, onUpgrade }) {
       {/* Full table */}
       <div className="card" style={{ padding: 0, overflow: "hidden" }}>
         <div className="row" style={{ justifyContent: "space-between", padding: "20px 24px", borderBottom: "1px solid var(--line)" }}>
-          <div className="serif" style={{ fontSize: 18 }}>Collaborateurs</div>
-          <span className="dim" style={{ fontSize: 12 }}>{collabs.length} membres</span>
+          <div className="serif" style={{ fontSize: 18 }}>Membres</div>
+          <span className="dim" style={{ fontSize: 12 }}>{tableMembers.length} membres</span>
         </div>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
             <thead>
               <tr style={{ background: "var(--surface-2)" }}>
-                {["Collaborateur", "Poste", "Statut", "Leads", "Action contact", "Dernier clic", role === "admin" ? "Actions" : ""].filter(Boolean).map(h => (
+                {["Membre", "Poste", "Rôle", "Leads", "Action contact", "Dernier clic", canManage ? "Actions" : ""].filter(Boolean).map(h => (
                   <th key={h} style={{ textAlign: "left", padding: "12px 20px", fontWeight: 500, color: "var(--ink-3)", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {collabs.map(c => (
+              {tableMembers.map(c => {
+                const isResp = c.role_membre === "responsable";
+                return (
                 <tr key={c.id} style={{ borderTop: "1px solid var(--line)" }}>
                   <td style={{ padding: "14px 20px" }}>
                     <div className="row gap-3">
@@ -154,9 +159,9 @@ function DashboardPage({ role, trialExpired, onUpgrade }) {
                   </td>
                   <td style={{ padding: "14px 20px", color: "var(--ink-3)" }}>{c.poste}</td>
                   <td style={{ padding: "14px 20px" }}>
-                    <span className={`pill ${c.statut === "actif" ? "pill-good" : c.statut === "en_attente" ? "pill-warn" : "pill-mute"}`}>
-                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor" }} />
-                      {c.statut === "actif" ? "Actif" : c.statut === "en_attente" ? "En attente" : "Inactif"}
+                    <span className={`pill ${isResp ? "pill-good" : "pill-mute"}`}>
+                      {isResp ? <Icon.Crown size={11} /> : <Icon.User size={11} />}
+                      {isResp ? "Responsable" : "Collaborateur"}
                     </span>
                   </td>
                   <td style={{ padding: "14px 20px" }}><span className="serif" style={{ fontSize: 18 }}>{c.leads}</span></td>
@@ -176,15 +181,26 @@ function DashboardPage({ role, trialExpired, onUpgrade }) {
                     </button>
                   </td>
                   <td style={{ padding: "14px 20px", color: "var(--ink-3)", fontSize: 12 }}>{c.last_click}</td>
-                  {role === "admin" && (
+                  {canManage && (
                     <td style={{ padding: "14px 20px" }}>
                       {c.statut === "actif" && (
-                        <button className="btn btn-ghost btn-sm" onClick={() => remove(c.id)}><Icon.Trash size={13} /></button>
+                        <div className="row gap-1">
+                          <button
+                            className="btn btn-ghost btn-sm"
+                            onClick={() => toggleRole(c.id)}
+                            title={isResp ? "Rétrograder en collaborateur" : "Promouvoir responsable"}
+                          >
+                            {isResp ? <Icon.User size={13} /> : <Icon.Crown size={13} />}
+                          </button>
+                          <button className="btn btn-ghost btn-sm" onClick={() => remove(c.id)} title="Supprimer l'accès">
+                            <Icon.Trash size={13} />
+                          </button>
+                        </div>
                       )}
                     </td>
                   )}
                 </tr>
-              ))}
+              );})}
             </tbody>
           </table>
         </div>

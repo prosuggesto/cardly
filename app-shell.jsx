@@ -85,7 +85,7 @@ function AppLayout({ navigate, params, children, tab, setTab, role, plan, trialE
                 }}>{me.prenom[0]}{me.nom[0]}</div>
                 <div className="col" style={{ lineHeight: 1.2 }}>
                   <div style={{ fontSize: 14, fontWeight: 500 }}>{me.prenom} {me.nom}</div>
-                  <div className="dim" style={{ fontSize: 12 }}>{role === "admin" ? "Admin · " : ""}{ent.nom_entreprise}</div>
+                  <div className="dim" style={{ fontSize: 12 }}>{role === "admin" ? "Chef · " : role === "manager" ? "Responsable · " : ""}{ent.nom_entreprise}</div>
                 </div>
               </div>
             </div>
@@ -146,7 +146,7 @@ function MyCardsPage({ onCustomize, onShareCard, role, trialExpired, onUpgrade }
   const [newTagInput, setNewTagInput] = useStateP("");
   const toast = useToast();
 
-  const isAdmin = role === "admin";
+  const isAdmin = role === "admin" || role === "manager";
 
   const createTag = () => {
     const v = newTagInput.trim();

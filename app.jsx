@@ -135,14 +135,14 @@ function TweaksPanel({ tweaks, setTweak, onClose, navigate, path }) {
       <div className="col gap-3">
         <div className="col gap-1">
           <div className="dim" style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase" }}>Rôle</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-            {["admin", "collaborator"].map(r => (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+            {["admin", "manager", "collaborator"].map(r => (
               <button key={r} onClick={() => setTweak("role", r)} className="btn btn-sm" style={{
                 background: tweaks.role === r ? "var(--ink)" : "var(--surface-2)",
                 color: tweaks.role === r ? "white" : "var(--ink)",
                 border: "1px solid var(--line)",
-                justifyContent: "center", height: 32, fontSize: 12,
-              }}>{r === "admin" ? "Admin" : "Collab."}</button>
+                justifyContent: "center", height: 32, fontSize: 11, padding: "0 4px",
+              }}>{r === "admin" ? "Chef" : r === "manager" ? "Resp." : "Collab."}</button>
             ))}
           </div>
         </div>

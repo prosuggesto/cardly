@@ -23,10 +23,10 @@ window.CARDLY_DATA = (function() {
   };
 
   const collaborators = [
-    { id: "u-002", prenom: "Emma", nom: "Laurent", email: "emma@immocosta.fr", poste: "Conseillère", leads: 42, statut: "actif", last_click: "Il y a 2h" },
-    { id: "u-003", prenom: "Hugo", nom: "Bernard", email: "hugo@immocosta.fr", poste: "Commercial", leads: 31, statut: "actif", last_click: "Il y a 5h" },
-    { id: "u-004", prenom: "Sofia", nom: "Garcia", email: "sofia@immocosta.fr", poste: "Agent immobilier", leads: 18, statut: "en_attente", last_click: "—" },
-    { id: "u-005", prenom: "Nathan", nom: "Morel", email: "nathan@immocosta.fr", poste: "Commercial junior", leads: 9, statut: "actif", last_click: "Hier" },
+    { id: "u-002", prenom: "Emma", nom: "Laurent", email: "emma@immocosta.fr", poste: "Conseillère", leads: 42, statut: "actif", role_membre: "responsable", last_click: "Il y a 2h" },
+    { id: "u-003", prenom: "Hugo", nom: "Bernard", email: "hugo@immocosta.fr", poste: "Commercial", leads: 31, statut: "actif", role_membre: "collaborateur", last_click: "Il y a 5h" },
+    { id: "u-004", prenom: "Sofia", nom: "Garcia", email: "sofia@immocosta.fr", poste: "Agent immobilier", leads: 18, statut: "en_attente", role_membre: "collaborateur", last_click: "—" },
+    { id: "u-005", prenom: "Nathan", nom: "Morel", email: "nathan@immocosta.fr", poste: "Commercial junior", leads: 9, statut: "actif", role_membre: "collaborateur", last_click: "Hier" },
   ];
 
   // 6 card design variants (used in landing carousel + Mes cartes)
