@@ -567,8 +567,8 @@ function LangPicker({ value, onChange }) {
           transition: "box-shadow 150ms, background 150ms",
         }}
       >
-        <span style={{ fontSize: 20, lineHeight: 1 }}>{current.flag}</span>
-        <span style={{ flex: 1, textAlign: "left" }}>{current.label}</span>
+        <span style={{ fontSize: 14, lineHeight: "14px", display: "flex", alignItems: "center" }}>{current.flag}</span>
+        <span style={{ flex: 1, textAlign: "left", lineHeight: "14px" }}>{current.label}</span>
         {/* Chevron */}
         <svg
           width={13} height={13} viewBox="0 0 24 24" fill="none"
@@ -606,7 +606,7 @@ function LangPicker({ value, onChange }) {
               onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.05)"}
               onMouseLeave={e => e.currentTarget.style.background = value === code ? "rgba(0,0,0,0.07)" : "transparent"}
             >
-              <span style={{ fontSize: 19, lineHeight: 1 }}>{flag}</span>
+              <span style={{ fontSize: 13.5, lineHeight: "13.5px", display: "flex", alignItems: "center" }}>{flag}</span>
               {label}
               {value === code && (
                 <svg style={{ marginLeft: "auto", color: "var(--ink)" }} width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
