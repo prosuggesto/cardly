@@ -419,6 +419,7 @@ function CardStatsModal({ open, onClose, card }) {
 function PresentCardModal({ card, onClose }) {
   const toast = useToast();
   const design = window.CARDLY_DATA.getDesign(card.design);
+  const [flipped, setFlipped] = useStateP(true);
 
   const shareLink = () => {
     const url = window.location.origin + window.location.pathname + `#/card?id=${card.id}`;
@@ -482,7 +483,7 @@ function PresentCardModal({ card, onClose }) {
         ><Icon.X size={16} /></button>
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <Card3D card={card} width={420} float={true} />
+          <Card3D card={card} width={420} float={true} flipped={flipped} onFlip={() => setFlipped(f => !f)} />
         </div>
 
         <div className="col gap-4" style={{ justifyContent: "center" }}>

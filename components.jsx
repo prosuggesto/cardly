@@ -120,21 +120,26 @@ function Card3D({
   const height = width * ratio;
   const [internalFlipped, setInternalFlipped] = useState(flipped);
   useEffect(() => setInternalFlipped(flipped), [flipped]);
-  const [imgLoaded, setImgLoaded] = useState(false);
-  // Reset skeleton whenever the main image source changes
-  const mainSrc = frontImageUrl || D.front || null;
-  const prevSrcRef = useRef(mainSrc);
+  // Track loading of BOTH faces — skeleton follows whichever is currently visible
+  const frontSrc = frontImageUrl || D.front || null;
+  const backSrc  = backImageUrl  || D.back  || null;
+  const [frontLoaded, setFrontLoaded] = useState(!frontSrc);
+  const [backLoaded,  setBackLoaded]  = useState(!backSrc);
   useEffect(() => {
-    if (prevSrcRef.current !== mainSrc) {
-      setImgLoaded(false);
-      prevSrcRef.current = mainSrc;
-    }
-    if (!mainSrc) { setImgLoaded(true); return; }
+    if (!frontSrc) { setFrontLoaded(true); return; }
+    setFrontLoaded(false);
     const img = new Image();
-    img.onload = () => setImgLoaded(true);
-    img.onerror = () => setImgLoaded(true);
-    img.src = mainSrc;
-  }, [mainSrc]);
+    img.onload = img.onerror = () => setFrontLoaded(true);
+    img.src = frontSrc;
+  }, [frontSrc]);
+  useEffect(() => {
+    if (!backSrc) { setBackLoaded(true); return; }
+    setBackLoaded(false);
+    const img = new Image();
+    img.onload = img.onerror = () => setBackLoaded(true);
+    img.src = backSrc;
+  }, [backSrc]);
+  const visibleLoaded = isFlipped ? backLoaded : frontLoaded;
   const isFlipped = internalFlipped;
 
   const dragRefFront = useRef(null);
@@ -337,19 +342,20 @@ function Card3D({
 
   return (
     <div className={`scene-3d ${className}`} style={{ width, height, position: "relative" }}>
-      {/* Skeleton shown until main image loads */}
-      {!imgLoaded && (
+      {/* Skeleton shown only until the face the user is actually looking at is loaded */}
+      {!visibleLoaded && (
         <div style={{
           position: "absolute", inset: 0, zIndex: 5,
           borderRadius: 16,
           background: "linear-gradient(90deg, rgba(184,138,62,0.07) 25%, rgba(184,138,62,0.18) 50%, rgba(184,138,62,0.07) 75%)",
           backgroundSize: "200% 100%",
           animation: "shimmer 1.4s ease-in-out infinite",
+          pointerEvents: "none",
         }} />
       )}
       <div
         className={`card-floater ${float ? "floating" : ""}`}
-        style={{ width, height, opacity: imgLoaded ? 1 : 0, transition: "opacity 350ms ease" }}
+        style={{ width, height, opacity: visibleLoaded ? 1 : 0, transition: "opacity 250ms ease" }}
       >
         <div
           className={`card-3d ${isFlipped ? "flipped" : ""} ${float ? "tilted" : ""}`}
