@@ -1222,7 +1222,7 @@ function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, on
                   </button>
                 )}
                 {scanButtons.crm && (
-                  <button className="btn btn-sm btn-gold" style={{ flex: 1, minWidth: 140, justifyContent: "center" }} onClick={() => setCrmModalOpen(true)}>
+                  <button className="btn btn-sm" style={{ flex: 1, minWidth: 140, justifyContent: "center" }} onClick={() => setCrmModalOpen(true)}>
                     <Icon.User size={13} /> Partager mes infos
                   </button>
                 )}
