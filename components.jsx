@@ -194,8 +194,8 @@ function Card3D({
         onPointerDown={handlePointerDown(f.key, side)}
         style={{
           left: `${pos.x}%`, top: `${pos.y}%`,
-          color: (fieldColors && fieldColors[f.key]) || inkColorBack,
           ...f.style,
+          color: (fieldColors && fieldColors[f.key]) || f.style.color || inkColorBack,
           fontSize: baseFontSize * sizeMul,
           ...(fontFamily ? { fontFamily } : {}),
           display: "inline-flex", alignItems: "center", gap: 6,
