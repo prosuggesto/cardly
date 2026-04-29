@@ -38,13 +38,13 @@ function PublicHeader({ navigate }) {
 const HERO_CARD = {
   id: "card-chinois-demo",
   design: "design-blossom",
-  nom_affiche: "Nakamura",
-  prenom_affiche: "Yuki",
-  entreprise_affiche: "Shin-Toku Studio",
+  nom_affiche: "Moreau",
+  prenom_affiche: "Élise",
+  entreprise_affiche: "Studio Solange",
   poste_affiche: "Directrice artistique",
-  telephone_affiche: "06 42 87 31 09",
-  email_affiche: "yuki@shintoku.co",
-  site_web: "shintoku.co",
+  telephone_affiche: "06 18 43 72 95",
+  email_affiche: "elise@studiosolange.fr",
+  site_web: "studiosolange.fr",
   afficher_nom: true,
   afficher_prenom: true,
   afficher_entreprise: true,
@@ -119,16 +119,20 @@ function HeroSection({ navigate }) {
               background: "radial-gradient(circle, rgba(244,220,175,0.5), transparent 70%)",
               filter: "blur(20px)",
             }} />
-            <Card3D
-              card={HERO_CARD}
-              width={420}
-              float={true}
-              showQR={false}
-              flipped={heroFlipped}
-              onFlip={() => setHeroFlipped(f => !f)}
-              frontImageUrl="assets/card-chinois-recto.png"
-              backImageUrl="assets/card-chinois-verso.png"
-            />
+            <div
+              onClick={() => setHeroFlipped(f => !f)}
+              style={{ cursor: "pointer", position: "relative", zIndex: 1 }}
+            >
+              <Card3D
+                card={HERO_CARD}
+                width={420}
+                float={true}
+                showQR={false}
+                flipped={heroFlipped}
+                frontImageUrl="assets/card-chinois-recto.png"
+                backImageUrl="assets/card-chinois-verso.png"
+              />
+            </div>
             {/* Flip hint */}
             <div style={{
               position: "absolute", bottom: "2%", left: "50%", transform: "translateX(-50%)",
