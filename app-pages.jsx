@@ -280,6 +280,89 @@ function CollabStatsModal({ collab, onClose }) {
   );
 }
 
+// ---------- Feedback card ----------
+function FeedbackCard() {
+  const INIT_MESSAGES = [
+    { from: "cardly", text: "👋 Bonjour ! Une idée pour améliorer Cardly Pro ? Une fonctionnalité manquante ? Partagez-la ici, on lit tout." },
+  ];
+  const [messages, setMessages] = useStateD(INIT_MESSAGES);
+  const [input, setInput] = useStateD("");
+  const [sent, setSent] = useStateD(false);
+  const bottomRef = React.useRef(null);
+
+  const send = () => {
+    const txt = input.trim();
+    if (!txt) return;
+    const next = [...messages, { from: "user", text: txt }];
+    setMessages(next);
+    setInput("");
+    setSent(true);
+    setTimeout(() => {
+      setMessages(m => [...m, { from: "cardly", text: "Merci pour votre retour ! Nous prenons bonne note. 🙏" }]);
+    }, 700);
+  };
+
+  React.useEffect(() => {
+    if (bottomRef.current) bottomRef.current.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  return (
+    <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+      {/* Header */}
+      <div className="row gap-2" style={{ padding: "16px 20px", borderBottom: "1px solid var(--line)", alignItems: "center" }}>
+        <Icon.Sparkle size={15} style={{ color: "var(--gold)" }} />
+        <div className="serif" style={{ fontSize: 17 }}>Vos idées</div>
+        <div className="chip" style={{ fontSize: 10, marginLeft: "auto", background: "var(--surface-2)" }}>Bêta</div>
+      </div>
+
+      {/* Messages */}
+      <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 10, maxHeight: 220, overflowY: "auto" }}>
+        {messages.map((m, i) => (
+          <div key={i} style={{ display: "flex", justifyContent: m.from === "user" ? "flex-end" : "flex-start" }}>
+            {m.from === "cardly" && (
+              <div style={{
+                width: 26, height: 26, borderRadius: "50%", flexShrink: 0,
+                background: "linear-gradient(135deg, var(--gold-2), var(--gold))",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 11, fontWeight: 700, color: "white", marginRight: 8, alignSelf: "flex-end",
+              }}>C</div>
+            )}
+            <div style={{
+              maxWidth: "75%", padding: "9px 13px", borderRadius: m.from === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
+              background: m.from === "user" ? "var(--ink)" : "var(--surface-2)",
+              color: m.from === "user" ? "white" : "var(--ink)",
+              fontSize: 13, lineHeight: 1.5,
+            }}>{m.text}</div>
+          </div>
+        ))}
+        <div ref={bottomRef} />
+      </div>
+
+      {/* Input bar */}
+      <div style={{ padding: "12px 16px", borderTop: "1px solid var(--line)", display: "flex", gap: 8, alignItems: "center" }}>
+        <input
+          className="input"
+          style={{ flex: 1, fontSize: 13, borderRadius: 20, padding: "8px 14px" }}
+          placeholder={sent ? "Envoyer un autre message…" : "Une idée, une suggestion, un bug…"}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") send(); }}
+        />
+        <button
+          className="btn btn-primary"
+          style={{ borderRadius: "50%", width: 36, height: 36, padding: 0, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+          onClick={send}
+          disabled={!input.trim()}
+        >
+          <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ---------- Mon compte ----------
 function SecretCodePage({ role, plan, onUpgrade }) {
   const [code, setCode] = useStateD(window.CARDLY_DATA.entreprise.code_secret);
@@ -394,6 +477,9 @@ function SecretCodePage({ role, plan, onUpgrade }) {
               <button className="btn btn-primary btn-sm" onClick={() => toast.push("Informations mises à jour")}><Icon.Check size={13} /> Enregistrer</button>
             </div>
           </div>
+
+          {/* Feedback */}
+          <FeedbackCard />
 
           {/* Plan */}
           <div className="card" style={{ padding: 24 }}>
