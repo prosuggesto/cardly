@@ -73,6 +73,19 @@ const HERO_CARD = {
 
 function HeroSection({ navigate }) {
   const [heroFlipped, setHeroFlipped] = useStateL(false);
+  const [imgsReady, setImgsReady] = useStateL(false);
+
+  useEffectL(() => {
+    let loaded = 0;
+    const srcs = ["assets/card-chinois-recto.png", "assets/card-chinois-verso.png"];
+    const onLoad = () => { loaded++; if (loaded >= srcs.length) setImgsReady(true); };
+    srcs.forEach(src => {
+      const img = new Image();
+      img.onload = onLoad;
+      img.onerror = onLoad; // don't block on error
+      img.src = src;
+    });
+  }, []);
 
   return (
     <section style={{ position: "relative", paddingTop: 60, paddingBottom: 100, overflow: "hidden" }}>
@@ -128,11 +141,26 @@ function HeroSection({ navigate }) {
               background: "radial-gradient(circle, rgba(244,220,175,0.5), transparent 70%)",
               filter: "blur(20px)",
             }} />
+            {/* Skeleton shown while images load */}
+            {!imgsReady && (
+              <div style={{
+                width: 420, aspectRatio: "1.75/1", borderRadius: 20,
+                background: "linear-gradient(90deg, rgba(184,138,62,0.08) 25%, rgba(184,138,62,0.18) 50%, rgba(184,138,62,0.08) 75%)",
+                backgroundSize: "200% 100%",
+                animation: "shimmer 1.4s ease-in-out infinite",
+                zIndex: 1, position: "relative",
+              }} />
+            )}
             <div
               onClick={() => setHeroFlipped(f => !f)}
               onMouseEnter={() => setHeroFlipped(true)}
               onMouseLeave={() => setHeroFlipped(false)}
-              style={{ cursor: "pointer", position: "relative", zIndex: 1 }}
+              style={{
+                cursor: "pointer", position: "relative", zIndex: 1,
+                opacity: imgsReady ? 1 : 0,
+                transition: "opacity 400ms ease",
+                position: imgsReady ? "relative" : "absolute",
+              }}
             >
               <Card3D
                 card={HERO_CARD}
