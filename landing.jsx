@@ -62,12 +62,12 @@ const HERO_CARD = {
   afficher_site_web: true,
   positions: {
     name:       { x: 68, y: 28 },
-    entreprise: { x: 60, y: 86 },  // front face — bas de la carte
+    entreprise: { x: 60, y: 86 },  // bas de la carte (face recto avec art)
     poste:      { x: 68, y: 47 },
     phone:      { x: 68, y: 60 },
     email:      { x: 68, y: 69 },
     web:        { x: 68, y: 78 },
-    logoVerso:  { x: 17, y: 84 },  // logo sur le recto (face avant)
+    logoRecto:  { x: 17, y: 84 },  // logo sur le recto (face non-flipped)
   },
 };
 
@@ -171,9 +171,9 @@ function HeroSection({ navigate }) {
                 frontImageUrl="assets/card-chinois-recto.png"
                 backImageUrl="assets/card-chinois-verso.png"
                 logoUrl={STUDIO_LOGO_URL}
-                logoSide="verso"
-                logoSizeVerso={0.52}
-                fieldSides={{ name: "recto", entreprise: "verso", poste: "recto", phone: "recto", email: "recto", web: "recto" }}
+                logoSide="recto"
+                logoSizeRecto={0.52}
+                fieldSides={{ name: "verso", entreprise: "recto", poste: "verso", phone: "verso", email: "verso", web: "verso" }}
                 fieldSizes={{ entreprise: 1.15 }}
                 fieldColors={{ entreprise: "#2a241a" }}
               />

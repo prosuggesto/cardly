@@ -1017,7 +1017,7 @@ function PublicCardPage({ navigate, params }) {
   const ent = window.CARDLY_DATA.entreprise;
   const toast = useToast();
   const [savedCount, setSavedCount] = useStateD(0);
-  const [flipped, setFlipped] = useStateD(true);
+  const [flipped, setFlipped] = useStateD(false);
   const [crmModalOpen, setCrmModalOpen] = useStateD(false);
 
   return (
@@ -1036,7 +1036,9 @@ function PublicCardPage({ navigate, params }) {
           </div>
         )}
 
-        <Card3D card={card} width={Math.min(380, window.innerWidth - 60)} float={true} flipped={flipped} onFlip={() => setFlipped(!flipped)} />
+        <div onClick={() => setFlipped(f => !f)} style={{ cursor: "pointer", display: "inline-block" }}>
+          <Card3D card={card} width={Math.min(380, window.innerWidth - 60)} float={true} flipped={flipped} />
+        </div>
 
         <div className="card" style={{ padding: 24, width: "100%" }}>
           <div className="col gap-1" style={{ alignItems: "center", textAlign: "center", marginBottom: 18 }}>

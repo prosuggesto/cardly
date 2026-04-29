@@ -120,13 +120,22 @@ function Card3D({
   const height = width * ratio;
   const [internalFlipped, setInternalFlipped] = useState(flipped);
   useEffect(() => setInternalFlipped(flipped), [flipped]);
-  // Track loading of BOTH faces — skeleton follows whichever is currently visible
+  // Track loading of BOTH faces — skeleton follows whichever is currently visible.
+  // CRITICAL: check img.complete synchronously so cached/preloaded images render
+  // INSTANTLY with no skeleton, no fade.
   const frontSrc = frontImageUrl || D.front || null;
   const backSrc  = backImageUrl  || D.back  || null;
-  const [frontLoaded, setFrontLoaded] = useState(!frontSrc);
-  const [backLoaded,  setBackLoaded]  = useState(!backSrc);
+  const isCached = (src) => {
+    if (!src) return true;
+    const img = new Image();
+    img.src = src;
+    return img.complete && img.naturalWidth > 0;
+  };
+  const [frontLoaded, setFrontLoaded] = useState(() => isCached(frontSrc));
+  const [backLoaded,  setBackLoaded]  = useState(() => isCached(backSrc));
   useEffect(() => {
     if (!frontSrc) { setFrontLoaded(true); return; }
+    if (isCached(frontSrc)) { setFrontLoaded(true); return; }
     setFrontLoaded(false);
     const img = new Image();
     img.onload = img.onerror = () => setFrontLoaded(true);
@@ -134,6 +143,7 @@ function Card3D({
   }, [frontSrc]);
   useEffect(() => {
     if (!backSrc) { setBackLoaded(true); return; }
+    if (isCached(backSrc)) { setBackLoaded(true); return; }
     setBackLoaded(false);
     const img = new Image();
     img.onload = img.onerror = () => setBackLoaded(true);
@@ -153,7 +163,8 @@ function Card3D({
     e.stopPropagation();
     setDragging(key);
     draggedRef.current = true;
-    const cardEl = side === "verso" ? dragRefFront.current : dragRefBack.current;
+    // recto fields live in renderFront (dragRefFront); verso fields live in renderBack (dragRefBack)
+    const cardEl = side === "recto" ? dragRefFront.current : dragRefBack.current;
     if (!cardEl) return;
     const rect = cardEl.getBoundingClientRect();
     const move = (ev) => {
@@ -256,7 +267,8 @@ function Card3D({
   };
 
   const renderFront = () => {
-    const versoFields = fieldsForSide("verso");
+    // Non-flipped = RECTO (the face users see first)
+    const rectoFields = fieldsForSide("recto");
     return (
       <div ref={dragRefFront} style={{ position: "absolute", inset: 0, overflow: "hidden", borderRadius: "inherit" }}>
         {frontImageUrl ? (
@@ -285,34 +297,35 @@ function Card3D({
             }} />
           </div>
         )}
-        {versoFields.map(f => renderField(f, "verso"))}
-        {renderLogoOverlay(editable, "verso")}
+        {rectoFields.map(f => renderField(f, "recto"))}
+        {renderLogoOverlay(editable, "recto")}
       </div>
     );
   };
 
   const renderBack = () => {
+    // Flipped = VERSO (the face users see after flipping)
     const isDarkBg = D.style === "noir-gold" || D.style === "blue-corporate";
     const inkColor = D.ink || "#2a241a";
-    const rectoFields = fieldsForSide("recto");
+    const versoFields = fieldsForSide("verso");
     return (
       <div ref={dragRefBack} style={{
         position: "absolute", inset: 0,
         background: D.back ? "transparent" : (D.bg || "linear-gradient(135deg,#fff,#f6f3ec)"),
       }}>
         {backImageUrl && <img src={backImageUrl} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} />}
-        {!backImageUrl && D.back && <img src={D.back} alt="" />}
-        {/* draggable text fields on recto */}
-        {rectoFields.map(f => renderField(f, "recto"))}
-        {/* Logo overlay on recto — draggable */}
-        {renderLogoOverlay(editable, "recto")}
+        {!backImageUrl && D.back && <img src={D.back} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} />}
+        {/* draggable text fields on verso */}
+        {versoFields.map(f => renderField(f, "verso"))}
+        {/* Logo overlay on verso — draggable */}
+        {renderLogoOverlay(editable, "verso")}
         {/* QR — also draggable when editable */}
         {showQR && (() => {
           const qrPos = positions.qr || { x: 88, y: 82 };
           const qrSize = width * 0.16;
           return (
             <div
-              onPointerDown={handlePointerDown("qr", "recto")}
+              onPointerDown={handlePointerDown("qr", "verso")}
               className={`${editable ? "editable" : ""} ${dragging === "qr" ? "dragging" : ""}`}
               style={{
                 position: "absolute",

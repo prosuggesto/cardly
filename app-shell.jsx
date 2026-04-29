@@ -331,7 +331,7 @@ function CardListItem({ card, onCustomize, onShare, role }) {
         style={{ display: "flex", justifyContent: "center", padding: "8px 0", background: "transparent", border: 0, cursor: "pointer" }}
         title="Présenter au client"
       >
-        <Card3D card={card} width={320} float={true} flipped={true} />
+        <Card3D card={card} width={320} float={true} />
       </button>
 
       {isLocked && (
@@ -419,7 +419,7 @@ function CardStatsModal({ open, onClose, card }) {
 function PresentCardModal({ card, onClose }) {
   const toast = useToast();
   const design = window.CARDLY_DATA.getDesign(card.design);
-  const [flipped, setFlipped] = useStateP(true);
+  const [flipped, setFlipped] = useStateP(false);
 
   const shareLink = () => {
     const url = window.location.origin + window.location.pathname + `#/card?id=${card.id}`;
@@ -483,7 +483,9 @@ function PresentCardModal({ card, onClose }) {
         ><Icon.X size={16} /></button>
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <Card3D card={card} width={420} float={true} flipped={flipped} onFlip={() => setFlipped(f => !f)} />
+          <div onClick={() => setFlipped(f => !f)} style={{ cursor: "pointer", display: "inline-block" }}>
+            <Card3D card={card} width={420} float={true} flipped={flipped} />
+          </div>
         </div>
 
         <div className="col gap-4" style={{ justifyContent: "center" }}>
@@ -654,7 +656,7 @@ window.CustomizePickerPage = CustomizePickerPage;
 function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack, onValidate }) {
   const original = window.CARDLY_DATA.cards.find(c => c.id === cardId) || window.CARDLY_DATA.cards[0];
   const [card, setCard] = useStateP({ ...original, positions: { ...original.positions } });
-  const [flipped, setFlipped] = useStateP(true);
+  const [flipped, setFlipped] = useStateP(false);
   const [showAIModal, setShowAIModal] = useStateP(false);
   const [aiBlocked, setAIBlocked] = useStateP(false);
   const [aiLoading, setAILoading] = useStateP(false);
@@ -1217,7 +1219,7 @@ function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, on
     mail: true,
     tel: true,
   });
-  const [flipped, setFlipped] = useStateP(true);
+  const [flipped, setFlipped] = useStateP(false);
   const [crmModalOpen, setCrmModalOpen] = useStateP(false);
   const toggleBtn = (k) => setScanButtons(s => ({ ...s, [k]: !s[k] }));
   const toggleCrm = (k) => setCrmFields(f => ({ ...f, [k]: !f[k] }));
@@ -1240,7 +1242,9 @@ function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, on
         <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 28 }} className="cust-grid">
           {/* Scanned card preview — identique à PublicCardPage */}
           <div className="card" style={{ padding: 28, display: "flex", flexDirection: "column", alignItems: "center", gap: 28, background: "linear-gradient(180deg, #fffdf6, #f7f2e6)" }}>
-            <Card3D card={card} width={360} float={true} flipped={flipped} onFlip={() => setFlipped(!flipped)} />
+            <div onClick={() => setFlipped(f => !f)} style={{ cursor: "pointer", display: "inline-block" }}>
+              <Card3D card={card} width={360} float={true} flipped={flipped} />
+            </div>
             <div className="card" style={{ padding: 24, width: "100%", maxWidth: 440, background: "var(--surface)" }}>
               <div className="col gap-1" style={{ alignItems: "center", textAlign: "center", marginBottom: 18 }}>
                 <div className="serif" style={{ fontSize: 26, letterSpacing: "-0.01em" }}>{card.prenom_affiche} {card.nom_affiche}</div>
