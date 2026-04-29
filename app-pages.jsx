@@ -391,33 +391,10 @@ function SecretCodePage({ role, plan, onUpgrade }) {
                 </div>
               ))}
             </div>
-            {/* Language selector */}
+            {/* Language selector — liquid glass iOS style */}
             <div style={{ marginTop: 18, paddingTop: 18, borderTop: "1px solid var(--line)" }}>
               <div style={{ fontSize: 11, fontWeight: 500, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>Langue de l'interface</div>
-              <div className="row gap-2">
-                {[
-                  { code: "fr", flag: "🇫🇷", label: "Français" },
-                  { code: "en", flag: "🇬🇧", label: "English" },
-                  { code: "es", flag: "🇪🇸", label: "Español" },
-                ].map(({ code, flag, label }) => (
-                  <button
-                    key={code}
-                    onClick={() => setLangue(code)}
-                    style={{
-                      display: "inline-flex", alignItems: "center", gap: 7,
-                      padding: "7px 14px", borderRadius: 20, cursor: "pointer",
-                      fontSize: 13, fontWeight: langue === code ? 600 : 400,
-                      border: langue === code ? "1.5px solid var(--ink)" : "1px solid var(--line-2)",
-                      background: langue === code ? "var(--ink)" : "var(--surface)",
-                      color: langue === code ? "white" : "var(--ink-3)",
-                      transition: "all 140ms",
-                    }}
-                  >
-                    <span style={{ fontSize: 16, lineHeight: 1 }}>{flag}</span>
-                    {label}
-                  </button>
-                ))}
-              </div>
+              <LangPicker value={langue} onChange={setLangue} />
             </div>
 
             <div style={{ marginTop: 18, display: "flex", justifyContent: "flex-end" }}>
@@ -548,6 +525,101 @@ function SecretCodePage({ role, plan, onUpgrade }) {
   );
 }
 window.SecretCodePage = SecretCodePage;
+
+// ---------- LangPicker — liquid glass iOS dropdown ----------
+function LangPicker({ value, onChange }) {
+  const [open, setOpen] = useStateD(false);
+  const ref = React.useRef(null);
+
+  const LANGS = [
+    { code: "fr", flag: "🇫🇷", label: "Français" },
+    { code: "en", flag: "🇬🇧", label: "English" },
+    { code: "es", flag: "🇪🇸", label: "Español" },
+  ];
+  const current = LANGS.find(l => l.code === value) || LANGS[0];
+
+  React.useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const glassBase = {
+    background: "rgba(255,255,255,0.45)",
+    backdropFilter: "blur(20px) saturate(180%)",
+    WebkitBackdropFilter: "blur(20px) saturate(180%)",
+    border: "1px solid rgba(255,255,255,0.65)",
+    boxShadow: "0 4px 24px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.8)",
+  };
+
+  return (
+    <div ref={ref} style={{ position: "relative", display: "inline-block" }}>
+      {/* Trigger */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          ...glassBase,
+          display: "inline-flex", alignItems: "center", gap: 9,
+          padding: "9px 16px 9px 12px",
+          borderRadius: 14, cursor: "pointer",
+          fontSize: 14, fontWeight: 500, color: "var(--ink)",
+          minWidth: 160,
+          transition: "box-shadow 150ms, background 150ms",
+        }}
+      >
+        <span style={{ fontSize: 20, lineHeight: 1 }}>{current.flag}</span>
+        <span style={{ flex: 1, textAlign: "left" }}>{current.label}</span>
+        {/* Chevron */}
+        <svg
+          width={13} height={13} viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
+          style={{ opacity: 0.5, transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 200ms" }}
+        >
+          <path d="M6 9l6 6 6-6"/>
+        </svg>
+      </button>
+
+      {/* Dropdown panel */}
+      {open && (
+        <div style={{
+          ...glassBase,
+          position: "absolute", top: "calc(100% + 6px)", left: 0,
+          borderRadius: 16, overflow: "hidden",
+          minWidth: 160, zIndex: 100,
+          animation: "fade-up 150ms ease both",
+        }}>
+          {LANGS.map(({ code, flag, label }, i) => (
+            <button
+              key={code}
+              onClick={() => { onChange(code); setOpen(false); }}
+              style={{
+                display: "flex", alignItems: "center", gap: 10,
+                width: "100%", padding: "11px 16px",
+                background: value === code ? "rgba(0,0,0,0.07)" : "transparent",
+                border: "none",
+                borderTop: i > 0 ? "1px solid rgba(255,255,255,0.55)" : "none",
+                cursor: "pointer",
+                fontSize: 13.5, fontWeight: value === code ? 600 : 400,
+                color: "var(--ink)",
+                transition: "background 100ms",
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.05)"}
+              onMouseLeave={e => e.currentTarget.style.background = value === code ? "rgba(0,0,0,0.07)" : "transparent"}
+            >
+              <span style={{ fontSize: 19, lineHeight: 1 }}>{flag}</span>
+              {label}
+              {value === code && (
+                <svg style={{ marginLeft: "auto", color: "var(--ink)" }} width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 6L9 17l-5-5"/>
+                </svg>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ---------- Feedback page ----------
 function FeedbackPage() {
