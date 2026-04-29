@@ -96,6 +96,7 @@ function App() {
         />}
         {tab === "dashboard" && <DashboardPage role={tweaks.role} trialExpired={tweaks.trialExpired} onUpgrade={() => setTab("subscription")} />}
         {tab === "secret" && <SecretCodePage role={tweaks.role} plan={tweaks.plan} onUpgrade={() => setTab("subscription")} />}
+        {tab === "feedback" && <FeedbackPage />}
         {tab === "subscription" && <SubscriptionPage plan={tweaks.plan} onSetPlan={(p) => setTweak("plan", p)} />}
       </AppLayout>
     );
