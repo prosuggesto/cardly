@@ -63,7 +63,7 @@ function DashboardPage({ role, trialExpired, onUpgrade }) {
       {/* Metrics */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
         <Metric label="Total leads ce mois" value="142" delta="+24 vs mois dernier" trend="up" />
-        <Metric label="Meilleur collaborateur" value={active[0] ? `${active[0].prenom} ${active[0].nom[0]}.` : "—"} delta={active[0] ? `${active[0].leads} leads` : ""} trend="neutral" />
+        <Metric label="Meilleur membre" value={active[0] ? `${active[0].prenom} ${active[0].nom[0]}.` : "—"} delta={active[0] ? `${active[0].leads} leads` : ""} trend="neutral" />
         <Metric label="Membres actifs" value={`${active.length}`} delta={`sur ${collabs.length}`} trend="neutral" />
       </div>
 
