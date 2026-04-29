@@ -7,15 +7,18 @@ function CrmPage({ role }) {
   const allContacts = window.CARDLY_DATA.crmContacts || [];
   const collabs = window.CARDLY_DATA.collaborators.filter(c => c.statut === "actif");
   const [filterMembre, setFilterMembre] = useStateD("all");
+  const [filterEvent, setFilterEvent] = useStateD("all");
   const [search, setSearch] = useStateD("");
 
   const canManage = role === "admin" || role === "manager";
+  const events = [...new Set(allContacts.map(c => c.event))];
 
   const filtered = allContacts.filter(c => {
     const matchMembre = filterMembre === "all" || c.membre_id === filterMembre;
+    const matchEvent = filterEvent === "all" || c.event === filterEvent;
     const q = search.toLowerCase();
     const matchSearch = !q || [c.nom, c.prenom, c.email, c.entreprise, c.membre].some(f => f && f.toLowerCase().includes(q));
-    return matchMembre && matchSearch;
+    return matchMembre && matchEvent && matchSearch;
   });
 
   const exportCSV = () => {
@@ -39,21 +42,25 @@ function CrmPage({ role }) {
       </div>
 
       {/* Toolbar */}
-      <div className="row gap-3" style={{ flexWrap: "wrap" }}>
+      <div className="row gap-3" style={{ flexWrap: "wrap", alignItems: "center" }}>
         <input
           className="input"
-          style={{ flex: 1, minWidth: 200, fontSize: 13 }}
+          style={{ minWidth: 180, maxWidth: 280, fontSize: 13 }}
           placeholder="Rechercher un contact…"
           value={search}
           onChange={e => setSearch(e.target.value)}
         />
         {canManage && (
-          <select className="select" style={{ width: "auto", fontSize: 13 }} value={filterMembre} onChange={e => setFilterMembre(e.target.value)}>
+          <select className="select" style={{ width: "auto", minWidth: 160, fontSize: 13, paddingRight: 36 }} value={filterMembre} onChange={e => setFilterMembre(e.target.value)}>
             <option value="all">Tous les membres</option>
             {collabs.map(c => <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>)}
           </select>
         )}
-        <button className="btn btn-sm" onClick={exportCSV} style={{ whiteSpace: "nowrap" }}>
+        <select className="select" style={{ width: "auto", minWidth: 180, fontSize: 13, paddingRight: 36 }} value={filterEvent} onChange={e => setFilterEvent(e.target.value)}>
+          <option value="all">Tous les événements</option>
+          {events.map(ev => <option key={ev} value={ev}>{ev}</option>)}
+        </select>
+        <button className="btn btn-sm" onClick={exportCSV} style={{ whiteSpace: "nowrap", marginLeft: "auto" }}>
           <Icon.Download size={13} /> Exporter CSV
         </button>
       </div>
