@@ -2,31 +2,74 @@
 
 const { useState: useStateD } = React;
 
-// ---------- FilterSelect — compact select with tight chevron ----------
-function FilterSelect({ value, onChange, children }) {
+// ---------- FilterSelect — liquid glass dropdown ----------
+function FilterSelect({ value, onChange, options }) {
+  const [open, setOpen] = useStateD(false);
+  const ref = React.useRef(null);
+  const current = options.find(o => o.value === value) || options[0];
+
+  React.useEffect(() => {
+    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, []);
+
+  const glass = {
+    background: "rgba(255,255,255,0.45)",
+    backdropFilter: "blur(20px) saturate(180%)",
+    WebkitBackdropFilter: "blur(20px) saturate(180%)",
+    border: "1px solid rgba(255,255,255,0.65)",
+    boxShadow: "0 4px 24px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.8)",
+  };
+
   return (
-    <div style={{ position: "relative", display: "inline-flex", alignItems: "center", flexShrink: 0 }}>
-      <select
-        value={value}
-        onChange={e => onChange(e.target.value)}
+    <div ref={ref} style={{ position: "relative", display: "inline-block", flexShrink: 0 }}>
+      <button
+        onClick={() => setOpen(o => !o)}
         style={{
-          height: 44, paddingLeft: 14, paddingRight: 32,
-          background: "var(--surface)", border: "1px solid var(--line)",
-          borderRadius: 12, fontSize: 13, color: "var(--ink)",
-          appearance: "none", WebkitAppearance: "none", MozAppearance: "none",
-          cursor: "pointer", outline: "none",
+          ...glass, display: "inline-flex", alignItems: "center", gap: 8,
+          padding: "9px 14px", borderRadius: 14, cursor: "pointer",
+          fontSize: 13, fontWeight: 500, color: "var(--ink)", whiteSpace: "nowrap",
+          height: 44,
         }}
       >
-        {children}
-      </select>
-      {/* Custom chevron tight after text */}
-      <svg
-        width={13} height={13} viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
-        style={{ position: "absolute", right: 10, pointerEvents: "none", opacity: 0.5, color: "var(--ink)" }}
-      >
-        <path d="M6 9l6 6 6-6"/>
-      </svg>
+        {current?.label}
+        <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
+          style={{ opacity: 0.45, transform: open ? "rotate(180deg)" : "rotate(0)", transition: "transform 180ms", flexShrink: 0 }}>
+          <path d="M6 9l6 6 6-6"/>
+        </svg>
+      </button>
+      {open && (
+        <div style={{
+          ...glass, position: "absolute", top: "calc(100% + 6px)", left: 0,
+          borderRadius: 16, overflow: "hidden", minWidth: "100%", zIndex: 200,
+          animation: "fade-up 150ms ease both",
+        }}>
+          {options.map((o, i) => (
+            <button
+              key={o.value}
+              onClick={() => { onChange(o.value); setOpen(false); }}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10,
+                width: "100%", padding: "10px 14px", whiteSpace: "nowrap",
+                background: value === o.value ? "rgba(0,0,0,0.07)" : "transparent",
+                border: "none", borderTop: i > 0 ? "1px solid rgba(255,255,255,0.55)" : "none",
+                cursor: "pointer", fontSize: 13,
+                fontWeight: value === o.value ? 600 : 400, color: "var(--ink)",
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.05)"}
+              onMouseLeave={e => e.currentTarget.style.background = value === o.value ? "rgba(0,0,0,0.07)" : "transparent"}
+            >
+              {o.label}
+              {value === o.value && (
+                <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 6L9 17l-5-5"/>
+                </svg>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -80,15 +123,17 @@ function CrmPage({ role }) {
           onChange={e => setSearch(e.target.value)}
         />
         {canManage && (
-          <FilterSelect value={filterMembre} onChange={setFilterMembre}>
-            <option value="all">Tous les membres</option>
-            {collabs.map(c => <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>)}
-          </FilterSelect>
+          <FilterSelect
+            value={filterMembre}
+            onChange={setFilterMembre}
+            options={[{ value: "all", label: "Tous les membres" }, ...collabs.map(c => ({ value: c.id, label: `${c.prenom} ${c.nom}` }))]}
+          />
         )}
-        <FilterSelect value={filterEvent} onChange={setFilterEvent}>
-          <option value="all">Tous les événements</option>
-          {events.map(ev => <option key={ev} value={ev}>{ev}</option>)}
-        </FilterSelect>
+        <FilterSelect
+          value={filterEvent}
+          onChange={setFilterEvent}
+          options={[{ value: "all", label: "Tous les événements" }, ...events.map(ev => ({ value: ev, label: ev }))]}
+        />
         <button className="btn btn-sm" onClick={exportCSV} style={{ whiteSpace: "nowrap", marginLeft: "auto" }}>
           <Icon.Download size={13} /> Exporter CSV
         </button>
