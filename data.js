@@ -75,7 +75,7 @@ window.CARDLY_DATA = (function() {
       id: "card-001",
       type: "enterprise",
       nom_carte: "Carte entreprise — Immo Costa",
-      design: "design-blossom",
+      design: "design-style-chinois",
       // displayed fields
       nom_affiche: "Martin",
       prenom_affiche: "Lucas",
@@ -109,7 +109,7 @@ window.CARDLY_DATA = (function() {
       id: "card-002",
       type: "personal",
       nom_carte: "Ma carte minimal",
-      design: "design-clean",
+      design: "design-serisier",
       nom_affiche: "Martin",
       prenom_affiche: "Lucas",
       entreprise_affiche: "Immo Costa",

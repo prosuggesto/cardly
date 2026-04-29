@@ -120,6 +120,21 @@ function Card3D({
   const height = width * ratio;
   const [internalFlipped, setInternalFlipped] = useState(flipped);
   useEffect(() => setInternalFlipped(flipped), [flipped]);
+  const [imgLoaded, setImgLoaded] = useState(false);
+  // Reset skeleton whenever the main image source changes
+  const mainSrc = frontImageUrl || D.front || null;
+  const prevSrcRef = useRef(mainSrc);
+  useEffect(() => {
+    if (prevSrcRef.current !== mainSrc) {
+      setImgLoaded(false);
+      prevSrcRef.current = mainSrc;
+    }
+    if (!mainSrc) { setImgLoaded(true); return; }
+    const img = new Image();
+    img.onload = () => setImgLoaded(true);
+    img.onerror = () => setImgLoaded(true);
+    img.src = mainSrc;
+  }, [mainSrc]);
   const isFlipped = internalFlipped;
 
   const dragRefFront = useRef(null);
@@ -321,8 +336,21 @@ function Card3D({
   };
 
   return (
-    <div className={`scene-3d ${className}`} style={{ width, height }}>
-      <div className={`card-floater ${float ? "floating" : ""}`} style={{ width, height }}>
+    <div className={`scene-3d ${className}`} style={{ width, height, position: "relative" }}>
+      {/* Skeleton shown until main image loads */}
+      {!imgLoaded && (
+        <div style={{
+          position: "absolute", inset: 0, zIndex: 5,
+          borderRadius: 16,
+          background: "linear-gradient(90deg, rgba(184,138,62,0.07) 25%, rgba(184,138,62,0.18) 50%, rgba(184,138,62,0.07) 75%)",
+          backgroundSize: "200% 100%",
+          animation: "shimmer 1.4s ease-in-out infinite",
+        }} />
+      )}
+      <div
+        className={`card-floater ${float ? "floating" : ""}`}
+        style={{ width, height, opacity: imgLoaded ? 1 : 0, transition: "opacity 350ms ease" }}
+      >
         <div
           className={`card-3d ${isFlipped ? "flipped" : ""} ${float ? "tilted" : ""}`}
           style={{ width, height, cursor: onFlip ? "pointer" : "default" }}
