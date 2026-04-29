@@ -1152,7 +1152,9 @@ function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, on
     instagram: true,
     linkedin: true,
     crm: true,
+    rdv: false,
   });
+  const [rdvUrl, setRdvUrl] = useStateP("");
   const [crmFields, setCrmFields] = useStateP({
     nom: true,
     prenom: true,
@@ -1227,6 +1229,11 @@ function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, on
                 <button className="btn btn-sm" style={{ flex: 1, minWidth: 110, justifyContent: "center" }}>
                   <Icon.Globe size={13} /> Site web
                 </button>
+                {scanButtons.rdv && (
+                  <button className="btn btn-sm btn-gold" style={{ flex: 1, minWidth: 130, justifyContent: "center" }}>
+                    <Icon.Calendar size={13} /> Prendre RDV
+                  </button>
+                )}
               </div>
               {(scanButtons.instagram || scanButtons.linkedin) && (
                 <div className="row gap-3" style={{ justifyContent: "center", marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--line)" }}>
@@ -1286,6 +1293,31 @@ function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, on
                   </button>
                 </div>
               </div>
+            </div>
+
+            <div className="card" style={{ padding: 20 }}>
+              <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: scanButtons.rdv ? 14 : 0 }}>
+                <div className="row gap-2" style={{ alignItems: "center" }}>
+                  <Icon.Calendar size={16} />
+                  <div className="serif" style={{ fontSize: 17 }}>Rendez-vous</div>
+                </div>
+                <button onClick={() => toggleBtn("rdv")} style={{ background: "none", border: "none", padding: 0, display: "inline-flex", alignItems: "center", cursor: "pointer" }}>
+                  <span className={`toggle ${scanButtons.rdv ? "on" : ""}`}></span>
+                </button>
+              </div>
+              {scanButtons.rdv && (
+                <>
+                  <p className="muted" style={{ fontSize: 12, marginTop: 0, marginBottom: 12 }}>Lien vers votre calendrier de réservation (Calendly, Cal.com, Google Agenda…). Le bouton « Prendre RDV » apparaîtra sur la carte scannée.</p>
+                  <input
+                    type="url"
+                    className="input"
+                    placeholder="https://calendly.com/votre-lien"
+                    value={rdvUrl}
+                    onChange={(e) => setRdvUrl(e.target.value)}
+                    style={{ width: "100%", fontSize: 13 }}
+                  />
+                </>
+              )}
             </div>
 
             <div className="card" style={{ padding: 20 }}>
