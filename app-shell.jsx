@@ -652,6 +652,58 @@ function CustomizePickerPage({ onPick, role, trialExpired, onUpgrade }) {
 }
 window.CustomizePickerPage = CustomizePickerPage;
 
+// ---------- DesignThumb — thumbnail avec shimmer + fondu ----------
+// Composant dédié pour que chaque thumbnail ait son propre état de chargement.
+// Shimmer pendant le téléchargement, opacity 0→1 quand l'image est prête.
+function DesignThumb({ design, selected, editable, onSelect }) {
+  const [loaded, setLoaded] = useStateP(false);
+  const bg = design.front
+    ? undefined
+    : (design.bg || "linear-gradient(135deg,#fff,#f6f3ec)");
+  return (
+    <button
+      disabled={!editable}
+      onClick={() => onSelect(design.id)}
+      title={design.label}
+      style={{
+        aspectRatio: "1.6/1", borderRadius: 10,
+        position: "relative", overflow: "hidden", padding: 0,
+        // shimmer tant que l'image n'est pas chargée, background fixe sinon
+        background: loaded
+          ? "transparent"
+          : (bg || "linear-gradient(90deg,rgba(184,138,62,0.06) 25%,rgba(184,138,62,0.14) 50%,rgba(184,138,62,0.06) 75%)"),
+        backgroundSize: loaded ? undefined : "200% 100%",
+        animation: loaded ? "none" : (bg ? "none" : "shimmer 1.4s ease-in-out infinite"),
+        border: selected ? "2px solid var(--gold)" : "1px solid var(--line)",
+        boxShadow: selected ? "0 0 0 3px rgba(184,138,62,0.15)" : "none",
+        cursor: editable ? "pointer" : "not-allowed",
+        opacity: editable ? 1 : 0.5,
+        transition: "border 150ms, box-shadow 150ms",
+        flexShrink: 0,
+      }}
+    >
+      {design.front && (
+        <img
+          src={design.front}
+          alt={design.label}
+          loading="lazy"
+          decoding="async"
+          onLoad={() => setLoaded(true)}
+          style={{
+            position: "absolute", inset: 0,
+            width: "100%", height: "100%",
+            objectFit: "cover", borderRadius: 9,
+            pointerEvents: "none",
+            // fondu 200ms à l'arrivée de l'image
+            opacity: loaded ? 1 : 0,
+            transition: "opacity 200ms ease",
+          }}
+        />
+      )}
+    </button>
+  );
+}
+
 // ---------- Personnalisation ----------
 function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack, onValidate }) {
   const original = window.CARDLY_DATA.cards.find(c => c.id === cardId) || window.CARDLY_DATA.cards[0];
@@ -766,15 +818,13 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, maxHeight: 280, overflowY: "auto", paddingRight: 4 }}>
                 {designs.map(d => (
-                  <button key={d.id} disabled={!editable} onClick={() => setField("design", d.id)} style={{
-                    aspectRatio: "1.6/1", borderRadius: 10,
-                    background: d.front ? `url(${d.front}) center/cover` : (d.bg || "linear-gradient(135deg,#fff,#f6f3ec)"),
-                    border: card.design === d.id ? "2px solid var(--gold)" : "1px solid var(--line)",
-                    boxShadow: card.design === d.id ? "0 0 0 3px rgba(184,138,62,0.15)" : "none",
-                    cursor: editable ? "pointer" : "not-allowed",
-                    opacity: editable ? 1 : 0.5,
-                    transition: "all 150ms",
-                  }} title={d.label} />
+                  <DesignThumb
+                    key={d.id}
+                    design={d}
+                    selected={card.design === d.id}
+                    editable={editable}
+                    onSelect={(id) => setField("design", id)}
+                  />
                 ))}
               </div>
             </div>
