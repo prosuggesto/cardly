@@ -43,6 +43,14 @@ const STUDIO_LOGO_URL = "data:image/svg+xml," + encodeURIComponent(
   </svg>`
 );
 
+// Logo for the phone scan mockup card
+const SCAN_LOGO_URL = "data:image/svg+xml," + encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+    <rect width="48" height="48" rx="10" fill="#1a3055"/>
+    <text x="24" y="31" font-family="Georgia,serif" font-size="20" fill="#e8d9c0" text-anchor="middle" font-weight="400">AL</text>
+  </svg>`
+);
+
 const HERO_CARD = {
   id: "card-chinois-demo",
   design: "design-blossom",
@@ -61,12 +69,12 @@ const HERO_CARD = {
   afficher_email: true,
   afficher_site_web: true,
   positions: {
-    name:       { x: 57, y: 20 },
-    entreprise: { x: 57, y: 33 },
-    poste:      { x: 57, y: 43 },
-    phone:      { x: 57, y: 57 },
-    email:      { x: 57, y: 67 },
-    web:        { x: 57, y: 77 },
+    name:       { x: 50, y: 24 },
+    entreprise: { x: 50, y: 40 },
+    poste:      { x: 50, y: 51 },
+    phone:      { x: 50, y: 63 },
+    email:      { x: 50, y: 73 },
+    web:        { x: 50, y: 83 },
     logoRecto:  { x: 15, y: 80 },
   },
 };
@@ -174,9 +182,9 @@ function HeroSection({ navigate }) {
                 logoSide="recto"
                 logoSizeRecto={0.52}
                 fieldSides={{ name: "verso", entreprise: "verso", poste: "verso", phone: "verso", email: "verso", web: "verso" }}
-                fieldSizes={{ name: 1.15, entreprise: 0.85, poste: 0.95 }}
+                fieldSizes={{ name: 1.7, entreprise: 1.0, poste: 0.82, phone: 0.78, email: 0.78, web: 0.78 }}
                 fieldFonts={{ name: "display", entreprise: "display" }}
-                fieldColors={{ name: "#1a150e", entreprise: "#b88a3e", poste: "#8a7566", phone: "#2a241a", email: "#2a241a", web: "#2a241a" }}
+                fieldColors={{ name: "#1a150e", entreprise: "#b88a3e", poste: "#6a5a4a", phone: "#3a2f22", email: "#3a2f22", web: "#3a2f22" }}
               />
             </div>
             {/* Flip hint */}
@@ -466,7 +474,7 @@ function DashboardPreview() {
 // ---------- ScanPreviewSection — ce que le prospect voit après le scan ----------
 const SCAN_CARD_DATA = {
   id: "scan-demo",
-  design: "design-coline",
+  design: "design-mon-fugi-vangog",
   nom_affiche: "Bernard",
   prenom_affiche: "Sophie",
   entreprise_affiche: "Agence Lumière",
@@ -477,19 +485,20 @@ const SCAN_CARD_DATA = {
   afficher_nom: true, afficher_prenom: true, afficher_entreprise: true,
   afficher_poste: true, afficher_telephone: true, afficher_email: true, afficher_site_web: true,
   positions: {
-    name:       { x: 52, y: 30 },
-    entreprise: { x: 52, y: 45 },
-    poste:      { x: 52, y: 56 },
-    phone:      { x: 52, y: 70 },
-    email:      { x: 52, y: 80 },
-    web:        { x: 52, y: 90 },
+    name:       { x: 50, y: 26 },
+    entreprise: { x: 50, y: 41 },
+    poste:      { x: 50, y: 52 },
+    phone:      { x: 50, y: 65 },
+    email:      { x: 50, y: 75 },
+    web:        { x: 50, y: 85 },
+    logoVerso:  { x: 50, y: 13 },
   },
 };
 
 function ScanPreviewSection() {
   const [scanFlipped, setScanFlipped] = useStateL(false);
   const scrollRef = React.useRef(null);
-  const scanDesign = window.CARDLY_DATA.cardDesigns.find(d => d.id === "design-coline")
+  const scanDesign = window.CARDLY_DATA.cardDesigns.find(d => d.id === "design-mon-fugi-vangog")
     || window.CARDLY_DATA.cardDesigns[0];
 
   // Auto-flip la carte toutes les 3 s
@@ -592,12 +601,19 @@ function ScanPreviewSection() {
                   {/* carte 3D avec flip auto */}
                   <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
                     <Card3D
-                      card={null}
+                      card={SCAN_CARD_DATA}
                       design={scanDesign}
                       width={242}
                       float={false}
                       flipped={scanFlipped}
                       showQR={false}
+                      logoUrl={SCAN_LOGO_URL}
+                      logoSide="verso"
+                      logoSizeVerso={0.45}
+                      fieldSides={{ name: "verso", entreprise: "verso", poste: "verso", phone: "verso", email: "verso", web: "verso" }}
+                      fieldSizes={{ name: 1.5, entreprise: 0.95, poste: 0.82, phone: 0.75, email: 0.75, web: 0.75 }}
+                      fieldFonts={{ name: "display", entreprise: "display" }}
+                      fieldColors={{ name: "#1a150e", entreprise: "#b88a3e", poste: "#6a5a4a", phone: "#2a241a", email: "#2a241a", web: "#2a241a" }}
                     />
                   </div>
 
@@ -645,8 +661,8 @@ function ScanPreviewSection() {
 
                   {/* réseaux sociaux */}
                   <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--line)" }}>
-                    <Icon.Instagram size={36} />
-                    <Icon.Linkedin size={36} />
+                    <Icon.Instagram size={46} />
+                    <Icon.Linkedin size={46} />
                   </div>
                 </div>
               </div>
