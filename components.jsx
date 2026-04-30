@@ -39,34 +39,6 @@ const Icon = {
 };
 window.Icon = Icon;
 
-// ---------- WebpImg — <picture> avec source WebP + fallback PNG/JPG ----------
-// Le navigateur essaie d'abord le .webp (plus léger). Si le .webp n'existe pas
-// encore (404) ou si le navigateur ne supporte pas WebP, il utilise le PNG
-// automatiquement — zéro perte de qualité, zéro changement de taille de fichier.
-function WebpImg({ src, style, loading = "lazy" }) {
-  if (!src) return null;
-  // Génère l'URL du .webp jumeau (ex: "assets/design-bambou-front.png" → "…front.webp")
-  const webpSrc = src.replace(/\.(png|jpe?g)$/i, '.webp');
-  return (
-    <picture style={{ position: "absolute", inset: 0, display: "block" }}>
-      <source srcSet={webpSrc} type="image/webp" />
-      <img
-        src={src}
-        alt=""
-        style={{
-          width: "100%", height: "100%",
-          objectFit: "cover", display: "block",
-          borderRadius: "inherit",
-          ...style,
-        }}
-        loading={loading}
-        decoding="async"
-      />
-    </picture>
-  );
-}
-window.WebpImg = WebpImg;
-
 // ---------- Logo ----------
 function Logo({ size = "md" }) {
   const px = size === "sm" ? 14 : size === "lg" ? 22 : 17;
@@ -301,11 +273,9 @@ function Card3D({
     return (
       <div ref={dragRefFront} style={{ position: "absolute", inset: 0, overflow: "hidden", borderRadius: "inherit" }}>
         {frontImageUrl ? (
-          // Image custom (hero, upload) — chargement immédiat
-          <img src={frontImageUrl} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} loading="eager" />
+          <img src={frontImageUrl} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} />
         ) : D.front ? (
-          // Image de template — lazy + WebP/PNG fallback
-          <WebpImg src={D.front} loading="lazy" />
+          <img src={D.front} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} loading="lazy" decoding="async" />
         ) : (
           <div style={{ position: "absolute", inset: 0, background: D.bg || "linear-gradient(135deg,#fff,#f6f3ec)" }}>
             <div style={{
@@ -344,14 +314,8 @@ function Card3D({
         position: "absolute", inset: 0,
         background: D.back ? "transparent" : (D.bg || "linear-gradient(135deg,#fff,#f6f3ec)"),
       }}>
-        {backImageUrl && (
-          // Image custom (hero, upload) — chargement immédiat
-          <img src={backImageUrl} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} loading="eager" />
-        )}
-        {!backImageUrl && D.back && (
-          // Image de template — lazy + WebP/PNG fallback
-          <WebpImg src={D.back} loading="lazy" />
-        )}
+        {backImageUrl && <img src={backImageUrl} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} />}
+        {!backImageUrl && D.back && <img src={D.back} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} loading="lazy" decoding="async" />}
         {/* draggable text fields on verso */}
         {versoFields.map(f => renderField(f, "verso"))}
         {/* Logo overlay on verso — draggable */}
