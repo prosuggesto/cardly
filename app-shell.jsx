@@ -653,13 +653,32 @@ function CustomizePickerPage({ onPick, role, trialExpired, onUpgrade }) {
 window.CustomizePickerPage = CustomizePickerPage;
 
 // ---------- DesignThumb — thumbnail avec shimmer + fondu ----------
-// Le <button> est identique à l'original (pas d'enfants, pas de position/overflow).
-// Le shimmer est dans le <div> wrapper pour ne pas perturber l'aspect-ratio du grid.
+// - IntersectionObserver sur le wrapper : la CSS background ne se charge que
+//   lorsque la vignette entre dans la zone visible du conteneur.
+// - img détecteur sans loading="lazy" (display:none bloque le lazy natif) :
+//   récupère l'image depuis le cache dès que la CSS background est chargée,
+//   déclenche setLoaded → shimmer disparaît en 250 ms.
 function DesignThumb({ design, selected, editable, onSelect }) {
-  const [loaded, setLoaded] = useStateP(!design.front);
+  const [inView, setInView]   = useStateP(!design.front); // pas d'image → déjà "visible"
+  const [loaded, setLoaded]   = useStateP(!design.front);
+  const wrapRef = useRefP(null);
+
+  useEffectP(() => {
+    if (!design.front) return;
+    if (typeof IntersectionObserver === "undefined") { setInView(true); return; }
+    const io = new IntersectionObserver(
+      ([e]) => { if (e.isIntersecting) { setInView(true); io.disconnect(); } },
+      // root null = viewport ; fonctionne car le panneau de personnalisation
+      // est dans le viewport et les vignettes hors-scroll sont hors écran
+      { rootMargin: "120px 0px", threshold: 0 }
+    );
+    if (wrapRef.current) io.observe(wrapRef.current);
+    return () => io.disconnect();
+  }, []);
+
   return (
-    <div style={{ position: "relative" }}>
-      {/* bouton identique à l'original — zéro enfant, même styles */}
+    <div ref={wrapRef} style={{ position: "relative" }}>
+      {/* bouton sans enfants — layout identique à l'original */}
       <button
         disabled={!editable}
         onClick={() => onSelect(design.id)}
@@ -667,7 +686,8 @@ function DesignThumb({ design, selected, editable, onSelect }) {
         style={{
           display: "block", width: "100%",
           aspectRatio: "1.6/1", borderRadius: 10,
-          background: design.front
+          // CSS background ne se charge que lorsque inView est true
+          background: inView && design.front
             ? `url(${design.front}) center/cover`
             : (design.bg || "linear-gradient(135deg,#fff,#f6f3ec)"),
           border: selected ? "2px solid var(--gold)" : "1px solid var(--line)",
@@ -677,7 +697,7 @@ function DesignThumb({ design, selected, editable, onSelect }) {
           transition: "all 150ms",
         }}
       />
-      {/* shimmer overlay dans le wrapper — disparaît en fondu quand l'image est prête */}
+      {/* shimmer : affiché tant que !loaded, disparaît en 250 ms */}
       {design.front && (
         <>
           <div style={{
@@ -688,8 +708,9 @@ function DesignThumb({ design, selected, editable, onSelect }) {
             opacity: loaded ? 0 : 1,
             transition: "opacity 250ms ease",
           }} />
-          {!loaded && (
-            <img src={design.front} alt="" loading="lazy" decoding="async"
+          {/* img détecteur : PAS de loading="lazy" (display:none le bloquerait) */}
+          {inView && !loaded && (
+            <img src={design.front} alt="" decoding="async"
               onLoad={() => setLoaded(true)} style={{ display: "none" }} />
           )}
         </>
