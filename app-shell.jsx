@@ -1115,16 +1115,66 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
 }
 window.CustomizationPage = CustomizationPage;
 
+// ---------- convertToWebP — conversion client-side avant upload Supabase ----------
+// Convertit n'importe quel format (PNG, JPEG, HEIC…) en WebP via canvas.
+// - Résolution d'origine préservée (aucun redimensionnement)
+// - Qualité 0.88 : bon équilibre taille/qualité pour des images de carte
+// - Retourne { dataUrl, blob, webpName } → dataUrl pour la préview React,
+//   blob + webpName directement utilisables pour supabase.storage.from(…).upload(webpName, blob)
+// - Fallback transparent si le navigateur ne supporte pas l'export WebP
+async function convertToWebP(file, quality = 0.88) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Impossible de lire le fichier"));
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("Impossible de décoder l'image"));
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width  = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        canvas.getContext("2d").drawImage(img, 0, 0);
+        canvas.toBlob(
+          (blob) => {
+            // Fallback : navigateur sans export WebP (très rare) → on garde le fichier d'origine
+            if (!blob) { resolve({ dataUrl: e.target.result, blob: file, webpName: file.name }); return; }
+            const webpName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
+            const r2 = new FileReader();
+            r2.onload = (ev) => resolve({ dataUrl: ev.target.result, blob, webpName });
+            r2.readAsDataURL(blob);
+          },
+          "image/webp",
+          quality
+        );
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 function UploadZone({ disabled, onLogo, hasLogo, onClear }) {
   const [hover, setHover] = useStateP(false);
   const [name, setName] = useStateP(null);
-  const handleFile = (file) => {
+  const [converting, setConverting] = useStateP(false);
+
+  const handleFile = async (file) => {
     if (!file) return;
-    setName(file.name);
-    const reader = new FileReader();
-    reader.onload = (ev) => onLogo && onLogo(ev.target.result);
-    reader.readAsDataURL(file);
+    setConverting(true);
+    try {
+      const { dataUrl, webpName } = await convertToWebP(file);
+      setName(webpName);
+      onLogo && onLogo(dataUrl);
+    } catch {
+      // Fallback si canvas échoue (ex : image corrompue)
+      const reader = new FileReader();
+      reader.onload = (ev) => { setName(file.name); onLogo && onLogo(ev.target.result); };
+      reader.readAsDataURL(file);
+    } finally {
+      setConverting(false);
+    }
   };
+
   return (
     <div className="col gap-2">
       <label
@@ -1141,9 +1191,13 @@ function UploadZone({ disabled, onLogo, hasLogo, onClear }) {
         <input type="file" hidden accept="image/*" disabled={disabled} onChange={(e) => handleFile(e.target.files[0])} />
         <div className="row gap-2" style={{ justifyContent: "center", marginBottom: 6 }}>
           <Icon.Upload size={16} />
-          <span style={{ fontSize: 14, fontWeight: 500 }}>{name ? name : "Importer mon logo"}</span>
+          <span style={{ fontSize: 14, fontWeight: 500 }}>
+            {converting ? "Conversion WebP…" : (name ? name : "Importer mon logo")}
+          </span>
         </div>
-        <div className="dim" style={{ fontSize: 12 }}>{hasLogo ? "Logo importé · choisissez son côté et sa taille ci-dessous." : "Glissez votre logo ici ou cliquez pour importer."}</div>
+        <div className="dim" style={{ fontSize: 12 }}>
+          {hasLogo ? "Logo importé · converti en WebP · choisissez son côté et sa taille ci-dessous." : "Glissez votre logo ici ou cliquez pour importer. Converti automatiquement en WebP."}
+        </div>
       </label>
       {hasLogo && (
         <button className="btn btn-ghost btn-sm" onClick={onClear} style={{ alignSelf: "flex-start", fontSize: 12 }}>
@@ -1157,13 +1211,24 @@ function UploadZone({ disabled, onLogo, hasLogo, onClear }) {
 function CardImageUpload({ label, hint, disabled, imageUrl, onChange, onClear }) {
   const [hover, setHover] = useStateP(false);
   const [name, setName] = useStateP(null);
-  const handleFile = (file) => {
+  const [converting, setConverting] = useStateP(false);
+
+  const handleFile = async (file) => {
     if (!file) return;
-    setName(file.name);
-    const reader = new FileReader();
-    reader.onload = (ev) => onChange && onChange(ev.target.result);
-    reader.readAsDataURL(file);
+    setConverting(true);
+    try {
+      const { dataUrl, webpName } = await convertToWebP(file);
+      setName(webpName);
+      onChange && onChange(dataUrl);
+    } catch {
+      const reader = new FileReader();
+      reader.onload = (ev) => { setName(file.name); onChange && onChange(ev.target.result); };
+      reader.readAsDataURL(file);
+    } finally {
+      setConverting(false);
+    }
   };
+
   return (
     <div className="col gap-2">
       <label
@@ -1183,9 +1248,13 @@ function CardImageUpload({ label, hint, disabled, imageUrl, onChange, onClear })
         ) : null}
         <div className="row gap-2" style={{ justifyContent: "center", marginBottom: 4 }}>
           <Icon.Upload size={16} />
-          <span style={{ fontSize: 14, fontWeight: 500 }}>{name || label}</span>
+          <span style={{ fontSize: 14, fontWeight: 500 }}>
+            {converting ? "Conversion WebP…" : (name || label)}
+          </span>
         </div>
-        <div className="dim" style={{ fontSize: 12 }}>{imageUrl ? `Image appliquée · glissez pour remplacer.` : hint}</div>
+        <div className="dim" style={{ fontSize: 12 }}>
+          {converting ? "Optimisation en cours…" : (imageUrl ? "Image appliquée · WebP · glissez pour remplacer." : hint)}
+        </div>
       </label>
       {imageUrl && (
         <button className="btn btn-ghost btn-sm" onClick={onClear} style={{ alignSelf: "flex-start", fontSize: 12 }}>
