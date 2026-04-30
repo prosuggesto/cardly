@@ -61,13 +61,13 @@ const HERO_CARD = {
   afficher_email: true,
   afficher_site_web: true,
   positions: {
-    name:       { x: 68, y: 28 },
-    entreprise: { x: 60, y: 86 },  // bas de la carte (face recto avec art)
-    poste:      { x: 68, y: 47 },
-    phone:      { x: 68, y: 60 },
-    email:      { x: 68, y: 69 },
-    web:        { x: 68, y: 78 },
-    logoRecto:  { x: 17, y: 84 },  // logo sur le recto (face non-flipped)
+    name:       { x: 66, y: 24 },
+    entreprise: { x: 66, y: 36 },
+    poste:      { x: 66, y: 46 },
+    phone:      { x: 66, y: 59 },
+    email:      { x: 66, y: 68 },
+    web:        { x: 66, y: 77 },
+    logoRecto:  { x: 15, y: 80 },
   },
 };
 
@@ -173,9 +173,9 @@ function HeroSection({ navigate }) {
                 logoUrl={STUDIO_LOGO_URL}
                 logoSide="recto"
                 logoSizeRecto={0.52}
-                fieldSides={{ name: "verso", entreprise: "recto", poste: "verso", phone: "verso", email: "verso", web: "verso" }}
-                fieldSizes={{ entreprise: 1.15 }}
-                fieldColors={{ entreprise: "#2a241a" }}
+                fieldSides={{ name: "verso", entreprise: "verso", poste: "verso", phone: "verso", email: "verso", web: "verso" }}
+                fieldSizes={{ name: 1.05, entreprise: 0.9 }}
+                fieldColors={{ name: "#2a241a", entreprise: "#b88a3e", poste: "#6b5d4f", phone: "#2a241a", email: "#2a241a", web: "#2a241a" }}
               />
             </div>
             {/* Flip hint */}
@@ -376,6 +376,7 @@ function ConversionTimeline() {
 
 function DashboardPreview() {
   const collabs = window.CARDLY_DATA.collaborators;
+  const active = collabs.filter(c => c.statut === "actif").sort((a, b) => b.leads - a.leads);
   return (
     <section style={{ padding: "120px 0", position: "relative" }}>
       <div className="container col gap-10">
@@ -386,56 +387,68 @@ function DashboardPreview() {
         />
 
         <div className="card" style={{ padding: 24, maxWidth: 1100, margin: "0 auto", width: "100%" }}>
-          {/* tab-bar */}
-          <div className="row" style={{ justifyContent: "space-between", paddingBottom: 16, borderBottom: "1px solid var(--line)", marginBottom: 20 }}>
+          {/* Header */}
+          <div className="row" style={{ justifyContent: "space-between", paddingBottom: 16, borderBottom: "1px solid var(--line)", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
             <div className="row gap-3" style={{ alignItems: "center" }}>
               <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--good)" }} />
-              <div className="serif" style={{ fontSize: 18 }}>Performance équipe</div>
+              <div className="serif" style={{ fontSize: 18 }}>Performance des membres</div>
             </div>
-            <div className="row gap-2">
-              <div className="chip">Avril 2026</div>
-              <div className="chip">Toute l'équipe</div>
+            <div className="row gap-2" style={{ flexWrap: "wrap" }}>
+              <div className="chip">Jan 2026 → Avr 2026</div>
+              <div className="chip">Tous les membres</div>
+              <div className="chip">Tous les événements</div>
             </div>
           </div>
-          {/* metrics */}
+
+          {/* Metrics */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16, marginBottom: 24 }}>
-            <Metric label="Total leads" value="142" delta="+24 ce mois" trend="up" />
-            <Metric label="Clics enregistrer" value="98" delta="+18%" trend="up" />
-            <Metric label="Top collaborateur" value="Emma L." delta="42 leads" trend="neutral" />
-            <Metric label="Collaborateurs actifs" value="3" delta="sur 4" trend="neutral" />
+            <Metric label="Total leads ce mois" value="142" delta="+24 vs mois dernier" trend="up" />
+            <Metric label="Meilleur membre" value={active[0] ? `${active[0].prenom} ${active[0].nom[0]}.` : "—"} delta={active[0] ? `${active[0].leads} leads` : ""} trend="neutral" />
+            <Metric label="Membres actifs" value={`${active.length}`} delta={`sur ${collabs.length}`} trend="neutral" />
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 20 }} className="dash-grid">
-            {/* chart */}
+
+          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 20 }} className="dash-grid">
+            {/* Bar chart */}
             <div className="col gap-4" style={{ padding: 20, border: "1px solid var(--line)", borderRadius: 16, background: "var(--surface-2)" }}>
               <div className="row" style={{ justifyContent: "space-between" }}>
                 <div className="serif" style={{ fontSize: 16 }}>Leads par jour</div>
                 <div className="dim" style={{ fontSize: 12 }}>30 derniers jours</div>
               </div>
               <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 130 }}>
-                {[40, 60, 35, 80, 55, 70, 90, 65, 100, 75, 88, 95, 70, 110, 85, 95, 120, 100, 90, 130, 110, 95, 140, 115, 105, 125, 100, 130, 110, 142].map((h, i) => (
-                  <div key={i} className="bar" style={{ height: `${h * 0.6}%`, flex: 1, opacity: 0.4 + (i / 30) * 0.6 }} />
+                {[40,60,35,80,55,70,90,65,100,75,88,95,70,110,85,95,120,100,90,130,110,95,140,115,105,125,100,130,110,142].map((h, i) => (
+                  <div key={i} className="bar" style={{ height: `${h*0.6}%`, flex: 1, opacity: 0.4 + (i/30)*0.6 }} />
                 ))}
               </div>
             </div>
-            {/* leaderboard */}
+
+            {/* Top 3 podium */}
             <div className="col gap-3" style={{ padding: 20, border: "1px solid var(--line)", borderRadius: 16 }}>
-              <div className="serif" style={{ fontSize: 16 }}>Classement</div>
-              {collabs.filter(c => c.statut === "actif").sort((a,b) => b.leads - a.leads).map((c, i) => (
-                <div key={c.id} className="row gap-3" style={{ justifyContent: "space-between" }}>
-                  <div className="row gap-3">
+              <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                <div className="serif" style={{ fontSize: 16 }}>Top 3 du mois</div>
+                <div className="dim" style={{ fontSize: 11 }}>Leads générés</div>
+              </div>
+              {active.slice(0, 3).map((c, i) => (
+                <div key={c.id} style={{
+                  display: "flex", alignItems: "center", gap: 12,
+                  padding: "12px 14px",
+                  background: i === 0 ? "linear-gradient(90deg,#fffaf0,var(--surface))" : "var(--surface-2)",
+                  border: i === 0 ? "1px solid #ecd5a8" : "1px solid var(--line)",
+                  borderRadius: 12, justifyContent: "space-between",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <div style={{
-                      width: 28, height: 28, borderRadius: "50%",
-                      background: i === 0 ? "var(--gold)" : i === 1 ? "var(--ink-4)" : "var(--surface-3)",
+                      width: 32, height: 32, borderRadius: "50%", flexShrink: 0,
+                      background: i === 0 ? "linear-gradient(135deg,var(--gold-2),var(--gold))" : i === 1 ? "var(--ink-4)" : "var(--surface-3)",
                       color: i < 2 ? "white" : "var(--ink-3)",
                       display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 12, fontWeight: 600,
-                    }}>{i+1}</div>
-                    <div className="col">
+                      fontSize: 11, fontWeight: 600,
+                    }}>{i === 0 ? <Icon.Crown size={14}/> : `#${i+1}`}</div>
+                    <div>
                       <div style={{ fontSize: 14, fontWeight: 500 }}>{c.prenom} {c.nom}</div>
-                      <div className="dim" style={{ fontSize: 12 }}>{c.poste}</div>
+                      <div className="dim" style={{ fontSize: 11 }}>{c.poste}</div>
                     </div>
                   </div>
-                  <div className="serif" style={{ fontSize: 18 }}>{c.leads}</div>
+                  <div className="serif" style={{ fontSize: 22, color: i === 0 ? "var(--gold)" : "var(--ink)" }}>{c.leads}</div>
                 </div>
               ))}
             </div>
@@ -444,6 +457,126 @@ function DashboardPreview() {
       </div>
       <style>{`
         @media (max-width: 800px) { .dash-grid { grid-template-columns: 1fr !important; } }
+      `}</style>
+    </section>
+  );
+}
+
+// ---------- ScanPreviewSection — ce que le prospect voit après le scan ----------
+function ScanPreviewSection() {
+  const card = window.CARDLY_DATA.cards[0];
+  const design = window.CARDLY_DATA.getDesign(card.design);
+  return (
+    <section style={{ padding: "120px 0" }} className="section-bg-soft">
+      <div className="container">
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "center" }} className="scan-grid">
+
+          {/* Left — explication */}
+          <div className="col gap-8 fade-up">
+            <SectionHeader
+              eyebrow="Expérience prospect"
+              title="Ce que voit votre prospect après le scan."
+              subtitle="Aucune application à installer. Une page instantanée avec toutes vos coordonnées et les actions clés."
+              align="left"
+            />
+            <div className="col gap-5">
+              {[
+                { icon: Icon.User,      t: "Enregistrement en 1 clic",   d: "Le prospect ajoute votre contact directement dans son carnet d'adresses." },
+                { icon: Icon.WhatsApp,  t: "WhatsApp instantané",         d: "Lance une conversation WhatsApp sans saisir de numéro." },
+                { icon: Icon.Chart,     t: "Chaque action mesurée",       d: "Scans, clics, contacts enregistrés — tout est visible dans votre dashboard." },
+              ].map(({ icon: Ic, t, d }, i) => (
+                <div key={i} className="row gap-4" style={{ alignItems: "flex-start" }}>
+                  <div style={{
+                    width: 42, height: 42, borderRadius: 13, flexShrink: 0,
+                    background: "var(--surface)", border: "1px solid var(--line)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    boxShadow: "var(--shadow-1)",
+                  }}><Ic size={18} /></div>
+                  <div className="col gap-1">
+                    <div style={{ fontSize: 15, fontWeight: 500, letterSpacing: "-0.01em" }}>{t}</div>
+                    <div className="muted" style={{ fontSize: 13, lineHeight: 1.5 }}>{d}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right — phone mockup */}
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <div style={{
+              width: 296, borderRadius: 44,
+              border: "10px solid #1a1a1a",
+              boxShadow: "0 32px 80px rgba(0,0,0,0.22), inset 0 0 0 1px #333",
+              background: "var(--bg)",
+              overflow: "hidden", position: "relative",
+            }}>
+              {/* notch */}
+              <div style={{
+                position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
+                width: 88, height: 24, background: "#1a1a1a", borderRadius: "0 0 16px 16px", zIndex: 10,
+              }} />
+              {/* status bar */}
+              <div style={{ height: 36, background: "var(--bg)", display: "flex", alignItems: "flex-end", justifyContent: "space-between", padding: "0 20px 4px", fontSize: 10, color: "var(--ink-3)" }}>
+                <span>9:41</span><span>●●●</span>
+              </div>
+              {/* content */}
+              <div style={{ padding: "4px 14px 20px", overflowY: "auto", maxHeight: 540 }}>
+                {/* mini header */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                  <div style={{ fontSize: 10, color: "var(--ink-3)" }}>← Retour</div>
+                  <div className="chip" style={{ fontSize: 10, padding: "2px 8px" }}>Carte scannée</div>
+                </div>
+                {/* card image */}
+                <div style={{ borderRadius: 12, overflow: "hidden", marginBottom: 12, boxShadow: "0 4px 18px rgba(0,0,0,0.14)" }}>
+                  <img src={design.front} alt={card.nom_carte}
+                    style={{ width: "100%", aspectRatio: "1.6/1", objectFit: "cover", display: "block" }} />
+                </div>
+                {/* name + title */}
+                <div style={{ textAlign: "center", marginBottom: 12 }}>
+                  <div className="serif" style={{ fontSize: 17, letterSpacing: "-0.01em" }}>{card.prenom_affiche} {card.nom_affiche}</div>
+                  <div className="muted" style={{ fontSize: 11, marginTop: 2 }}>{card.poste_affiche} · {window.CARDLY_DATA.entreprise.nom_entreprise}</div>
+                </div>
+                {/* contact rows */}
+                <div className="col gap-2" style={{ marginBottom: 12 }}>
+                  {[
+                    { icon: <Icon.Phone size={11} />, t: card.telephone_affiche },
+                    { icon: <Icon.Mail size={11} />,  t: card.email_affiche },
+                    { icon: <Icon.Globe size={11} />, t: card.site_web },
+                  ].map(({ icon, t }, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", background: "var(--surface-2)", borderRadius: 8, fontSize: 11 }}>
+                      <span className="dim">{icon}</span><span>{t}</span>
+                    </div>
+                  ))}
+                </div>
+                {/* primary CTA */}
+                <button className="btn btn-primary" style={{ width: "100%", justifyContent: "center", fontSize: 12, padding: "10px 14px", marginBottom: 8 }}>
+                  <Icon.User size={12} /> Enregistrer dans mes contacts
+                </button>
+                {/* secondary buttons */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                  {[
+                    { ic: Icon.WhatsApp, t: "WhatsApp" },
+                    { ic: Icon.Mail,     t: "Email" },
+                    { ic: Icon.User,     t: "Partager mes infos" },
+                    { ic: Icon.Globe,    t: "Site web" },
+                  ].map(({ ic: Ic, t }, i) => (
+                    <button key={i} className="btn btn-sm" style={{ justifyContent: "center", fontSize: 11 }}>
+                      <Ic size={11} /> {t}
+                    </button>
+                  ))}
+                </div>
+                {/* social */}
+                <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--line)" }}>
+                  <Icon.Instagram size={32} />
+                  <Icon.Linkedin size={32} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <style>{`
+        @media (max-width: 860px) { .scan-grid { grid-template-columns: 1fr !important; } }
       `}</style>
     </section>
   );
@@ -655,6 +788,7 @@ function LandingPage({ navigate }) {
       <CarouselSection />
       <WhySection />
       <ConversionTimeline />
+      <ScanPreviewSection />
       <DashboardPreview />
       <PricingSection navigate={navigate} />
       <FAQSection />
