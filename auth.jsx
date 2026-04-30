@@ -1,4 +1,4 @@
-/* Cardly Pro — Auth page (signup/login with flip card) */
+/* Cartalis — Auth page (signup/login with flip card) */
 
 const { useState: useStateA, useEffect: useEffectA, useRef: useRefA } = React;
 
@@ -27,10 +27,10 @@ function AuthPage({ navigate, params }) {
       <div className="container col" style={{ alignItems: "center", paddingTop: 40, paddingBottom: 80, gap: 32 }}>
         <div className="col gap-3" style={{ alignItems: "center", textAlign: "center", maxWidth: 520 }}>
           <div className="chip">
-            {isLogin ? "Connexion" : "Inscription"} · Cardly Pro
+            {isLogin ? "Connexion" : "Inscription"} · Cartalis
           </div>
           <h1 className="serif" style={{ fontSize: "clamp(36px, 5vw, 52px)", margin: 0, letterSpacing: "-0.02em", lineHeight: 1.05 }}>
-            {isLogin ? "Bon retour parmi nous." : "Créer votre espace Cardly Pro"}
+            {isLogin ? "Bon retour parmi nous." : "Créer votre espace Cartalis"}
           </h1>
           <p className="muted" style={{ fontSize: 16, margin: 0 }}>
             {isLogin
@@ -85,7 +85,7 @@ function AuthPage({ navigate, params }) {
                 }}>
                   <div className="logo-mark" style={{ width: 44, height: 44, fontSize: 22 }}>C</div>
                   <div className="serif" style={{ fontSize: "clamp(24px, 3vw, 32px)", textAlign: "center", letterSpacing: "-0.01em" }}>
-                    Qui rejoint Cardly Pro&nbsp;?
+                    Qui rejoint Cartalis&nbsp;?
                   </div>
                   <div className="row gap-3" style={{ flexWrap: "wrap", justifyContent: "center" }}>
                     <RoleButton
@@ -136,7 +136,7 @@ function AuthPage({ navigate, params }) {
         </div>
       </div>
 
-      <Modal open={!!showSecretModal} onClose={() => { setShowSecretModal(null); navigate("/app"); }} title="Bienvenue chez Cardly Pro">
+      <Modal open={!!showSecretModal} onClose={() => { setShowSecretModal(null); navigate("/app"); }} title="Bienvenue chez Cartalis">
         <p className="muted" style={{ marginTop: 0 }}>
           Voici votre code secret entreprise. Transmettez-le à vos collaborateurs pour qu'ils puissent rejoindre votre espace.
         </p>
@@ -275,7 +275,7 @@ function LoginForm({ onSubmit }) {
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }} className="col gap-3" style={{ maxWidth: 380, margin: "0 auto" }}>
       <div className="col" style={{ marginBottom: 6 }}>
         <div className="serif" style={{ fontSize: 26, letterSpacing: "-0.01em" }}>Se connecter</div>
-        <div className="dim" style={{ fontSize: 13 }}>Accédez à votre espace Cardly Pro.</div>
+        <div className="dim" style={{ fontSize: 13 }}>Accédez à votre espace Cartalis.</div>
       </div>
 
       <button

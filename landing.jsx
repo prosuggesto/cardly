@@ -1,4 +1,4 @@
-/* Cardly Pro — Landing page */
+/* Cartalis — Landing page */
 
 const { useState: useStateL, useEffect: useEffectL } = React;
 
@@ -116,7 +116,7 @@ function HeroSection({ navigate }) {
               <span style={{ fontStyle: "italic", color: "var(--gold)" }}>opportunité</span><br/>commerciale.
             </h1>
             <p className="muted" style={{ fontSize: 18, lineHeight: 1.55, maxWidth: 520, margin: 0, textWrap: "pretty" }}>
-              Cardly Pro remplace la carte de visite papier par une carte digitale 3D, interactive et mesurable. Vos prospects scannent, enregistrent votre contact, et vous suivez les interactions générées par vos équipes.
+              Cartalis remplace la carte de visite papier par une carte digitale 3D, interactive et mesurable. Vos prospects scannent, enregistrent votre contact, et vous suivez les interactions générées par vos équipes.
             </p>
             <div className="row gap-3" style={{ marginTop: 8 }}>
               <button className="btn btn-primary btn-lg" onClick={() => navigate("/auth?mode=signup")}>
@@ -323,9 +323,9 @@ function WhySection() {
     <section id="why" style={{ padding: "120px 0" }}>
       <div className="container col gap-10">
         <SectionHeader
-          eyebrow="Pourquoi Cardly"
+          eyebrow="Pourquoi Cartalis"
           title="Une carte papier se donne. Une carte digitale convertit."
-          subtitle="Une carte de visite classique dépend de la mémoire du prospect. Cardly Pro transforme ce moment en action immédiate : scanner, enregistrer, contacter."
+          subtitle="Une carte de visite classique dépend de la mémoire du prospect. Cartalis transforme ce moment en action immédiate : scanner, enregistrer, contacter."
         />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20 }}>
           {items.map((it, i) => (
@@ -356,7 +356,7 @@ function ConversionTimeline() {
         <SectionHeader
           eyebrow="Conversion"
           title="Une carte de visite qui ne se contente pas d'être jolie. Elle convertit."
-          subtitle="Cardly Pro transforme une interaction physique en relation digitale. Le prospect ne repart pas seulement avec votre nom : il peut enregistrer votre contact, ouvrir une conversation et garder un lien direct avec vous."
+          subtitle="Cartalis transforme une interaction physique en relation digitale. Le prospect ne repart pas seulement avec votre nom : il peut enregistrer votre contact, ouvrir une conversation et garder un lien direct avec vous."
         />
         <div style={{ position: "relative", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20 }}>
           {steps.map((s, i) => (
@@ -392,7 +392,7 @@ function DashboardPreview() {
         <SectionHeader
           eyebrow="Dashboard"
           title="Suivez les performances de vos équipes."
-          subtitle="Cardly Pro permet aux entreprises de visualiser quels collaborateurs génèrent le plus d'interactions grâce à leurs cartes digitales."
+          subtitle="Cartalis permet aux entreprises de visualiser quels collaborateurs génèrent le plus d'interactions grâce à leurs cartes digitales."
         />
 
         <div className="card" style={{ padding: 24, maxWidth: 1100, margin: "0 auto", width: "100%" }}>
@@ -746,7 +746,7 @@ function PricingSection({ navigate }) {
             ]}
             contactPhone="07 67 56 92 24"
             contactEmail="contact.cardly@gmail.com"
-            cta="Contacter Cardly Pro"
+            cta="Contacter Cartalis"
             onCta={() => window.location.href = "mailto:contact.cardly@gmail.com"}
           />
         </div>
@@ -809,7 +809,7 @@ window.PricingCard = PricingCard;
 
 function FAQSection() {
   const items = [
-    { q: "Est-ce que Cardly Pro remplace vraiment une carte papier ?", a: "Oui. L'objectif est de proposer une alternative plus moderne, plus écologique et surtout plus mesurable qu'une carte papier." },
+    { q: "Est-ce que Cartalis remplace vraiment une carte papier ?", a: "Oui. L'objectif est de proposer une alternative plus moderne, plus écologique et surtout plus mesurable qu'une carte papier." },
     { q: "Le prospect doit-il installer une application ?", a: "Non. Le prospect scanne simplement le QR code et arrive sur une page web." },
     { q: "Puis-je personnaliser ma carte ?", a: "Oui. Vous pouvez modifier les informations affichées, importer un logo, changer certains éléments visuels et, selon votre plan, générer un visuel par IA." },
     { q: "Comment fonctionne le compte entreprise ?", a: "Le chef d'entreprise obtient un code secret qu'il transmet à ses collaborateurs. Les collaborateurs s'inscrivent avec ce code, puis le chef valide leur accès." },
@@ -867,7 +867,7 @@ function Footer({ navigate }) {
         </div>
         <div className="divider" />
         <div className="row" style={{ justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-          <div className="dim" style={{ fontSize: 12 }}>© 2026 Cardly Pro · Tous droits réservés</div>
+          <div className="dim" style={{ fontSize: 12 }}>© 2026 Cartalis · Tous droits réservés</div>
           <div className="dim" style={{ fontSize: 12 }}>contact.cardly@gmail.com · 07 67 56 92 24</div>
         </div>
       </div>

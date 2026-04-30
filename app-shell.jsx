@@ -1,4 +1,4 @@
-/* Cardly Pro — App shell + Mes cartes + Personnalisation */
+/* Cartalis — App shell + Mes cartes + Personnalisation */
 
 const { useState: useStateP, useEffect: useEffectP, useRef: useRefP } = React;
 

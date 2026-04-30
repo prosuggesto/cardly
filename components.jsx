@@ -46,7 +46,7 @@ function Logo({ size = "md" }) {
     <div className="row gap-2" style={{ alignItems: "center" }}>
       <div className="logo-mark" style={{ width: px*1.6, height: px*1.6, fontSize: px*0.95 }}>C</div>
       <div className="serif" style={{ fontSize: px*1.15, letterSpacing: "-0.01em", lineHeight: 1 }}>
-        Cardly <span style={{ color: "var(--gold)", fontStyle: "italic" }}>Pro</span>
+        <span style={{ fontStyle: "italic" }}>Cartalis</span>
       </div>
     </div>
   );

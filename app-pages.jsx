@@ -1,4 +1,4 @@
-/* Cardly Pro — Dashboard, Code secret, Subscription, Public card pages */
+/* Cartalis — Dashboard, Code secret, Subscription, Public card pages */
 
 const { useState: useStateD } = React;
 
@@ -710,7 +710,7 @@ function SecretCodePage({ role, plan, onUpgrade }) {
           <div className="serif" style={{ fontSize: 22 }}>Abonnement annulé</div>
           <p className="muted" style={{ fontSize: 13, margin: 0, maxWidth: 360 }}>
             Votre abonnement <strong>{plan === "team" ? "Team" : plan === "solo" ? "Solo" : "Enterprise"}</strong> a bien été annulé.
-            Vous conservez l'accès jusqu'au <strong>{RENEWAL_DATE}</strong>. Merci d'avoir utilisé Cardly Pro.
+            Vous conservez l'accès jusqu'au <strong>{RENEWAL_DATE}</strong>. Merci d'avoir utilisé Cartalis.
           </p>
           <button className="btn btn-primary" style={{ marginTop: 8 }} onClick={() => { setManageStep(null); setCancelReason(null); onUpgrade(); }}>
             <Icon.Crown size={14} /> Voir les autres plans
@@ -822,7 +822,7 @@ function LangPicker({ value, onChange }) {
 function FeedbackPage() {
   const me = window.CARDLY_DATA.profileMe;
   const INIT = [
-    { from: "cardly", text: "👋 Bonjour " + me.prenom + " ! Une idée pour améliorer Cardly Pro ? Une fonctionnalité manquante, un bug, ou juste un avis ? Partagez ici — on lit tout." },
+    { from: "cardly", text: "👋 Bonjour " + me.prenom + " ! Une idée pour améliorer Cartalis ? Une fonctionnalité manquante, un bug, ou juste un avis ? Partagez ici — on lit tout." },
   ];
   const [messages, setMessages] = useStateD(INIT);
   const [input, setInput] = useStateD("");
@@ -855,7 +855,7 @@ function FeedbackPage() {
         {/* Header text */}
         <div className="col gap-2" style={{ alignItems: "center", textAlign: "center", marginBottom: 32 }}>
           <div className="chip" style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
-            <Icon.Sparkle size={12} /> Vos idées · Cardly Pro
+            <Icon.Sparkle size={12} /> Vos idées · Cartalis
           </div>
           <h1 className="serif" style={{ fontSize: "clamp(32px, 5vw, 46px)", margin: 0, letterSpacing: "-0.02em", lineHeight: 1.1 }}>
             Aidez-nous à<br/>construire mieux.
@@ -893,7 +893,7 @@ function FeedbackPage() {
                 fontSize: 14, fontWeight: 700, color: "white", flexShrink: 0,
               }}>C</div>
               <div className="col" style={{ lineHeight: 1.3 }}>
-                <div style={{ fontWeight: 600, fontSize: 14 }}>Cardly Pro</div>
+                <div style={{ fontWeight: 600, fontSize: 14 }}>Cartalis</div>
                 <div className="dim" style={{ fontSize: 12 }}>Équipe produit · répond sous 48h</div>
               </div>
               <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--good, #2d7a4f)" }}>
@@ -960,7 +960,7 @@ function FeedbackPage() {
         </div>
 
         <p className="muted" style={{ textAlign: "center", fontSize: 12, marginTop: 16 }}>
-          Vos messages sont transmis directement à l'équipe Cardly Pro.
+          Vos messages sont transmis directement à l'équipe Cartalis.
         </p>
       </div>
     </div>
@@ -974,7 +974,7 @@ function SubscriptionPage({ plan, onSetPlan }) {
     <div className="col gap-8">
       <div className="col gap-2">
         <div className="eyebrow">Abonnement</div>
-        <h1 className="serif" style={{ fontSize: "clamp(28px, 4vw, 40px)", margin: 0, letterSpacing: "-0.02em" }}>Votre plan Cardly Pro</h1>
+        <h1 className="serif" style={{ fontSize: "clamp(28px, 4vw, 40px)", margin: 0, letterSpacing: "-0.02em" }}>Votre plan Cartalis</h1>
         <p className="muted" style={{ margin: 0, fontSize: 15 }}>Plan actuel : <strong className="serif">{plan === "team" ? "Team" : plan === "solo" ? "Solo" : "Enterprise"}</strong>. Vous pouvez changer à tout moment.</p>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20, alignItems: "stretch" }}>
@@ -999,7 +999,7 @@ function SubscriptionPage({ plan, onSetPlan }) {
           tagline="Pour équipes de plus de 10 collaborateurs."
           features={["Plus de 10 collaborateurs", "Design personnalisé", "Accompagnement", "Support prioritaire", "Conditions sur mesure"]}
           contactPhone="07 67 56 92 24" contactEmail="contact.cardly@gmail.com"
-          cta="Contacter Cardly Pro"
+          cta="Contacter Cartalis"
           onCta={() => window.location.href = "mailto:contact.cardly@gmail.com"}
         />
       </div>
@@ -1096,7 +1096,7 @@ function PublicCardPage({ navigate, params }) {
         </div>
 
         <div className="dim" style={{ fontSize: 12, textAlign: "center" }}>
-          Propulsé par <a href="#/" onClick={(e) => { e.preventDefault(); navigate("/"); }} style={{ color: "var(--ink)", textDecoration: "underline" }}>Cardly Pro</a> · La carte de visite qui ne finit pas dans une poche.
+          Propulsé par <a href="#/" onClick={(e) => { e.preventDefault(); navigate("/"); }} style={{ color: "var(--ink)", textDecoration: "underline" }}>Cartalis</a> · La carte de visite qui ne finit pas dans une poche.
         </div>
       </div>
 
