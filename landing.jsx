@@ -61,12 +61,12 @@ const HERO_CARD = {
   afficher_email: true,
   afficher_site_web: true,
   positions: {
-    name:       { x: 66, y: 24 },
-    entreprise: { x: 66, y: 36 },
-    poste:      { x: 66, y: 46 },
-    phone:      { x: 66, y: 59 },
-    email:      { x: 66, y: 68 },
-    web:        { x: 66, y: 77 },
+    name:       { x: 57, y: 20 },
+    entreprise: { x: 57, y: 33 },
+    poste:      { x: 57, y: 43 },
+    phone:      { x: 57, y: 57 },
+    email:      { x: 57, y: 67 },
+    web:        { x: 57, y: 77 },
     logoRecto:  { x: 15, y: 80 },
   },
 };
@@ -174,8 +174,9 @@ function HeroSection({ navigate }) {
                 logoSide="recto"
                 logoSizeRecto={0.52}
                 fieldSides={{ name: "verso", entreprise: "verso", poste: "verso", phone: "verso", email: "verso", web: "verso" }}
-                fieldSizes={{ name: 1.05, entreprise: 0.9 }}
-                fieldColors={{ name: "#2a241a", entreprise: "#b88a3e", poste: "#6b5d4f", phone: "#2a241a", email: "#2a241a", web: "#2a241a" }}
+                fieldSizes={{ name: 1.15, entreprise: 0.85, poste: 0.95 }}
+                fieldFonts={{ name: "display", entreprise: "display" }}
+                fieldColors={{ name: "#1a150e", entreprise: "#b88a3e", poste: "#8a7566", phone: "#2a241a", email: "#2a241a", web: "#2a241a" }}
               />
             </div>
             {/* Flip hint */}
@@ -463,9 +464,62 @@ function DashboardPreview() {
 }
 
 // ---------- ScanPreviewSection — ce que le prospect voit après le scan ----------
+const SCAN_CARD_DATA = {
+  id: "scan-demo",
+  design: "design-coline",
+  nom_affiche: "Bernard",
+  prenom_affiche: "Sophie",
+  entreprise_affiche: "Agence Lumière",
+  poste_affiche: "Consultante senior",
+  telephone_affiche: "06 45 78 23 91",
+  email_affiche: "s.bernard@agence-lumiere.fr",
+  site_web: "agence-lumiere.fr",
+  afficher_nom: true, afficher_prenom: true, afficher_entreprise: true,
+  afficher_poste: true, afficher_telephone: true, afficher_email: true, afficher_site_web: true,
+  positions: {
+    name:       { x: 52, y: 30 },
+    entreprise: { x: 52, y: 45 },
+    poste:      { x: 52, y: 56 },
+    phone:      { x: 52, y: 70 },
+    email:      { x: 52, y: 80 },
+    web:        { x: 52, y: 90 },
+  },
+};
+
 function ScanPreviewSection() {
-  const card = window.CARDLY_DATA.cards[0];
-  const design = window.CARDLY_DATA.getDesign(card.design);
+  const [scanFlipped, setScanFlipped] = useStateL(false);
+  const scrollRef = React.useRef(null);
+  const scanDesign = window.CARDLY_DATA.cardDesigns.find(d => d.id === "design-coline")
+    || window.CARDLY_DATA.cardDesigns[0];
+
+  // Auto-flip la carte toutes les 3 s
+  useEffectL(() => {
+    const t = setInterval(() => setScanFlipped(f => !f), 3000);
+    return () => clearInterval(t);
+  }, []);
+
+  // Auto-scroll fluide haut ↔ bas pour révéler les icônes sociales
+  useEffectL(() => {
+    let dir = 1;
+    let raf;
+    let last = 0;
+    const step = (ts) => {
+      if (ts - last > 20) { // ~50 fps max
+        last = ts;
+        if (scrollRef.current) {
+          const el = scrollRef.current;
+          el.scrollTop += dir * 0.8;
+          if (el.scrollTop >= el.scrollHeight - el.clientHeight - 2) dir = -1;
+          else if (el.scrollTop <= 0) dir = 1;
+        }
+      }
+      raf = requestAnimationFrame(step);
+    };
+    // Démarre après 1.2 s pour laisser le temps de voir la position initiale
+    const t = setTimeout(() => { raf = requestAnimationFrame(step); }, 1200);
+    return () => { clearTimeout(t); cancelAnimationFrame(raf); };
+  }, []);
+
   return (
     <section style={{ padding: "120px 0" }} className="section-bg-soft">
       <div className="container">
@@ -481,9 +535,9 @@ function ScanPreviewSection() {
             />
             <div className="col gap-5">
               {[
-                { icon: Icon.User,      t: "Enregistrement en 1 clic",   d: "Le prospect ajoute votre contact directement dans son carnet d'adresses." },
-                { icon: Icon.WhatsApp,  t: "WhatsApp instantané",         d: "Lance une conversation WhatsApp sans saisir de numéro." },
-                { icon: Icon.Chart,     t: "Chaque action mesurée",       d: "Scans, clics, contacts enregistrés — tout est visible dans votre dashboard." },
+                { icon: Icon.User,     t: "Enregistrement en 1 clic",  d: "Le prospect ajoute votre contact directement dans son carnet d'adresses." },
+                { icon: Icon.WhatsApp, t: "WhatsApp instantané",        d: "Lance une conversation WhatsApp sans saisir de numéro." },
+                { icon: Icon.Chart,    t: "Chaque action mesurée",      d: "Scans, clics, contacts enregistrés — tout est visible dans votre dashboard." },
               ].map(({ icon: Ic, t, d }, i) => (
                 <div key={i} className="row gap-4" style={{ alignItems: "flex-start" }}>
                   <div style={{
@@ -501,74 +555,99 @@ function ScanPreviewSection() {
             </div>
           </div>
 
-          {/* Right — phone mockup */}
+          {/* Right — phone flottant et légèrement penché */}
           <div style={{ display: "flex", justifyContent: "center" }}>
             <div style={{
-              width: 296, borderRadius: 44,
-              border: "10px solid #1a1a1a",
-              boxShadow: "0 32px 80px rgba(0,0,0,0.22), inset 0 0 0 1px #333",
-              background: "var(--bg)",
-              overflow: "hidden", position: "relative",
+              transform: "rotate(-4deg) perspective(900px) rotateY(6deg)",
+              animation: "float-soft 6s ease-in-out infinite",
+              filter: "drop-shadow(0 28px 60px rgba(0,0,0,0.22))",
             }}>
-              {/* notch */}
               <div style={{
-                position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
-                width: 88, height: 24, background: "#1a1a1a", borderRadius: "0 0 16px 16px", zIndex: 10,
-              }} />
-              {/* status bar */}
-              <div style={{ height: 36, background: "var(--bg)", display: "flex", alignItems: "flex-end", justifyContent: "space-between", padding: "0 20px 4px", fontSize: 10, color: "var(--ink-3)" }}>
-                <span>9:41</span><span>●●●</span>
-              </div>
-              {/* content */}
-              <div style={{ padding: "4px 14px 20px", overflowY: "auto", maxHeight: 540 }}>
-                {/* mini header */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                  <div style={{ fontSize: 10, color: "var(--ink-3)" }}>← Retour</div>
-                  <div className="chip" style={{ fontSize: 10, padding: "2px 8px" }}>Carte scannée</div>
+                width: 290, borderRadius: 44,
+                border: "10px solid #1a1a1a",
+                outline: "1px solid #333",
+                background: "var(--bg)",
+                overflow: "hidden", position: "relative",
+              }}>
+                {/* notch */}
+                <div style={{
+                  position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
+                  width: 86, height: 24, background: "#1a1a1a", borderRadius: "0 0 16px 16px", zIndex: 10,
+                }} />
+                {/* status bar */}
+                <div style={{ height: 36, background: "var(--bg)", display: "flex", alignItems: "flex-end", justifyContent: "space-between", padding: "0 20px 4px", fontSize: 10, color: "var(--ink-3)" }}>
+                  <span>9:41</span><span style={{ letterSpacing: 1 }}>●●●</span>
                 </div>
-                {/* card image */}
-                <div style={{ borderRadius: 12, overflow: "hidden", marginBottom: 12, boxShadow: "0 4px 18px rgba(0,0,0,0.14)" }}>
-                  <img src={design.front} alt={card.nom_carte}
-                    style={{ width: "100%", aspectRatio: "1.6/1", objectFit: "cover", display: "block" }} />
-                </div>
-                {/* name + title */}
-                <div style={{ textAlign: "center", marginBottom: 12 }}>
-                  <div className="serif" style={{ fontSize: 17, letterSpacing: "-0.01em" }}>{card.prenom_affiche} {card.nom_affiche}</div>
-                  <div className="muted" style={{ fontSize: 11, marginTop: 2 }}>{card.poste_affiche} · {window.CARDLY_DATA.entreprise.nom_entreprise}</div>
-                </div>
-                {/* contact rows */}
-                <div className="col gap-2" style={{ marginBottom: 12 }}>
-                  {[
-                    { icon: <Icon.Phone size={11} />, t: card.telephone_affiche },
-                    { icon: <Icon.Mail size={11} />,  t: card.email_affiche },
-                    { icon: <Icon.Globe size={11} />, t: card.site_web },
-                  ].map(({ icon, t }, i) => (
-                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", background: "var(--surface-2)", borderRadius: 8, fontSize: 11 }}>
-                      <span className="dim">{icon}</span><span>{t}</span>
+                {/* scrollable content */}
+                <div
+                  ref={scrollRef}
+                  style={{ padding: "4px 14px 24px", overflowY: "scroll", maxHeight: 540, scrollbarWidth: "none" }}
+                >
+                  {/* mini header */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                    <div style={{ fontSize: 10, color: "var(--ink-3)" }}>← Retour</div>
+                    <div className="chip" style={{ fontSize: 10, padding: "2px 8px" }}>Carte scannée</div>
+                  </div>
+
+                  {/* carte 3D avec flip auto */}
+                  <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
+                    <Card3D
+                      card={null}
+                      design={scanDesign}
+                      width={242}
+                      float={false}
+                      flipped={scanFlipped}
+                      showQR={false}
+                    />
+                  </div>
+
+                  {/* name + title */}
+                  <div style={{ textAlign: "center", marginBottom: 12 }}>
+                    <div className="serif" style={{ fontSize: 17, letterSpacing: "-0.01em" }}>
+                      {SCAN_CARD_DATA.prenom_affiche} {SCAN_CARD_DATA.nom_affiche}
                     </div>
-                  ))}
-                </div>
-                {/* primary CTA */}
-                <button className="btn btn-primary" style={{ width: "100%", justifyContent: "center", fontSize: 12, padding: "10px 14px", marginBottom: 8 }}>
-                  <Icon.User size={12} /> Enregistrer dans mes contacts
-                </button>
-                {/* secondary buttons */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-                  {[
-                    { ic: Icon.WhatsApp, t: "WhatsApp" },
-                    { ic: Icon.Mail,     t: "Email" },
-                    { ic: Icon.User,     t: "Partager mes infos" },
-                    { ic: Icon.Globe,    t: "Site web" },
-                  ].map(({ ic: Ic, t }, i) => (
-                    <button key={i} className="btn btn-sm" style={{ justifyContent: "center", fontSize: 11 }}>
-                      <Ic size={11} /> {t}
-                    </button>
-                  ))}
-                </div>
-                {/* social */}
-                <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--line)" }}>
-                  <Icon.Instagram size={32} />
-                  <Icon.Linkedin size={32} />
+                    <div className="muted" style={{ fontSize: 11, marginTop: 2 }}>
+                      {SCAN_CARD_DATA.poste_affiche} · {SCAN_CARD_DATA.entreprise_affiche}
+                    </div>
+                  </div>
+
+                  {/* contact rows */}
+                  <div className="col gap-2" style={{ marginBottom: 12 }}>
+                    {[
+                      { icon: <Icon.Phone size={11}/>, t: SCAN_CARD_DATA.telephone_affiche },
+                      { icon: <Icon.Mail  size={11}/>, t: SCAN_CARD_DATA.email_affiche },
+                      { icon: <Icon.Globe size={11}/>, t: SCAN_CARD_DATA.site_web },
+                    ].map(({ icon, t }, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", background: "var(--surface-2)", borderRadius: 8, fontSize: 11 }}>
+                        <span className="dim">{icon}</span><span>{t}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* CTA principal */}
+                  <button className="btn btn-primary" style={{ width: "100%", justifyContent: "center", fontSize: 12, padding: "10px 14px", marginBottom: 8 }}>
+                    <Icon.User size={12} /> Enregistrer dans mes contacts
+                  </button>
+
+                  {/* boutons secondaires */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                    {[
+                      { ic: Icon.WhatsApp, t: "WhatsApp" },
+                      { ic: Icon.Mail,     t: "Email" },
+                      { ic: Icon.User,     t: "Partager mes infos" },
+                      { ic: Icon.Globe,    t: "Site web" },
+                    ].map(({ ic: Ic, t }, i) => (
+                      <button key={i} className="btn btn-sm" style={{ justifyContent: "center", fontSize: 11 }}>
+                        <Ic size={11} /> {t}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* réseaux sociaux */}
+                  <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--line)" }}>
+                    <Icon.Instagram size={36} />
+                    <Icon.Linkedin size={36} />
+                  </div>
                 </div>
               </div>
             </div>
