@@ -221,71 +221,86 @@ function HeroSection({ navigate }) {
   );
 }
 
-// ---------- LazyCard3D — monte la carte seulement quand elle entre dans le viewport ----------
-// Evite de charger les ~137 MB de templates d'un seul coup au chargement de la page.
-// IntersectionObserver détecte quand la carte approche du viewport (rootMargin 200px)
-// et monte Card3D à ce moment-là seulement.
-function LazyCard3D({ width, ...rest }) {
-  const ratio = 0.63;
-  const height = Math.round(width * ratio);
-  const [mounted, setMounted] = useStateL(false);
-  const ref = React.useRef(null);
-
-  useEffectL(() => {
-    // Si IntersectionObserver non disponible (très vieux navigateurs) → montage direct
-    if (typeof IntersectionObserver === "undefined") { setMounted(true); return; }
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setMounted(true);
-          io.disconnect();
-        }
-      },
-      // rootMargin permet de précharger 200 px avant que la carte soit visible
-      { rootMargin: "200px 200px 200px 200px", threshold: 0 }
-    );
-    if (ref.current) io.observe(ref.current);
-    return () => io.disconnect();
-  }, []);
-
-  if (!mounted) {
-    // Placeholder shimmer — même dimensions que la vraie carte
-    return (
-      <div ref={ref} style={{
-        width, height, borderRadius: 16, flexShrink: 0,
-        background: "linear-gradient(90deg, rgba(184,138,62,0.06) 25%, rgba(184,138,62,0.15) 50%, rgba(184,138,62,0.06) 75%)",
-        backgroundSize: "200% 100%",
-        animation: "shimmer 1.6s ease-in-out infinite",
-      }} />
-    );
-  }
-  return <Card3D width={width} {...rest} />;
-}
-
+// ---------- CarouselSection — infinite auto-scroll strip ----------
 function CarouselSection() {
   const designs = window.CARDLY_DATA.cardDesigns;
-  const scrollRef = React.useRef(null);
+  // Duplicate for seamless loop (translateX -50% = exactly one set)
+  const doubled = [...designs, ...designs];
+  const stripRef = React.useRef(null);
+
+  const pause  = () => { if (stripRef.current) stripRef.current.style.animationPlayState = "paused";  };
+  const resume = () => { if (stripRef.current) stripRef.current.style.animationPlayState = "running"; };
+
   return (
-    <section id="features" style={{ padding: "100px 0" }} className="section-bg-soft">
-      <div className="container col gap-8">
+    <section id="features" style={{ padding: "100px 0 80px", overflow: "hidden" }} className="section-bg-soft">
+      {/* Header centré */}
+      <div className="container col gap-2" style={{ marginBottom: 48 }}>
         <SectionHeader
           eyebrow="Designs"
           title="Des cartes digitales qui marquent les esprits."
           subtitle="Choisissez un design, ajoutez vos informations, partagez votre carte en un scan."
         />
-        <div className="h-scroll" ref={scrollRef} style={{ paddingLeft: 28, paddingRight: 28, marginLeft: -28, marginRight: -28 }}>
-          {designs.map((d) => (
-            <div key={d.id} className="col gap-3" style={{ alignItems: "center" }}>
-              {/* LazyCard3D : ne charge l'image que quand la carte entre dans le viewport */}
-              <LazyCard3D design={d} width={320} float={false} showQR={true} card={null} />
-              <div className="col gap-1" style={{ alignItems: "center" }}>
-                <div className="serif" style={{ fontSize: 18 }}>{d.label}</div>
-                <div className="chip">{d.tag}</div>
-              </div>
+      </div>
+
+      {/* Bande pleine largeur avec masque de fondu sur les bords */}
+      <div
+        style={{
+          width: "100%",
+          overflow: "hidden",
+          WebkitMaskImage: "linear-gradient(90deg, transparent 0%, black 7%, black 93%, transparent 100%)",
+          maskImage:        "linear-gradient(90deg, transparent 0%, black 7%, black 93%, transparent 100%)",
+        }}
+        onMouseEnter={pause}
+        onMouseLeave={resume}
+      >
+        <div
+          ref={stripRef}
+          style={{
+            display: "flex",
+            gap: 20,
+            width: "max-content",
+            animation: "carousel-scroll 38s linear infinite",
+            willChange: "transform",
+          }}
+        >
+          {doubled.map((d, i) => (
+            <div
+              key={i}
+              style={{
+                flexShrink: 0,
+                width: 300,
+                borderRadius: 18,
+                overflow: "hidden",
+                boxShadow: "0 6px 28px rgba(42,36,26,0.13)",
+                transition: "transform 300ms ease, box-shadow 300ms ease",
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.transform = "scale(1.04) translateY(-4px)";
+                e.currentTarget.style.boxShadow = "0 16px 48px rgba(42,36,26,0.22)";
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = "scale(1) translateY(0)";
+                e.currentTarget.style.boxShadow = "0 6px 28px rgba(42,36,26,0.13)";
+              }}
+            >
+              <img
+                src={d.front}
+                alt={d.label}
+                loading="lazy"
+                decoding="async"
+                style={{ width: "100%", aspectRatio: "1.6/1", objectFit: "cover", display: "block" }}
+              />
             </div>
           ))}
         </div>
       </div>
+
+      <style>{`
+        @keyframes carousel-scroll {
+          0%   { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+      `}</style>
     </section>
   );
 }
