@@ -1,6 +1,6 @@
 // Cardly Pro — mock data layer (shaped to match future Supabase schema)
 
-window.CARDLY_DATA = (function() {
+window.CARTALIS_DATA = (function() {
   const entreprise = {
     id: "ent-001",
     nom_entreprise: "Cartalis",

@@ -16,8 +16,8 @@ function AppLayout({ navigate, params, children, tab, setTab, role, plan, trialE
   ];
   const visibleTabs = tabs;
   const tabLabel = visibleTabs.find(t => t.id === tab)?.label || "";
-  const me = window.CARDLY_DATA.profileMe;
-  const ent = window.CARDLY_DATA.entreprise;
+  const me = window.CARTALIS_DATA.profileMe;
+  const ent = window.CARTALIS_DATA.entreprise;
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
@@ -134,7 +134,7 @@ window.AppLayout = AppLayout;
 
 // ---------- Mes cartes ----------
 function MyCardsPage({ onCustomize, onShareCard, role, trialExpired, onUpgrade }) {
-  const [cards, setCards] = useStateP(window.CARDLY_DATA.cards);
+  const [cards, setCards] = useStateP(window.CARTALIS_DATA.cards);
   const [showAdd, setShowAdd] = useStateP(false);
   const [newName, setNewName] = useStateP("");
   const [newType, setNewType] = useStateP("personal"); // 'personal' | 'enterprise'
@@ -160,11 +160,11 @@ function MyCardsPage({ onCustomize, onShareCard, role, trialExpired, onUpgrade }
 
   const addCard = () => {
     if (!newName.trim()) return;
-    const designs = window.CARDLY_DATA.cardDesigns;
+    const designs = window.CARTALIS_DATA.cardDesigns;
     const designId = designs[(cards.length) % designs.length].id;
     const tag = tags.find(t => t.id === selectedTagId);
     const next = {
-      ...window.CARDLY_DATA.cards[1],
+      ...window.CARTALIS_DATA.cards[1],
       id: "card-" + Math.random().toString(36).slice(2, 6),
       type: newType,
       nom_carte: newName.trim(),
@@ -185,7 +185,7 @@ function MyCardsPage({ onCustomize, onShareCard, role, trialExpired, onUpgrade }
     <div className="col gap-6" style={{ position: "relative" }}>
       <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 16 }}>
         <div className="col gap-2">
-          <div className="eyebrow">Espace · {window.CARDLY_DATA.entreprise.nom_entreprise}</div>
+          <div className="eyebrow">Espace · {window.CARTALIS_DATA.entreprise.nom_entreprise}</div>
           <h1 className="serif" style={{ fontSize: "clamp(28px, 4vw, 40px)", margin: 0, letterSpacing: "-0.02em" }}>Mes cartes</h1>
           <p className="muted" style={{ margin: 0, fontSize: 15 }}>Retrouvez vos cartes digitales et partagez-les en un scan.</p>
         </div>
@@ -318,7 +318,7 @@ function CardListItem({ card, onCustomize, onShare, role }) {
             {card.type === "enterprise" && <span className="chip chip-gold">Entreprise</span>}
             {card.event && <span className="chip" style={{ background: "var(--surface-2)", color: "var(--ink-2)" }}>{card.event}</span>}
           </div>
-          <div className="dim" style={{ fontSize: 12 }}>{card.type === "enterprise" ? "Carte entreprise" : "Carte personnelle"} · {window.CARDLY_DATA.getDesign(card.design).label}</div>
+          <div className="dim" style={{ fontSize: 12 }}>{card.type === "enterprise" ? "Carte entreprise" : "Carte personnelle"} · {window.CARTALIS_DATA.getDesign(card.design).label}</div>
         </div>
         <div className="row gap-1">
           <button className="btn btn-ghost btn-sm" onClick={() => onCustomize(card.id)} title="Personnaliser"><Icon.Brush size={14} /></button>
@@ -418,7 +418,7 @@ function CardStatsModal({ open, onClose, card }) {
 
 function PresentCardModal({ card, onClose }) {
   const toast = useToast();
-  const design = window.CARDLY_DATA.getDesign(card.design);
+  const design = window.CARTALIS_DATA.getDesign(card.design);
   const [flipped, setFlipped] = useStateP(false);
 
   const shareLink = () => {
@@ -590,7 +590,7 @@ function AddCardTile({ onClick }) {
 
 // ---------- Personnalisation : sélecteur ----------
 function CustomizePickerPage({ onPick, role, trialExpired, onUpgrade }) {
-  const cards = window.CARDLY_DATA.cards;
+  const cards = window.CARTALIS_DATA.cards;
   return (
     <div className="col gap-6" style={{ position: "relative" }}>
       <div className="col gap-2">
@@ -621,7 +621,7 @@ function CustomizePickerPage({ onPick, role, trialExpired, onUpgrade }) {
                   <div className="col gap-1" style={{ flex: 1 }}>
                     <div className="serif" style={{ fontSize: 18, letterSpacing: "-0.01em" }}>{c.nom_carte}</div>
                     <div className="dim" style={{ fontSize: 12 }}>
-                      {c.type === "enterprise" ? "Carte entreprise" : "Carte personnelle"} · {window.CARDLY_DATA.getDesign(c.design).label}
+                      {c.type === "enterprise" ? "Carte entreprise" : "Carte personnelle"} · {window.CARTALIS_DATA.getDesign(c.design).label}
                     </div>
                   </div>
                   <div className="col gap-1" style={{ alignItems: "flex-end" }}>
@@ -721,7 +721,7 @@ function DesignThumb({ design, selected, editable, onSelect }) {
 
 // ---------- Personnalisation ----------
 function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack, onValidate }) {
-  const original = window.CARDLY_DATA.cards.find(c => c.id === cardId) || window.CARDLY_DATA.cards[0];
+  const original = window.CARTALIS_DATA.cards.find(c => c.id === cardId) || window.CARTALIS_DATA.cards[0];
   const [card, setCard] = useStateP({ ...original, positions: { ...original.positions } });
   const [flipped, setFlipped] = useStateP(false);
   const [showAIModal, setShowAIModal] = useStateP(false);
@@ -799,7 +799,7 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
     }
   };
 
-  const designs = window.CARDLY_DATA.cardDesigns;
+  const designs = window.CARTALIS_DATA.cardDesigns;
   const setField = (k, v) => setCard(c => ({ ...c, [k]: v }));
   const movePos = (key, pos) => setCard(c => ({ ...c, positions: { ...c.positions, [key]: pos } }));
 
@@ -878,7 +878,7 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
             <div className="card" style={{ padding: 20 }}>
               <div className="row" style={{ justifyContent: "space-between", marginBottom: 14 }}>
                 <div className="serif" style={{ fontSize: 17 }}>Modèle</div>
-                <span className="chip">{window.CARDLY_DATA.getDesign(card.design).label}</span>
+                <span className="chip">{window.CARTALIS_DATA.getDesign(card.design).label}</span>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, maxHeight: 280, overflowY: "auto", paddingRight: 4 }}>
                 {designs.map(d => (
@@ -1383,9 +1383,9 @@ function CardImageUpload({ label, hint, disabled, imageUrl, onChange, onClear })
 
 // ---------- Personnalisation Scan ----------
 function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack }) {
-  const cards = window.CARDLY_DATA.cards;
+  const cards = window.CARTALIS_DATA.cards;
   const card = (cardId && cards.find(c => c.id === cardId)) || cards[0];
-  const ent = window.CARDLY_DATA.entreprise;
+  const ent = window.CARTALIS_DATA.entreprise;
   const toast = useToast();
   const [scanButtons, setScanButtons] = useStateP({
     contact: true,

@@ -76,8 +76,8 @@ function FilterSelect({ value, onChange, options, btnStyle }) {
 
 // ---------- CRM ----------
 function CrmPage({ role }) {
-  const allContacts = window.CARDLY_DATA.crmContacts || [];
-  const collabs = window.CARDLY_DATA.collaborators.filter(c => c.statut === "actif");
+  const allContacts = window.CARTALIS_DATA.crmContacts || [];
+  const collabs = window.CARTALIS_DATA.collaborators.filter(c => c.statut === "actif");
   const [filterMembre, setFilterMembre] = useStateD("all");
   const [filterEvent, setFilterEvent] = useStateD("all");
   const [search, setSearch] = useStateD("");
@@ -200,7 +200,7 @@ window.CrmPage = CrmPage;
 
 // ---------- Dashboard ----------
 function DashboardPage({ role, trialExpired, onUpgrade }) {
-  const [collabs, setCollabs] = useStateD(window.CARDLY_DATA.collaborators);
+  const [collabs, setCollabs] = useStateD(window.CARTALIS_DATA.collaborators);
   const [statsCollab, setStatsCollab] = useStateD(null);
   const toast = useToast();
   const canManage = role === "admin" || role === "manager";
@@ -481,15 +481,15 @@ function CollabStatsModal({ collab, onClose }) {
 
 // ---------- Mon compte ----------
 function SecretCodePage({ role, plan, onUpgrade }) {
-  const [code, setCode] = useStateD(window.CARDLY_DATA.entreprise.code_secret);
+  const [code, setCode] = useStateD(window.CARTALIS_DATA.entreprise.code_secret);
   const [showRegenConfirm, setShowRegenConfirm] = useStateD(false);
   // manageModal steps: null | "choice" | "cancel-confirm" | "cancel-reason" | "cancel-done"
   const [manageStep, setManageStep] = useStateD(null);
   const [cancelReason, setCancelReason] = useStateD(null);
   const toast = useToast();
 
-  const meInit = window.CARDLY_DATA.profileMe;
-  const entInit = window.CARDLY_DATA.entreprise;
+  const meInit = window.CARTALIS_DATA.profileMe;
+  const entInit = window.CARTALIS_DATA.entreprise;
   const [profile, setProfile] = useStateD({
     prenom: meInit.prenom,
     nom: meInit.nom,
@@ -820,7 +820,7 @@ function LangPicker({ value, onChange }) {
 
 // ---------- Feedback page ----------
 function FeedbackPage() {
-  const me = window.CARDLY_DATA.profileMe;
+  const me = window.CARTALIS_DATA.profileMe;
   const INIT = [
     { from: "cardly", text: "👋 Bonjour " + me.prenom + " ! Une idée pour améliorer Cartalis ? Une fonctionnalité manquante, un bug, ou juste un avis ? Partagez ici — on lit tout." },
   ];
@@ -1012,9 +1012,9 @@ window.SubscriptionPage = SubscriptionPage;
 function PublicCardPage({ navigate, params }) {
   const cardId = params.get("id") || "card-001";
   const inactive = params.get("inactive") === "1";
-  const card = window.CARDLY_DATA.cards.find(c => c.id === cardId) || window.CARDLY_DATA.cards[0];
-  const me = window.CARDLY_DATA.profileMe;
-  const ent = window.CARDLY_DATA.entreprise;
+  const card = window.CARTALIS_DATA.cards.find(c => c.id === cardId) || window.CARTALIS_DATA.cards[0];
+  const me = window.CARTALIS_DATA.profileMe;
+  const ent = window.CARTALIS_DATA.entreprise;
   const toast = useToast();
   const [savedCount, setSavedCount] = useStateD(0);
   const [flipped, setFlipped] = useStateD(false);

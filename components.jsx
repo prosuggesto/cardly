@@ -115,7 +115,7 @@ function Card3D({
     mono: "var(--font-mono), 'Courier New', monospace",
     script: "'Brush Script MT', 'Lucida Handwriting', cursive",
   };
-  const D = design || (card && window.CARDLY_DATA.getDesign(card.design)) || window.CARDLY_DATA.cardDesigns[0];
+  const D = design || (card && window.CARTALIS_DATA.getDesign(card.design)) || window.CARTALIS_DATA.cardDesigns[0];
   const ratio = 0.63; // typical card aspect
   const height = width * ratio;
   const [internalFlipped, setInternalFlipped] = useState(flipped);
@@ -190,7 +190,7 @@ function Card3D({
       text: `${card.afficher_prenom ? card.prenom_affiche : ""} ${card.afficher_nom ? card.nom_affiche : ""}`.trim(),
       style: { fontSize: width * 0.062, fontWeight: 500, letterSpacing: "-0.01em" } },
     { key: "entreprise", show: card.afficher_entreprise,
-      text: card.entreprise_affiche || window.CARDLY_DATA.entreprise.nom_entreprise,
+      text: card.entreprise_affiche || window.CARTALIS_DATA.entreprise.nom_entreprise,
       style: { fontSize: width * 0.038, fontWeight: 500, letterSpacing: "0.02em" } },
     { key: "poste", show: card.afficher_poste,
       text: card.poste_affiche,

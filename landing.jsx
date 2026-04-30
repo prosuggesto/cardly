@@ -232,7 +232,7 @@ function HeroSection({ navigate }) {
 
 // ---------- CarouselSection — infinite auto-scroll strip ----------
 function CarouselSection() {
-  const designs = window.CARDLY_DATA.cardDesigns;
+  const designs = window.CARTALIS_DATA.cardDesigns;
   // Duplicate for seamless loop (translateX -50% = exactly one set)
   const doubled = [...designs, ...designs];
   const stripRef = React.useRef(null);
@@ -384,7 +384,7 @@ function ConversionTimeline() {
 }
 
 function DashboardPreview() {
-  const collabs = window.CARDLY_DATA.collaborators;
+  const collabs = window.CARTALIS_DATA.collaborators;
   const active = collabs.filter(c => c.statut === "actif").sort((a, b) => b.leads - a.leads);
   return (
     <section style={{ padding: "120px 0", position: "relative" }}>
@@ -498,8 +498,8 @@ const SCAN_CARD_DATA = {
 function ScanPreviewSection() {
   const [scanFlipped, setScanFlipped] = useStateL(false);
   const scrollRef = React.useRef(null);
-  const scanDesign = window.CARDLY_DATA.cardDesigns.find(d => d.id === "design-mon-fugi-vangog")
-    || window.CARDLY_DATA.cardDesigns[0];
+  const scanDesign = window.CARTALIS_DATA.cardDesigns.find(d => d.id === "design-mon-fugi-vangog")
+    || window.CARTALIS_DATA.cardDesigns[0];
 
   // Auto-flip la carte toutes les 3 s
   useEffectL(() => {
