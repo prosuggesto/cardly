@@ -661,8 +661,8 @@ function ScanPreviewSection() {
 
                   {/* réseaux sociaux */}
                   <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--line)" }}>
-                    <Icon.Instagram size={46} />
-                    <Icon.Linkedin size={46} />
+                    <Icon.Instagram size={36} />
+                    <Icon.Linkedin size={36} />
                   </div>
                 </div>
               </div>

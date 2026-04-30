@@ -758,6 +758,47 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
   const isAdminOnEnterprise = card.type === "enterprise" && role === "collaborator";
   const editable = !isAdminOnEnterprise;
 
+  const cardPreviewRef = useRefP(null);
+  const [downloading, setDownloading] = useStateP(false);
+
+  const downloadFace = async (side) => {
+    const container = cardPreviewRef.current;
+    if (!container || !window.html2canvas) { toast.push("Export non disponible"); return; }
+    const front = container.querySelector('.card-face:not(.card-face-back)');
+    const back  = container.querySelector('.card-face-back');
+    const card3d = container.querySelector('.card-3d');
+    if (!front || !back || !card3d) return;
+    setDownloading(true);
+    // Flatten card + isolate target face
+    card3d.style.transform = 'none';
+    if (side === 'recto') {
+      back.style.visibility = 'hidden';
+    } else {
+      front.style.visibility = 'hidden';
+      back.style.transform = 'rotateY(0deg)';
+    }
+    await new Promise(r => setTimeout(r, 80));
+    try {
+      const canvas = await window.html2canvas(card3d, {
+        scale: 2, backgroundColor: null, useCORS: true, allowTaint: true,
+        logging: false,
+      });
+      const a = document.createElement('a');
+      a.href = canvas.toDataURL('image/png');
+      a.download = `${(card.nom_carte || 'carte').replace(/\s+/g,'-')}-${side}.png`;
+      a.click();
+      toast.push(`${side === 'recto' ? 'Recto' : 'Verso'} téléchargé`, { icon: <Icon.Check size={14}/> });
+    } catch(e) {
+      toast.push('Erreur lors de l\'export');
+    } finally {
+      card3d.style.transform = '';
+      front.style.visibility = '';
+      back.style.visibility = '';
+      back.style.transform  = '';
+      setDownloading(false);
+    }
+  };
+
   const designs = window.CARDLY_DATA.cardDesigns;
   const setField = (k, v) => setCard(c => ({ ...c, [k]: v }));
   const movePos = (key, pos) => setCard(c => ({ ...c, positions: { ...c.positions, [key]: pos } }));
@@ -793,7 +834,7 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
 
         <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 28 }} className="cust-grid">
           {/* Card preview */}
-          <div className="card" style={{ padding: 36, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 24, background: "linear-gradient(180deg, #fffdf6, #f7f2e6)", alignSelf: "stretch" }}>
+          <div className="card" style={{ padding: 36, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 24, background: "linear-gradient(180deg, #fffdf6, #f7f2e6)", alignSelf: "stretch" }} ref={cardPreviewRef}>
             {isAdminOnEnterprise && (
               <div className="card" style={{ padding: 14, background: "var(--surface-2)", borderColor: "var(--line)", fontSize: 13, color: "var(--ink-3)", textAlign: "center" }}>
                 Cette carte est gérée par votre entreprise. Vous pouvez l'utiliser avec vos informations, mais seul un administrateur peut modifier son design.
@@ -818,8 +859,16 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
               logoSizeRecto={logoSizeRecto}
               logoSizeVerso={logoSizeVerso}
             />
-            <div className="row gap-2">
+            <div className="row gap-2" style={{ flexWrap: "wrap", justifyContent: "center" }}>
               <button className="btn btn-sm" onClick={() => setFlipped(!flipped)}><Icon.Refresh size={13}/> Tester le flip</button>
+              <button className="btn btn-sm" disabled={downloading} onClick={() => downloadFace('recto')} style={{ gap: 5 }}>
+                <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                {downloading ? "Export…" : "↓ Recto"}
+              </button>
+              <button className="btn btn-sm" disabled={downloading} onClick={() => downloadFace('verso')} style={{ gap: 5 }}>
+                <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                {downloading ? "Export…" : "↓ Verso"}
+              </button>
             </div>
           </div>
 
