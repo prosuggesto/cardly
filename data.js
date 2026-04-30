@@ -1,10 +1,10 @@
-﻿// Cardly Pro â€” mock data layer (shaped to match future Supabase schema)
+// Cardly Pro — mock data layer (shaped to match future Supabase schema)
 
 window.CARDLY_DATA = (function() {
   const entreprise = {
     id: "ent-001",
-    nom_entreprise: "Immo Costa",
-    code_secret: "CARDLY-8K4P",
+    nom_entreprise: "Cartalis",
+    code_secret: "CARTALIS-8K4P",
     plan: "team", // 'solo' | 'team' | 'enterprise'
     max_collaborateurs: 10,
     owner_id: "u-001",
@@ -13,22 +13,22 @@ window.CARDLY_DATA = (function() {
 
   const profileMe = {
     id: "u-001",
-    nom: "Martin",
-    prenom: "Lucas",
+    nom: "Lamperim",
+    prenom: "Diego",
     telephone: "07 67 56 92 24",
-    email: "contact.cardly@gmail.com",
+    email: "contact.cartalis@gmail.com",
     poste: "Directeur commercial",
     role: "admin", // 'admin' | 'collaborator'
-    site_web: "immocosta.fr",
-    instagram: "immocosta",
-    linkedin: "lucas-martin-immocosta",
+    site_web: "cartalis.fr",
+    instagram: "cartalis",
+    linkedin: "diego-lamperim-cartalis",
   };
 
   const collaborators = [
-    { id: "u-002", prenom: "Emma", nom: "Laurent", email: "emma@immocosta.fr", poste: "Conseillère", leads: 42, statut: "actif", role_membre: "responsable", last_click: "Il y a 2h" },
-    { id: "u-003", prenom: "Hugo", nom: "Bernard", email: "hugo@immocosta.fr", poste: "Commercial", leads: 31, statut: "actif", role_membre: "collaborateur", last_click: "Il y a 5h" },
-    { id: "u-004", prenom: "Sofia", nom: "Garcia", email: "sofia@immocosta.fr", poste: "Agent immobilier", leads: 18, statut: "en_attente", role_membre: "collaborateur", last_click: "â€”" },
-    { id: "u-005", prenom: "Nathan", nom: "Morel", email: "nathan@immocosta.fr", poste: "Commercial junior", leads: 9, statut: "actif", role_membre: "collaborateur", last_click: "Hier" },
+    { id: "u-002", prenom: "Emma", nom: "Laurent", email: "emma@cartalis.fr", poste: "Conseillère", leads: 42, statut: "actif", role_membre: "responsable", last_click: "Il y a 2h" },
+    { id: "u-003", prenom: "Hugo", nom: "Bernard", email: "hugo@cartalis.fr", poste: "Commercial", leads: 31, statut: "actif", role_membre: "collaborateur", last_click: "Il y a 5h" },
+    { id: "u-004", prenom: "Sofia", nom: "Garcia", email: "sofia@cartalis.fr", poste: "Agent immobilier", leads: 18, statut: "en_attente", role_membre: "collaborateur", last_click: "—" },
+    { id: "u-005", prenom: "Nathan", nom: "Morel", email: "nathan@cartalis.fr", poste: "Commercial junior", leads: 9, statut: "actif", role_membre: "collaborateur", last_click: "Hier" },
   ];
 
   // 6 card design variants (used in landing carousel + Mes cartes)
@@ -74,16 +74,16 @@ window.CARDLY_DATA = (function() {
     {
       id: "card-001",
       type: "enterprise",
-      nom_carte: "Carte entreprise â€” Immo Costa",
+      nom_carte: "Carte entreprise — Cartalis",
       design: "design-style-chinois",
       // displayed fields
-      nom_affiche: "Martin",
-      prenom_affiche: "Lucas",
-      entreprise_affiche: "Immo Costa",
+      nom_affiche: "Lamperim",
+      prenom_affiche: "Diego",
+      entreprise_affiche: "Cartalis",
       poste_affiche: "Directeur commercial",
       telephone_affiche: "07 67 56 92 24",
-      email_affiche: "contact.cardly@gmail.com",
-      site_web: "immocosta.fr",
+      email_affiche: "contact.cartalis@gmail.com",
+      site_web: "cartalis.fr",
       // visibility
       afficher_nom: true,
       afficher_prenom: true,
@@ -110,13 +110,13 @@ window.CARDLY_DATA = (function() {
       type: "personal",
       nom_carte: "Ma carte minimal",
       design: "design-serisier",
-      nom_affiche: "Martin",
-      prenom_affiche: "Lucas",
-      entreprise_affiche: "Immo Costa",
+      nom_affiche: "Lamperim",
+      prenom_affiche: "Diego",
+      entreprise_affiche: "Cartalis",
       poste_affiche: "Directeur commercial",
       telephone_affiche: "07 67 56 92 24",
-      email_affiche: "lucas@immocosta.fr",
-      site_web: "lucasmartin.fr",
+      email_affiche: "diego@cartalis.fr",
+      site_web: "cartalis.fr",
       afficher_nom: true,
       afficher_prenom: true,
       afficher_entreprise: false,
