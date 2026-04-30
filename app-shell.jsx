@@ -653,51 +653,48 @@ function CustomizePickerPage({ onPick, role, trialExpired, onUpgrade }) {
 window.CustomizePickerPage = CustomizePickerPage;
 
 // ---------- DesignThumb — thumbnail avec shimmer + fondu ----------
-// Même disposition qu'avant (CSS background-image), shimmer overlay qui disparaît
-// en fondu une fois l'image chargée. Un <img hidden> sert uniquement à détecter onLoad.
+// Le <button> est identique à l'original (pas d'enfants, pas de position/overflow).
+// Le shimmer est dans le <div> wrapper pour ne pas perturber l'aspect-ratio du grid.
 function DesignThumb({ design, selected, editable, onSelect }) {
   const [loaded, setLoaded] = useStateP(!design.front);
   return (
-    <button
-      disabled={!editable}
-      onClick={() => onSelect(design.id)}
-      title={design.label}
-      style={{
-        aspectRatio: "1.6/1", borderRadius: 10,
-        position: "relative", overflow: "hidden",
-        background: design.front
-          ? `url(${design.front}) center/cover`
-          : (design.bg || "linear-gradient(135deg,#fff,#f6f3ec)"),
-        border: selected ? "2px solid var(--gold)" : "1px solid var(--line)",
-        boxShadow: selected ? "0 0 0 3px rgba(184,138,62,0.15)" : "none",
-        cursor: editable ? "pointer" : "not-allowed",
-        opacity: editable ? 1 : 0.5,
-        transition: "border 150ms, box-shadow 150ms",
-      }}
-    >
+    <div style={{ position: "relative" }}>
+      {/* bouton identique à l'original — zéro enfant, même styles */}
+      <button
+        disabled={!editable}
+        onClick={() => onSelect(design.id)}
+        title={design.label}
+        style={{
+          display: "block", width: "100%",
+          aspectRatio: "1.6/1", borderRadius: 10,
+          background: design.front
+            ? `url(${design.front}) center/cover`
+            : (design.bg || "linear-gradient(135deg,#fff,#f6f3ec)"),
+          border: selected ? "2px solid var(--gold)" : "1px solid var(--line)",
+          boxShadow: selected ? "0 0 0 3px rgba(184,138,62,0.15)" : "none",
+          cursor: editable ? "pointer" : "not-allowed",
+          opacity: editable ? 1 : 0.5,
+          transition: "all 150ms",
+        }}
+      />
+      {/* shimmer overlay dans le wrapper — disparaît en fondu quand l'image est prête */}
       {design.front && (
         <>
-          {/* overlay shimmer qui s'efface en fondu quand l'image est prête */}
           <div style={{
-            position: "absolute", inset: 0, pointerEvents: "none", borderRadius: "inherit",
+            position: "absolute", inset: 0, borderRadius: 10, pointerEvents: "none",
             background: "linear-gradient(90deg,rgba(184,138,62,0.06) 25%,rgba(184,138,62,0.14) 50%,rgba(184,138,62,0.06) 75%)",
             backgroundSize: "200% 100%",
-            animation: "shimmer 1.4s ease-in-out infinite",
+            animation: loaded ? "none" : "shimmer 1.4s ease-in-out infinite",
             opacity: loaded ? 0 : 1,
             transition: "opacity 250ms ease",
           }} />
-          {/* img cachée juste pour déclencher onLoad */}
-          <img
-            src={design.front}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            onLoad={() => setLoaded(true)}
-            style={{ display: "none" }}
-          />
+          {!loaded && (
+            <img src={design.front} alt="" loading="lazy" decoding="async"
+              onLoad={() => setLoaded(true)} style={{ display: "none" }} />
+          )}
         </>
       )}
-    </button>
+    </div>
   );
 }
 
