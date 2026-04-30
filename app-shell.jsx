@@ -1041,7 +1041,7 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
                 )}
                 <CardImageUpload
                   label="Image recto"
-                  hint="Cette image sera appliquée sur le recto de votre carte."
+                  hint="Format JPEG uniquement · dimensions optimales : 1050 × 660 px"
                   disabled={!editable}
                   imageUrl={backImageUrl}
                   onChange={(url) => { setBackImageUrl(url); setFlipped(true); }}
@@ -1049,7 +1049,7 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
                 />
                 <CardImageUpload
                   label="Image verso"
-                  hint="Cette image sera appliquée sur le verso de votre carte."
+                  hint="Format JPEG uniquement · dimensions optimales : 1050 × 660 px"
                   disabled={!editable}
                   imageUrl={frontImageUrl}
                   onChange={(url) => { setFrontImageUrl(url); setFlipped(false); }}
@@ -1188,7 +1188,7 @@ function UploadZone({ disabled, onLogo, hasLogo, onClear }) {
           opacity: disabled ? 0.5 : 1, transition: "all 150ms",
         }}
       >
-        <input type="file" hidden accept="image/*" disabled={disabled} onChange={(e) => handleFile(e.target.files[0])} />
+        <input type="file" hidden accept="image/png,image/svg+xml,image/jpeg,.png,.svg,.jpg,.jpeg" disabled={disabled} onChange={(e) => handleFile(e.target.files[0])} />
         <div className="row gap-2" style={{ justifyContent: "center", marginBottom: 6 }}>
           <Icon.Upload size={16} />
           <span style={{ fontSize: 14, fontWeight: 500 }}>
@@ -1196,7 +1196,9 @@ function UploadZone({ disabled, onLogo, hasLogo, onClear }) {
           </span>
         </div>
         <div className="dim" style={{ fontSize: 12 }}>
-          {hasLogo ? "Logo importé · converti en WebP · choisissez son côté et sa taille ci-dessous." : "Glissez votre logo ici ou cliquez pour importer. Converti automatiquement en WebP."}
+          {hasLogo
+            ? "Logo importé · converti en WebP · choisissez son côté et sa taille ci-dessous."
+            : "PNG avec fond transparent recommandé · min. 400 × 400 px"}
         </div>
       </label>
       {hasLogo && (
@@ -1242,7 +1244,7 @@ function CardImageUpload({ label, hint, disabled, imageUrl, onChange, onClear })
           opacity: disabled ? 0.5 : 1, transition: "all 150ms",
         }}
       >
-        <input type="file" hidden accept="image/*" disabled={disabled} onChange={(e) => handleFile(e.target.files[0])} />
+        <input type="file" hidden accept="image/jpeg,.jpg,.jpeg" disabled={disabled} onChange={(e) => handleFile(e.target.files[0])} />
         {imageUrl ? (
           <img src={imageUrl} alt="" style={{ width: "100%", maxHeight: 80, objectFit: "cover", borderRadius: 8, marginBottom: 6 }} />
         ) : null}
