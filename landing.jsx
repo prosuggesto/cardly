@@ -221,6 +221,47 @@ function HeroSection({ navigate }) {
   );
 }
 
+// ---------- LazyCard3D — monte la carte seulement quand elle entre dans le viewport ----------
+// Evite de charger les ~137 MB de templates d'un seul coup au chargement de la page.
+// IntersectionObserver détecte quand la carte approche du viewport (rootMargin 200px)
+// et monte Card3D à ce moment-là seulement.
+function LazyCard3D({ width, ...rest }) {
+  const ratio = 0.63;
+  const height = Math.round(width * ratio);
+  const [mounted, setMounted] = useStateL(false);
+  const ref = React.useRef(null);
+
+  useEffectL(() => {
+    // Si IntersectionObserver non disponible (très vieux navigateurs) → montage direct
+    if (typeof IntersectionObserver === "undefined") { setMounted(true); return; }
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setMounted(true);
+          io.disconnect();
+        }
+      },
+      // rootMargin permet de précharger 200 px avant que la carte soit visible
+      { rootMargin: "200px 200px 200px 200px", threshold: 0 }
+    );
+    if (ref.current) io.observe(ref.current);
+    return () => io.disconnect();
+  }, []);
+
+  if (!mounted) {
+    // Placeholder shimmer — même dimensions que la vraie carte
+    return (
+      <div ref={ref} style={{
+        width, height, borderRadius: 16, flexShrink: 0,
+        background: "linear-gradient(90deg, rgba(184,138,62,0.06) 25%, rgba(184,138,62,0.15) 50%, rgba(184,138,62,0.06) 75%)",
+        backgroundSize: "200% 100%",
+        animation: "shimmer 1.6s ease-in-out infinite",
+      }} />
+    );
+  }
+  return <Card3D width={width} {...rest} />;
+}
+
 function CarouselSection() {
   const designs = window.CARDLY_DATA.cardDesigns;
   const scrollRef = React.useRef(null);
@@ -233,9 +274,10 @@ function CarouselSection() {
           subtitle="Choisissez un design, ajoutez vos informations, partagez votre carte en un scan."
         />
         <div className="h-scroll" ref={scrollRef} style={{ paddingLeft: 28, paddingRight: 28, marginLeft: -28, marginRight: -28 }}>
-          {designs.map((d, i) => (
+          {designs.map((d) => (
             <div key={d.id} className="col gap-3" style={{ alignItems: "center" }}>
-              <Card3D design={d} width={320} float={false} showQR={true} card={null} />
+              {/* LazyCard3D : ne charge l'image que quand la carte entre dans le viewport */}
+              <LazyCard3D design={d} width={320} float={false} showQR={true} card={null} />
               <div className="col gap-1" style={{ alignItems: "center" }}>
                 <div className="serif" style={{ fontSize: 18 }}>{d.label}</div>
                 <div className="chip">{d.tag}</div>

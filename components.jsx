@@ -39,6 +39,34 @@ const Icon = {
 };
 window.Icon = Icon;
 
+// ---------- WebpImg — <picture> avec source WebP + fallback PNG/JPG ----------
+// Le navigateur essaie d'abord le .webp (plus léger). Si le .webp n'existe pas
+// encore (404) ou si le navigateur ne supporte pas WebP, il utilise le PNG
+// automatiquement — zéro perte de qualité, zéro changement de taille de fichier.
+function WebpImg({ src, style, loading = "lazy" }) {
+  if (!src) return null;
+  // Génère l'URL du .webp jumeau (ex: "assets/design-bambou-front.png" → "…front.webp")
+  const webpSrc = src.replace(/\.(png|jpe?g)$/i, '.webp');
+  return (
+    <picture style={{ position: "absolute", inset: 0, display: "block" }}>
+      <source srcSet={webpSrc} type="image/webp" />
+      <img
+        src={src}
+        alt=""
+        style={{
+          width: "100%", height: "100%",
+          objectFit: "cover", display: "block",
+          borderRadius: "inherit",
+          ...style,
+        }}
+        loading={loading}
+        decoding="async"
+      />
+    </picture>
+  );
+}
+window.WebpImg = WebpImg;
+
 // ---------- Logo ----------
 function Logo({ size = "md" }) {
   const px = size === "sm" ? 14 : size === "lg" ? 22 : 17;
@@ -184,26 +212,27 @@ function Card3D({
   };
 
   const positions = (card && card.positions) || {};
-  const fields = [
-    { key: "name",  show: card ? (card.afficher_nom || card.afficher_prenom) : true,
-      text: card ? `${card.afficher_prenom ? card.prenom_affiche : ""} ${card.afficher_nom ? card.nom_affiche : ""}`.trim() : "Nom Prénom",
+  // When no card is provided (e.g. design carousel previews), don't render any text overlays.
+  const fields = !card ? [] : [
+    { key: "name",  show: card.afficher_nom || card.afficher_prenom,
+      text: `${card.afficher_prenom ? card.prenom_affiche : ""} ${card.afficher_nom ? card.nom_affiche : ""}`.trim(),
       style: { fontSize: width * 0.062, fontWeight: 500, letterSpacing: "-0.01em" } },
-    { key: "entreprise", show: card ? card.afficher_entreprise : true,
-      text: (card && card.entreprise_affiche) ? card.entreprise_affiche : window.CARDLY_DATA.entreprise.nom_entreprise,
+    { key: "entreprise", show: card.afficher_entreprise,
+      text: card.entreprise_affiche || window.CARDLY_DATA.entreprise.nom_entreprise,
       style: { fontSize: width * 0.038, fontWeight: 500, letterSpacing: "0.02em" } },
-    { key: "poste", show: card ? card.afficher_poste : true,
-      text: card ? card.poste_affiche : "Fonction",
+    { key: "poste", show: card.afficher_poste,
+      text: card.poste_affiche,
       style: { fontSize: width * 0.034, color: "var(--gold)", letterSpacing: "0.04em" } },
-    { key: "phone", show: card ? card.afficher_telephone : true,
-      text: card ? card.telephone_affiche : "Téléphone",
+    { key: "phone", show: card.afficher_telephone,
+      text: card.telephone_affiche,
       icon: <Icon.Phone size={width * 0.034} />,
       style: { fontSize: width * 0.032 } },
-    { key: "email", show: card ? card.afficher_email : true,
-      text: card ? card.email_affiche : "Email",
+    { key: "email", show: card.afficher_email,
+      text: card.email_affiche,
       icon: <Icon.Mail size={width * 0.034} />,
       style: { fontSize: width * 0.032 } },
-    { key: "web", show: card ? card.afficher_site_web : true,
-      text: card ? card.site_web : "Site web",
+    { key: "web", show: card.afficher_site_web,
+      text: card.site_web,
       icon: <Icon.Globe size={width * 0.034} />,
       style: { fontSize: width * 0.032 } },
   ];
@@ -272,9 +301,11 @@ function Card3D({
     return (
       <div ref={dragRefFront} style={{ position: "absolute", inset: 0, overflow: "hidden", borderRadius: "inherit" }}>
         {frontImageUrl ? (
-          <img src={frontImageUrl} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} />
+          // Image custom (hero, upload) — chargement immédiat
+          <img src={frontImageUrl} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} loading="eager" />
         ) : D.front ? (
-          <img src={D.front} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+          // Image de template — lazy + WebP/PNG fallback
+          <WebpImg src={D.front} loading="lazy" />
         ) : (
           <div style={{ position: "absolute", inset: 0, background: D.bg || "linear-gradient(135deg,#fff,#f6f3ec)" }}>
             <div style={{
@@ -313,8 +344,14 @@ function Card3D({
         position: "absolute", inset: 0,
         background: D.back ? "transparent" : (D.bg || "linear-gradient(135deg,#fff,#f6f3ec)"),
       }}>
-        {backImageUrl && <img src={backImageUrl} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} />}
-        {!backImageUrl && D.back && <img src={D.back} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} />}
+        {backImageUrl && (
+          // Image custom (hero, upload) — chargement immédiat
+          <img src={backImageUrl} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} loading="eager" />
+        )}
+        {!backImageUrl && D.back && (
+          // Image de template — lazy + WebP/PNG fallback
+          <WebpImg src={D.back} loading="lazy" />
+        )}
         {/* draggable text fields on verso */}
         {versoFields.map(f => renderField(f, "verso"))}
         {/* Logo overlay on verso — draggable */}

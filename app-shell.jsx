@@ -766,15 +766,35 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, maxHeight: 280, overflowY: "auto", paddingRight: 4 }}>
                 {designs.map(d => (
+                  // position:relative + overflow:hidden + padding:0 pour l'img lazy en absolute
                   <button key={d.id} disabled={!editable} onClick={() => setField("design", d.id)} style={{
                     aspectRatio: "1.6/1", borderRadius: 10,
-                    background: d.front ? `url(${d.front}) center/cover` : (d.bg || "linear-gradient(135deg,#fff,#f6f3ec)"),
+                    background: d.front ? "var(--surface-2)" : (d.bg || "linear-gradient(135deg,#fff,#f6f3ec)"),
                     border: card.design === d.id ? "2px solid var(--gold)" : "1px solid var(--line)",
                     boxShadow: card.design === d.id ? "0 0 0 3px rgba(184,138,62,0.15)" : "none",
                     cursor: editable ? "pointer" : "not-allowed",
                     opacity: editable ? 1 : 0.5,
                     transition: "all 150ms",
-                  }} title={d.label} />
+                    position: "relative", overflow: "hidden", padding: 0,
+                  }} title={d.label}>
+                    {d.front && (
+                      // loading="lazy" : le navigateur ne charge que les thumbnails visibles
+                      // dans le conteneur scrollable — les 25+ autres attendent le scroll
+                      <img
+                        src={d.front}
+                        alt={d.label}
+                        loading="lazy"
+                        decoding="async"
+                        style={{
+                          position: "absolute", inset: 0,
+                          width: "100%", height: "100%",
+                          objectFit: "cover",
+                          borderRadius: 9,
+                          pointerEvents: "none",
+                        }}
+                      />
+                    )}
+                  </button>
                 ))}
               </div>
             </div>
