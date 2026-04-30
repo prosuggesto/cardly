@@ -250,8 +250,6 @@ function CarouselSection() {
           WebkitMaskImage: "linear-gradient(90deg, transparent 0%, black 7%, black 93%, transparent 100%)",
           maskImage:        "linear-gradient(90deg, transparent 0%, black 7%, black 93%, transparent 100%)",
         }}
-        onMouseEnter={pause}
-        onMouseLeave={resume}
       >
         <div
           ref={stripRef}
@@ -259,7 +257,7 @@ function CarouselSection() {
             display: "flex",
             gap: 20,
             width: "max-content",
-            animation: "carousel-scroll 38s linear infinite",
+            animation: "carousel-scroll 65s linear infinite",
             willChange: "transform",
           }}
         >
