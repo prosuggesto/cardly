@@ -198,40 +198,12 @@ function CrmPage({ role }) {
 }
 window.CrmPage = CrmPage;
 
-// ---------- Animated counter component ----------
-function AnimCounter({ target, mounted, duration, suffix }) {
-  const [val, setVal] = useStateD(0);
-  React.useEffect(() => {
-    if (!mounted) { setVal(0); return; }
-    const d = duration || 1100;
-    let startTs = null;
-    let rafId;
-    const step = (ts) => {
-      if (!startTs) startTs = ts;
-      const progress = Math.min((ts - startTs) / d, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setVal(Math.round(eased * target));
-      if (progress < 1) { rafId = requestAnimationFrame(step); }
-    };
-    rafId = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(rafId);
-  }, [mounted, target, duration]);
-  return React.createElement(React.Fragment, null, val + (suffix || ""));
-}
-
 // ---------- Dashboard ----------
 function DashboardPage({ role, trialExpired, onUpgrade }) {
   const [collabs, setCollabs] = useStateD(window.CARTALIS_DATA.collaborators);
   const [statsCollab, setStatsCollab] = useStateD(null);
-  const [mounted, setMounted] = useStateD(false);
-  const [hoveredDay, setHoveredDay] = useStateD(null);
   const toast = useToast();
   const canManage = role === "admin" || role === "manager";
-
-  React.useEffect(() => {
-    const t = setTimeout(() => setMounted(true), 100);
-    return () => clearTimeout(t);
-  }, []);
 
   const MONTHS = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
   const monthOpts = MONTHS.map((m, i) => ({ value: String(i+1).padStart(2,"0"), label: m }));
@@ -242,7 +214,6 @@ function DashboardPage({ role, trialExpired, onUpgrade }) {
   const [yFin, setYFin] = useStateD("2026");
   const [fMembre, setFMembre] = useStateD("all");
   const [fEvent, setFEvent] = useStateD("all");
-
   const active = collabs.filter(c => c.statut === "actif").sort((a,b) => b.leads - a.leads);
   const tableMembers = collabs.filter(c => c.statut !== "en_attente");
   const pending = collabs.filter(c => c.statut === "en_attente");
@@ -252,72 +223,8 @@ function DashboardPage({ role, trialExpired, onUpgrade }) {
   const remove = (id) => { setCollabs(c => c.map(x => x.id === id ? { ...x, statut: "inactif", leads: 0 } : x)); toast.push("Accès supprimé"); };
   const toggleRole = (id) => { setCollabs(c => c.map(x => x.id === id ? { ...x, role_membre: x.role_membre === "responsable" ? "collaborateur" : "responsable" } : x)); toast.push("Rôle mis à jour"); };
 
-  // ---- Chart data ----
-  const dailyData = [4,3,5,4,7,6,8,5,4,7,9,6,5,8,10,7,6,9,11,8,7,10,12,9,8,11,10,13,12,14];
-  const chartW = 580, chartH = 130, pX = 8, pY = 10;
-  const maxVal = Math.max(...dailyData);
-  const pts = dailyData.map((v, i) => ({
-    x: pX + (i / (dailyData.length - 1)) * (chartW - pX * 2),
-    y: pY + (1 - v / maxVal) * (chartH - pY * 2),
-    val: v, day: i + 1,
-  }));
-  function buildPath(pts) {
-    if (pts.length < 2) return "";
-    let d = `M ${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
-    for (let i = 1; i < pts.length; i++) {
-      const p = pts[i-1], c = pts[i];
-      const cp1x = (p.x + c.x) / 2; const cp2x = cp1x;
-      d += ` C ${cp1x.toFixed(1)},${p.y.toFixed(1)} ${cp2x.toFixed(1)},${c.y.toFixed(1)} ${c.x.toFixed(1)},${c.y.toFixed(1)}`;
-    }
-    return d;
-  }
-  const linePath = buildPath(pts);
-  const areaPath = linePath + ` L ${(chartW - pX).toFixed(1)},${chartH} L ${pX},${chartH} Z`;
-
-  // ---- Event donut data ----
-  const eventData = [
-    { label: "Salon Immobilier", color: "#b8843e", value: 58, pct: 41 },
-    { label: "Réseau MEDEF",     color: "#c9a050", value: 47, pct: 33 },
-    { label: "Portes ouvertes",  color: "#d4b878", value: 23, pct: 16 },
-    { label: "Sans étiquette",   color: "#ddd0ad", value: 14, pct: 10 },
-  ];
-  const totalEv = eventData.reduce((s,e) => s + e.value, 0);
-  const r = 52, dcx = 80, dcy = 80, circ = 2 * Math.PI * r;
-  const donutSegs = eventData.map((e, i) => {
-    const cumFrac = eventData.slice(0, i).reduce((s, x) => s + x.value, 0) / totalEv;
-    const frac = e.value / totalEv;
-    return { ...e, dashLen: frac * circ, cumOffset: -(cumFrac * circ), frac };
-  });
-
-  // ---- Weekly bars data ----
-  const weekTotals = [28, 35, 38, 41];
-
-  // ---- KPI sparkline paths (tiny inline charts) ----
-  const kpiSparkData = [
-    [88,92,100,108,112,118,142],
-    [142,148,155,168,172,185,198],
-    [68,71,70,73,72,74,74],
-    [3,3,3,3,3,3,3],
-  ];
-  function sparkPath(vals, w, h) {
-    const mx = Math.max(...vals), mn = Math.min(...vals);
-    const range = mx - mn || 1;
-    const spts = vals.map((v, i) => ({
-      x: (i / (vals.length - 1)) * w,
-      y: h - ((v - mn) / range) * (h - 4) - 2,
-    }));
-    return buildPath(spts);
-  }
-
-  const FADE = (i, extra = 0) => ({
-    opacity: mounted ? 1 : 0,
-    transform: mounted ? "translateY(0)" : "translateY(18px)",
-    transition: `opacity 520ms ease ${i * 80 + extra}ms, transform 520ms ease ${i * 80 + extra}ms`,
-  });
-
   return (
     <div className="col gap-6">
-      {/* Header */}
       <div className="col gap-2">
         <div className="eyebrow">Dashboard · Avril 2026</div>
         <h1 className="serif" style={{ fontSize: "clamp(28px, 4vw, 40px)", margin: 0, letterSpacing: "-0.02em" }}>Performance des membres</h1>
@@ -332,9 +239,14 @@ function DashboardPage({ role, trialExpired, onUpgrade }) {
           <span className="dim" style={{ alignSelf: "center" }}>→</span>
           <FilterSelect value={mFin} onChange={setMFin} options={monthOpts} btnStyle={{ minWidth: 110 }} />
           <FilterSelect value={yFin} onChange={setYFin} options={yearOpts} btnStyle={{ minWidth: 80 }} />
-          <FilterSelect value={fMembre} onChange={setFMembre}
-            options={[{ value: "all", label: "Tous les membres" }, ...active.map(c => ({ value: c.id, label: `${c.prenom} ${c.nom}` }))]} />
-          <FilterSelect value={fEvent} onChange={setFEvent}
+          <FilterSelect
+            value={fMembre}
+            onChange={setFMembre}
+            options={[{ value: "all", label: "Tous les membres" }, ...active.map(c => ({ value: c.id, label: `${c.prenom} ${c.nom}` }))]}
+          />
+          <FilterSelect
+            value={fEvent}
+            onChange={setFEvent}
             options={[
               { value: "all", label: "Tous les événements" },
               { value: "Salon Immobilier 2026", label: "Salon Immobilier 2026" },
@@ -347,252 +259,44 @@ function DashboardPage({ role, trialExpired, onUpgrade }) {
         </div>
       </div>
 
-      {/* ═══════ KPI CARDS ═══════ */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 16 }}>
-        {[
-          { label: "Leads ce mois",        target: 142, suffix: "",  delta: "+20.3%", good: true,  sp: 0 },
-          { label: "Total scans",           target: 198, suffix: "",  delta: "+15.1%", good: true,  sp: 1 },
-          { label: "Taux de conversion",    target: 74,  suffix: "%", delta: "+3 pts",  good: true,  sp: 2 },
-          { label: "Membres actifs",        target: active.length, suffix: `/${collabs.length}`, delta: pending.length > 0 ? `${pending.length} en attente` : "Équipe au complet", good: pending.length === 0, sp: 3 },
-        ].map((kpi, i) => (
-          <div key={i} className="card col gap-0" style={{ padding: 20, overflow: "hidden", position: "relative", ...FADE(i) }}>
-            {/* Sparkline bg */}
-            <svg viewBox={`0 0 90 32`} style={{ position: "absolute", right: 0, bottom: 0, width: 90, height: 32, opacity: 0.18, pointerEvents: "none" }}>
-              <path d={sparkPath(kpiSparkData[kpi.sp], 90, 32)} fill="none" stroke="#b8843e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            <div className="eyebrow" style={{ fontSize: 10, marginBottom: 10 }}>{kpi.label}</div>
-            <div className="serif" style={{ fontSize: 38, lineHeight: 1, letterSpacing: "-0.03em", marginBottom: 8 }}>
-              <AnimCounter target={kpi.target} mounted={mounted} duration={1000 + i * 130} suffix={kpi.suffix} />
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: kpi.good ? "var(--good,#2d7a4f)" : "var(--ink-3)", fontWeight: 500 }}>
-              {kpi.good && <span>↑</span>}{kpi.delta}
-            </div>
-          </div>
-        ))}
+      {/* Metrics */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+        <Metric label="Total leads ce mois" value="142" delta="+24 vs mois dernier" trend="up" />
+        <Metric label="Meilleur membre" value={active[0] ? `${active[0].prenom} ${active[0].nom[0]}.` : "—"} delta={active[0] ? `${active[0].leads} leads` : ""} trend="neutral" />
+        <Metric label="Membres actifs" value={`${active.length}`} delta={`sur ${collabs.length}`} trend="neutral" />
       </div>
 
-      {/* ═══════ AREA CHART – Leads par jour ═══════ */}
-      <div className="card" style={{ padding: 24, ...FADE(0, 280) }}>
-        <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
-          <div>
-            <div className="serif" style={{ fontSize: 17, marginBottom: 3 }}>Évolution des leads</div>
-            <div className="dim" style={{ fontSize: 12 }}>Avril 2026 · 30 jours · tendance haussière</div>
-          </div>
-          <div style={{ textAlign: "right" }}>
-            <div className="serif" style={{ fontSize: 28, letterSpacing: "-0.02em", lineHeight: 1 }}>142</div>
-            <div style={{ fontSize: 12, color: "var(--good,#2d7a4f)", fontWeight: 500 }}>↑ +24 vs mars 2026</div>
-          </div>
+      {/* Top 3 podium */}
+      <div className="card" style={{ padding: 24 }}>
+        <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <div className="serif" style={{ fontSize: 18 }}>Top 3 du mois</div>
+          <div className="dim" style={{ fontSize: 12 }}>Classement des interactions générées</div>
         </div>
-
-        <div style={{
-          position: "relative",
-          clipPath: mounted ? "inset(0 0% 0 0)" : "inset(0 100% 0 0)",
-          transition: "clip-path 1300ms cubic-bezier(0.25,0.1,0.25,1) 350ms",
-        }}>
-          <svg viewBox={`0 0 ${chartW} ${chartH + 18}`} style={{ width: "100%", height: 155, display: "block", overflow: "visible" }}
-            onMouseLeave={() => setHoveredDay(null)}>
-            <defs>
-              <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#b8843e" stopOpacity="0.22"/>
-                <stop offset="85%" stopColor="#b8843e" stopOpacity="0.02"/>
-              </linearGradient>
-            </defs>
-            {/* Y-axis grid */}
-            {[0, 0.33, 0.66, 1].map((f, gi) => {
-              const gy = pY + (1 - f) * (chartH - pY * 2);
-              return <line key={gi} x1={pX} y1={gy} x2={chartW - pX} y2={gy} stroke="var(--line)" strokeWidth="1" opacity="0.7" strokeDasharray="3 5"/>;
-            })}
-            {/* Area */}
-            <path d={areaPath} fill="url(#areaGrad)"/>
-            {/* Line */}
-            <path d={linePath} fill="none" stroke="#b8843e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-            {/* Hover zones + dots */}
-            {pts.map((p, i) => (
-              <g key={i}>
-                <rect x={p.x - 10} y={0} width={20} height={chartH + 18} fill="transparent" style={{ cursor: "crosshair" }}
-                  onMouseEnter={() => setHoveredDay(i)}/>
-                {hoveredDay === i && (
-                  <g>
-                    <line x1={p.x} y1={pY - 2} x2={p.x} y2={chartH - pY + 2}
-                      stroke="#b8843e" strokeWidth="1.5" strokeDasharray="3 3" opacity="0.6"/>
-                    <circle cx={p.x} cy={p.y} r={5} fill="white" stroke="#b8843e" strokeWidth="2.5"/>
-                    <circle cx={p.x} cy={p.y} r={2.5} fill="#b8843e"/>
-                    <rect x={Math.max(4, Math.min(p.x - 28, chartW - 62))} y={p.y - 34} width={56} height={26} rx={7} fill="#1a1815" opacity="0.88"/>
-                    <text x={Math.max(4, Math.min(p.x - 28, chartW - 62)) + 28} y={p.y - 17}
-                      textAnchor="middle" fill="white" fontSize="11" fontWeight="600" fontFamily="system-ui,sans-serif">
-                      {p.val} leads
-                    </text>
-                    <text x={Math.max(4, Math.min(p.x - 28, chartW - 62)) + 28} y={p.y - 4}
-                      textAnchor="middle" fill="rgba(255,255,255,0.6)" fontSize="9.5" fontFamily="system-ui,sans-serif">
-                      {p.day} avr
-                    </text>
-                  </g>
-                )}
-              </g>
-            ))}
-          </svg>
-        </div>
-
-        {/* X labels */}
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4, paddingLeft: pX, paddingRight: pX, opacity: mounted ? 1 : 0, transition: "opacity 600ms ease 1400ms" }}>
-          {["1 avr","7 avr","14 avr","21 avr","28 avr","30 avr"].map((l,i) => (
-            <div key={i} className="dim" style={{ fontSize: 10.5 }}>{l}</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+          {active.slice(0, 3).map((c, i) => (
+            <div key={c.id} className="col gap-3" style={{
+              padding: 20,
+              background: i === 0 ? "linear-gradient(180deg, #fffaf0, #f5edd9)" : "var(--surface-2)",
+              border: i === 0 ? "1px solid #ecd5a8" : "1px solid var(--line)",
+              borderRadius: 14, alignItems: "center", textAlign: "center",
+            }}>
+              <div style={{
+                width: 44, height: 44, borderRadius: "50%",
+                background: i === 0 ? "linear-gradient(135deg, var(--gold-2), var(--gold))" : i === 1 ? "var(--ink-4)" : "var(--surface-3)",
+                color: i < 2 ? "white" : "var(--ink-3)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 14, fontWeight: 600,
+              }}>{i === 0 ? <Icon.Crown size={18} /> : `#${i+1}`}</div>
+              <div className="serif" style={{ fontSize: 18 }}>{c.prenom} {c.nom}</div>
+              <div className="dim" style={{ fontSize: 12 }}>{c.poste}</div>
+              <div className="serif" style={{ fontSize: 32, lineHeight: 1, color: i === 0 ? "var(--gold)" : "var(--ink)" }}>{c.leads}</div>
+              <div className="dim" style={{ fontSize: 11 }}>leads ce mois</div>
+            </div>
           ))}
         </div>
       </div>
 
-      {/* ═══════ ROW: Bar chart + Donut chart ═══════ */}
-      <div style={{ display: "grid", gridTemplateColumns: "1.35fr 1fr", gap: 16 }}>
-
-        {/* ── Performance membres (horizontal bars + weekly mini bars) ── */}
-        <div className="card" style={{ padding: 24, ...FADE(0, 500) }}>
-          <div className="serif" style={{ fontSize: 17, marginBottom: 3 }}>Performance membres</div>
-          <div className="dim" style={{ fontSize: 12, marginBottom: 22 }}>Leads générés ce mois · classement</div>
-
-          <div className="col gap-5">
-            {active.map((c, i) => {
-              const pct = (c.leads / (active[0]?.leads || 1)) * 100;
-              const barColors = [
-                "linear-gradient(90deg,#b8843e,#d4a855)",
-                "linear-gradient(90deg,#c9a050,#dbb86a)",
-                "linear-gradient(90deg,#d4b878,#e4cb96)",
-              ];
-              return (
-                <div key={c.id}>
-                  <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
-                    <div className="row gap-3" style={{ alignItems: "center" }}>
-                      <div style={{
-                        width: 30, height: 30, borderRadius: "50%", flexShrink: 0,
-                        background: i === 0 ? "linear-gradient(135deg,#b8843e,#d4a855)" : "var(--surface-3)",
-                        color: i === 0 ? "white" : "var(--ink-3)",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: 10, fontWeight: 700,
-                      }}>
-                        {i === 0 ? <Icon.Crown size={13}/> : `#${i+1}`}
-                      </div>
-                      <div className="col" style={{ gap: 1 }}>
-                        <div style={{ fontWeight: 500, fontSize: 14 }}>{c.prenom} {c.nom}</div>
-                        <div className="dim" style={{ fontSize: 11 }}>{c.poste}</div>
-                      </div>
-                    </div>
-                    <div className="row gap-2" style={{ alignItems: "baseline" }}>
-                      <span className="serif" style={{ fontSize: 24, letterSpacing: "-0.02em" }}>{c.leads}</span>
-                      <span className="dim" style={{ fontSize: 11 }}>leads</span>
-                    </div>
-                  </div>
-                  <div style={{ height: 9, background: "var(--surface-2)", borderRadius: 999, overflow: "hidden" }}>
-                    <div style={{
-                      height: "100%",
-                      width: mounted ? `${pct}%` : "0%",
-                      background: barColors[i] || barColors[2],
-                      borderRadius: 999,
-                      transition: `width 950ms cubic-bezier(0.34,1.56,0.64,1) ${620 + i * 130}ms`,
-                    }}/>
-                  </div>
-                  <div className="row" style={{ justifyContent: "flex-end", marginTop: 3 }}>
-                    <span className="dim" style={{ fontSize: 10 }}>{Math.round(pct)}% du score max</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Weekly progression mini bars */}
-          <div style={{ marginTop: 22, paddingTop: 18, borderTop: "1px solid var(--line)" }}>
-            <div className="row" style={{ justifyContent: "space-between", marginBottom: 10 }}>
-              <div className="dim" style={{ fontSize: 11 }}>Progression hebdomadaire</div>
-              <div style={{ fontSize: 11, color: "var(--good,#2d7a4f)", fontWeight: 500 }}>↑ +47% sur 4 sem.</div>
-            </div>
-            <div className="row gap-3">
-              {weekTotals.map((wv, wi) => (
-                <div key={wi} className="col" style={{ flex: 1, alignItems: "center", gap: 5 }}>
-                  <div style={{ width: "100%", height: 52, background: "var(--surface-2)", borderRadius: 8, overflow: "hidden", display: "flex", alignItems: "flex-end" }}>
-                    <div style={{
-                      width: "100%",
-                      height: mounted ? `${(wv / 41) * 100}%` : "0%",
-                      background: wi === 3 ? "linear-gradient(0deg,#b8843e,#d4a855)" : wi === 2 ? "var(--surface-3)" : "var(--surface-3)",
-                      transition: `height 750ms cubic-bezier(0.34,1.56,0.64,1) ${900 + wi * 90}ms`,
-                      borderRadius: "6px 6px 0 0",
-                    }}/>
-                  </div>
-                  <span className="dim" style={{ fontSize: 10 }}>S{wi+1}</span>
-                  <span style={{ fontSize: 12, fontWeight: wi === 3 ? 700 : 400, color: wi === 3 ? "var(--ink)" : "var(--ink-3)" }}>{wv}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* ── Donut chart: répartition événements ── */}
-        <div className="card" style={{ padding: 24, ...FADE(0, 650) }}>
-          <div className="serif" style={{ fontSize: 17, marginBottom: 3 }}>Répartition événements</div>
-          <div className="dim" style={{ fontSize: 12, marginBottom: 22 }}>142 leads · Avril 2026</div>
-
-          {/* Donut + legend */}
-          <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-            <div style={{ position: "relative", flexShrink: 0 }}>
-              <svg viewBox="0 0 160 160" style={{ width: 130, height: 130, transform: "rotate(-90deg)" }}>
-                {/* Background ring */}
-                <circle cx={dcx} cy={dcy} r={r} fill="none" stroke="var(--surface-2)" strokeWidth={20}/>
-                {/* Segments */}
-                {donutSegs.map((seg, i) => (
-                  <circle key={i}
-                    cx={dcx} cy={dcy} r={r}
-                    fill="none"
-                    stroke={seg.color}
-                    strokeWidth={20}
-                    strokeLinecap="butt"
-                    strokeDasharray={`${mounted ? seg.dashLen : 0} ${circ}`}
-                    strokeDashoffset={seg.cumOffset}
-                    style={{ transition: `stroke-dasharray 900ms cubic-bezier(0.34,1.56,0.64,1) ${750 + i * 110}ms` }}
-                  />
-                ))}
-              </svg>
-              {/* Center label */}
-              <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                <div className="serif" style={{ fontSize: 24, lineHeight: 1 }}>142</div>
-                <div className="dim" style={{ fontSize: 10 }}>leads</div>
-              </div>
-            </div>
-
-            {/* Legend */}
-            <div className="col gap-3" style={{ flex: 1 }}>
-              {eventData.map((e, i) => (
-                <div key={i} className="row" style={{ alignItems: "center", gap: 8 }}>
-                  <div style={{ width: 9, height: 9, borderRadius: 3, background: e.color, flexShrink: 0 }}/>
-                  <div className="col" style={{ flex: 1, gap: 1 }}>
-                    <div style={{ fontSize: 12, fontWeight: 500, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{e.label}</div>
-                    <div className="dim" style={{ fontSize: 11 }}>{e.value} · {e.pct}%</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Mini event progress bars */}
-          <div className="col gap-2" style={{ marginTop: 22, paddingTop: 18, borderTop: "1px solid var(--line)" }}>
-            {eventData.map((e, i) => (
-              <div key={i} className="row" style={{ alignItems: "center", gap: 9 }}>
-                <div style={{ width: 60, fontSize: 11, color: "var(--ink-3)", textAlign: "right", flexShrink: 0, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
-                  {e.label.split(" ")[0]}
-                </div>
-                <div style={{ flex: 1, height: 6, background: "var(--surface-2)", borderRadius: 999, overflow: "hidden" }}>
-                  <div style={{
-                    height: "100%",
-                    width: mounted ? `${e.pct}%` : "0%",
-                    background: e.color,
-                    borderRadius: 999,
-                    transition: `width 850ms ease ${850 + i * 100}ms`,
-                  }}/>
-                </div>
-                <div style={{ fontSize: 11, fontWeight: 600, width: 28, textAlign: "right" }}>{e.pct}%</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ═══════ PENDING REQUESTS ═══════ */}
+      {/* Pending requests — admin & responsable */}
       {canManage && pending.length > 0 && (
         <div className="card" style={{ padding: 24 }}>
           <div className="row" style={{ justifyContent: "space-between", marginBottom: 16 }}>
@@ -612,8 +316,8 @@ function DashboardPage({ role, trialExpired, onUpgrade }) {
                   </div>
                 </div>
                 <div className="row gap-2">
-                  <button className="btn btn-sm" onClick={() => refuse(c.id)}><Icon.X size={13}/> Refuser</button>
-                  <button className="btn btn-primary btn-sm" onClick={() => accept(c.id)}><Icon.Check size={13}/> Accepter</button>
+                  <button className="btn btn-sm" onClick={() => refuse(c.id)}><Icon.X size={13} /> Refuser</button>
+                  <button className="btn btn-primary btn-sm" onClick={() => accept(c.id)}><Icon.Check size={13} /> Accepter</button>
                 </div>
               </div>
             ))}
@@ -621,18 +325,18 @@ function DashboardPage({ role, trialExpired, onUpgrade }) {
         </div>
       )}
 
-      {/* ═══════ MEMBERS TABLE ═══════ */}
+      {/* Full table */}
       <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-        <div className="row" style={{ justifyContent: "space-between", padding: "20px 24px", borderBottom: "1px solid var(--line)", alignItems: "center" }}>
-          <div className="serif" style={{ fontSize: 18 }}>Équipe</div>
+        <div className="row" style={{ justifyContent: "space-between", padding: "20px 24px", borderBottom: "1px solid var(--line)" }}>
+          <div className="serif" style={{ fontSize: 18 }}>Membres</div>
           <span className="dim" style={{ fontSize: 12 }}>{tableMembers.length} membres</span>
         </div>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
             <thead>
               <tr style={{ background: "var(--surface-2)" }}>
-                {["Membre","Poste","Rôle","Leads","Actions canal","Dernier clic", canManage ? "Actions" : ""].filter(Boolean).map(h => (
-                  <th key={h} style={{ textAlign: "left", padding: "12px 20px", fontWeight: 500, color: "var(--ink-3)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>{h}</th>
+                {["Membre", "Poste", "Rôle", "Leads", "Action contact", "Dernier clic", canManage ? "Actions" : ""].filter(Boolean).map(h => (
+                  <th key={h} style={{ textAlign: "left", padding: "12px 20px", fontWeight: 500, color: "var(--ink-3)", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -640,54 +344,62 @@ function DashboardPage({ role, trialExpired, onUpgrade }) {
               {tableMembers.map(c => {
                 const isResp = c.role_membre === "responsable";
                 return (
-                  <tr key={c.id} style={{ borderTop: "1px solid var(--line)" }}>
-                    <td style={{ padding: "14px 20px" }}>
-                      <div className="row gap-3">
-                        <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--surface-3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600 }}>
-                          {c.prenom[0]}{c.nom[0]}
-                        </div>
-                        <div className="col" style={{ lineHeight: 1.3 }}>
-                          <div style={{ fontWeight: 500 }}>{c.prenom} {c.nom}</div>
-                          <div className="dim" style={{ fontSize: 12 }}>{c.email}</div>
-                        </div>
+                <tr key={c.id} style={{ borderTop: "1px solid var(--line)" }}>
+                  <td style={{ padding: "14px 20px" }}>
+                    <div className="row gap-3">
+                      <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--surface-3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600 }}>
+                        {c.prenom[0]}{c.nom[0]}
                       </div>
-                    </td>
-                    <td style={{ padding: "14px 20px", color: "var(--ink-3)" }}>{c.poste}</td>
+                      <div className="col" style={{ lineHeight: 1.3 }}>
+                        <div style={{ fontWeight: 500 }}>{c.prenom} {c.nom}</div>
+                        <div className="dim" style={{ fontSize: 12 }}>{c.email}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td style={{ padding: "14px 20px", color: "var(--ink-3)" }}>{c.poste}</td>
+                  <td style={{ padding: "14px 20px" }}>
+                    <span className={`pill ${isResp ? "pill-good" : "pill-mute"}`}>
+                      {isResp ? <Icon.Crown size={11} /> : <Icon.User size={11} />}
+                      {isResp ? "Responsable" : "Collaborateur"}
+                    </span>
+                  </td>
+                  <td style={{ padding: "14px 20px" }}><span className="serif" style={{ fontSize: 18 }}>{c.leads}</span></td>
+                  <td style={{ padding: "14px 20px" }}>
+                    <button
+                      type="button"
+                      onClick={() => setStatsCollab(c)}
+                      title="Voir le détail par canal"
+                      style={{
+                        background: "transparent", border: 0, padding: 0, cursor: "pointer",
+                        display: "inline-flex", alignItems: "center", gap: 6,
+                        color: "var(--ink)", borderBottom: "1px dashed var(--ink-4)",
+                      }}
+                    >
+                      <span className="serif" style={{ fontSize: 18 }}>{Math.round(c.leads * 1.4)}</span>
+                      <Icon.ChevronRight size={12} />
+                    </button>
+                  </td>
+                  <td style={{ padding: "14px 20px", color: "var(--ink-3)", fontSize: 12 }}>{c.last_click}</td>
+                  {canManage && (
                     <td style={{ padding: "14px 20px" }}>
-                      <span className={`pill ${isResp ? "pill-good" : "pill-mute"}`}>
-                        {isResp ? <Icon.Crown size={11}/> : <Icon.User size={11}/>}
-                        {isResp ? "Responsable" : "Collaborateur"}
-                      </span>
+                      {c.statut === "actif" && (
+                        <div className="row gap-1">
+                          <button
+                            className="btn btn-ghost btn-sm"
+                            onClick={() => toggleRole(c.id)}
+                            title={isResp ? "Rétrograder en collaborateur" : "Promouvoir responsable"}
+                          >
+                            {isResp ? <Icon.User size={13} /> : <Icon.Crown size={13} />}
+                          </button>
+                          <button className="btn btn-ghost btn-sm" onClick={() => remove(c.id)} title="Supprimer l'accès">
+                            <Icon.Trash size={13} />
+                          </button>
+                        </div>
+                      )}
                     </td>
-                    <td style={{ padding: "14px 20px" }}>
-                      <span className="serif" style={{ fontSize: 20 }}>{c.leads}</span>
-                    </td>
-                    <td style={{ padding: "14px 20px" }}>
-                      <button type="button" onClick={() => setStatsCollab(c)} title="Détail par canal"
-                        style={{ background: "transparent", border: 0, padding: 0, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, color: "var(--ink)", borderBottom: "1px dashed var(--ink-4)" }}>
-                        <span className="serif" style={{ fontSize: 20 }}>{Math.round(c.leads * 1.4)}</span>
-                        <Icon.ChevronRight size={12}/>
-                      </button>
-                    </td>
-                    <td style={{ padding: "14px 20px", color: "var(--ink-3)", fontSize: 12 }}>{c.last_click}</td>
-                    {canManage && (
-                      <td style={{ padding: "14px 20px" }}>
-                        {c.statut === "actif" && (
-                          <div className="row gap-1">
-                            <button className="btn btn-ghost btn-sm" onClick={() => toggleRole(c.id)}
-                              title={isResp ? "Rétrograder" : "Promouvoir responsable"}>
-                              {isResp ? <Icon.User size={13}/> : <Icon.Crown size={13}/>}
-                            </button>
-                            <button className="btn btn-ghost btn-sm" onClick={() => remove(c.id)} title="Retirer l'accès">
-                              <Icon.Trash size={13}/>
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                    )}
-                  </tr>
-                );
-              })}
+                  )}
+                </tr>
+              );})}
             </tbody>
           </table>
         </div>
