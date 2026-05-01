@@ -386,8 +386,97 @@ function ConversionTimeline() {
 function DashboardPreview() {
   const collabs = window.CARTALIS_DATA.collaborators;
   const active = collabs.filter(c => c.statut === "actif").sort((a, b) => b.leads - a.leads);
+
+  const sectionRef = React.useRef(null);
+  const [vis, setVis] = useStateL(false);
+  const [hoveredDay, setHoveredDay] = useStateL(null);
+  const [kpi1, setKpi1] = useStateL(0);
+  const [kpi2, setKpi2] = useStateL(0);
+  const [kpi3, setKpi3] = useStateL(0);
+  const [kpi4, setKpi4] = useStateL(0);
+
+  useEffectL(() => {
+    const obs = new IntersectionObserver(
+      ([e]) => { if (e.isIntersecting) setVis(true); },
+      { threshold: 0.1 }
+    );
+    if (sectionRef.current) obs.observe(sectionRef.current);
+    return () => obs.disconnect();
+  }, []);
+
+  useEffectL(() => {
+    if (!vis) return;
+    const go = (setter, target, delay) => {
+      setTimeout(() => {
+        let s = null, r;
+        const fn = (ts) => {
+          if (!s) s = ts;
+          const p = Math.min((ts - s) / 1050, 1);
+          setter(Math.round((1 - Math.pow(1 - p, 3)) * target));
+          if (p < 1) r = requestAnimationFrame(fn);
+        };
+        r = requestAnimationFrame(fn);
+      }, delay);
+    };
+    go(setKpi1, 142, 0);
+    go(setKpi2, 198, 120);
+    go(setKpi3, 74, 240);
+    go(setKpi4, 3, 360);
+  }, [vis]);
+
+  // ── SVG area chart ──
+  const dailyData = [4,3,5,4,7,6,8,5,4,7,9,6,5,8,10,7,6,9,11,8,7,10,12,9,8,11,10,13,12,14];
+  const cW = 560, cH = 110, pX = 6, pY = 8;
+  const maxD = Math.max(...dailyData);
+  const pts = dailyData.map((v, i) => ({
+    x: pX + (i / (dailyData.length - 1)) * (cW - pX * 2),
+    y: pY + (1 - v / maxD) * (cH - pY * 2),
+    val: v, day: i + 1,
+  }));
+  function buildPath(pp) {
+    if (pp.length < 2) return "";
+    let d = `M ${pp[0].x.toFixed(1)},${pp[0].y.toFixed(1)}`;
+    for (let i = 1; i < pp.length; i++) {
+      const a = pp[i-1], b = pp[i];
+      const mx = (a.x + b.x) / 2;
+      d += ` C ${mx.toFixed(1)},${a.y.toFixed(1)} ${mx.toFixed(1)},${b.y.toFixed(1)} ${b.x.toFixed(1)},${b.y.toFixed(1)}`;
+    }
+    return d;
+  }
+  const linePath = buildPath(pts);
+  const areaPath = linePath + ` L ${cW - pX},${cH} L ${pX},${cH} Z`;
+
+  // ── Donut chart ──
+  const eventData = [
+    { label: "Salon Immobilier", color: "#b8843e", value: 58, pct: 41 },
+    { label: "Réseau MEDEF",     color: "#c9a050", value: 47, pct: 33 },
+    { label: "Portes ouvertes",  color: "#d4b878", value: 23, pct: 16 },
+    { label: "Sans étiquette",   color: "#ddd0ad", value: 14, pct: 10 },
+  ];
+  const r = 44, dcx = 64, dcy = 64, circ = 2 * Math.PI * r;
+  const donutSegs = eventData.map((e, i) => {
+    const cumFrac = eventData.slice(0, i).reduce((s, x) => s + x.value, 0) / 142;
+    return { ...e, dashLen: (e.value / 142) * circ, cumOffset: -(cumFrac * circ) };
+  });
+
+  // ── Sparklines ──
+  function sp(vals) {
+    const mx = Math.max(...vals), mn = Math.min(...vals), rng = mx - mn || 1;
+    return buildPath(vals.map((v, i) => ({
+      x: (i / (vals.length - 1)) * 68,
+      y: 22 - ((v - mn) / rng) * 19 - 1,
+    })));
+  }
+
+  const barColors = ["linear-gradient(90deg,#b8843e,#d4a855)","linear-gradient(90deg,#c9a050,#dbb86a)","linear-gradient(90deg,#d4b878,#e4cb96)"];
+  const FADE = (delay) => ({
+    opacity: vis ? 1 : 0,
+    transform: vis ? "translateY(0)" : "translateY(14px)",
+    transition: `opacity 480ms ease ${delay}ms, transform 480ms ease ${delay}ms`,
+  });
+
   return (
-    <section style={{ padding: "120px 0", position: "relative" }}>
+    <section ref={sectionRef} style={{ padding: "120px 0", position: "relative" }}>
       <div className="container col gap-10">
         <SectionHeader
           eyebrow="Dashboard"
@@ -395,12 +484,13 @@ function DashboardPreview() {
           subtitle="Cartalis permet aux entreprises de visualiser quels collaborateurs génèrent le plus d'interactions grâce à leurs cartes digitales."
         />
 
-        <div className="card" style={{ padding: 24, maxWidth: 1100, margin: "0 auto", width: "100%" }}>
-          {/* Header */}
-          <div className="row" style={{ justifyContent: "space-between", paddingBottom: 16, borderBottom: "1px solid var(--line)", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
+        <div className="card" style={{ padding: 28, maxWidth: 1100, margin: "0 auto", width: "100%", boxShadow: "0 12px 56px rgba(0,0,0,0.10)" }}>
+
+          {/* Header bar */}
+          <div className="row" style={{ justifyContent: "space-between", paddingBottom: 18, borderBottom: "1px solid var(--line)", marginBottom: 22, flexWrap: "wrap", gap: 10 }}>
             <div className="row gap-3" style={{ alignItems: "center" }}>
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--good)" }} />
-              <div className="serif" style={{ fontSize: 18 }}>Performance des membres</div>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--good)", boxShadow: "0 0 0 3px rgba(45,122,79,0.15)" }}/>
+              <div className="serif" style={{ fontSize: 17 }}>Performance des membres</div>
             </div>
             <div className="row gap-2" style={{ flexWrap: "wrap" }}>
               <div className="chip">Jan 2026 → Avr 2026</div>
@@ -409,63 +499,209 @@ function DashboardPreview() {
             </div>
           </div>
 
-          {/* Metrics */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16, marginBottom: 24 }}>
-            <Metric label="Total leads ce mois" value="142" delta="+24 vs mois dernier" trend="up" />
-            <Metric label="Meilleur membre" value={active[0] ? `${active[0].prenom} ${active[0].nom[0]}.` : "—"} delta={active[0] ? `${active[0].leads} leads` : ""} trend="neutral" />
-            <Metric label="Membres actifs" value={`${active.length}`} delta={`sur ${collabs.length}`} trend="neutral" />
+          {/* KPI cards */}
+          <div className="dash-kpi" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 20 }}>
+            {[
+              { label: "Leads ce mois",   val: kpi1, sfx: "",   delta: "↑ +20.3%", sp: sp([88,100,112,118,142]) },
+              { label: "Total scans",      val: kpi2, sfx: "",   delta: "↑ +15.1%", sp: sp([142,155,168,185,198]) },
+              { label: "Taux conversion",  val: kpi3, sfx: "%",  delta: "↑ +3 pts",  sp: sp([68,71,70,73,74]) },
+              { label: "Membres actifs",   val: kpi4, sfx: "/4", delta: "Équipe active", sp: sp([2,3,3,3,3]) },
+            ].map((k, i) => (
+              <div key={i} style={{
+                padding: "16px 18px", borderRadius: 14,
+                background: "var(--surface-2)", border: "1px solid var(--line)",
+                position: "relative", overflow: "hidden",
+                ...FADE(i * 70),
+              }}>
+                <svg viewBox="0 0 68 24" style={{ position: "absolute", right: 6, bottom: 6, width: 68, height: 24, opacity: 0.18, pointerEvents: "none" }}>
+                  <path d={k.sp} fill="none" stroke="#b8843e" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                <div style={{ fontSize: 10, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-3)", marginBottom: 8 }}>{k.label}</div>
+                <div className="serif" style={{ fontSize: 34, lineHeight: 1, letterSpacing: "-0.03em", marginBottom: 6 }}>{k.val}{k.sfx}</div>
+                <div style={{ fontSize: 11, fontWeight: 500, color: "var(--good,#2d7a4f)" }}>{k.delta}</div>
+              </div>
+            ))}
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 20 }} className="dash-grid">
-            {/* Bar chart */}
-            <div className="col gap-4" style={{ padding: 20, border: "1px solid var(--line)", borderRadius: 16, background: "var(--surface-2)" }}>
-              <div className="row" style={{ justifyContent: "space-between" }}>
-                <div className="serif" style={{ fontSize: 16 }}>Leads par jour</div>
-                <div className="dim" style={{ fontSize: 12 }}>30 derniers jours</div>
+          {/* Area chart */}
+          <div style={{ padding: "18px 18px 12px", borderRadius: 14, background: "var(--surface-2)", border: "1px solid var(--line)", marginBottom: 18, ...FADE(300) }}>
+            <div className="row" style={{ justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+              <div>
+                <div className="serif" style={{ fontSize: 15 }}>Évolution des leads</div>
+                <div className="dim" style={{ fontSize: 11, marginTop: 1 }}>Avril 2026 · 30 jours</div>
               </div>
-              <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 130 }}>
-                {[40,60,35,80,55,70,90,65,100,75,88,95,70,110,85,95,120,100,90,130,110,95,140,115,105,125,100,130,110,142].map((h, i) => (
-                  <div key={i} className="bar" style={{ height: `${h*0.6}%`, flex: 1, opacity: 0.4 + (i/30)*0.6 }} />
-                ))}
+              <div style={{ textAlign: "right" }}>
+                <div className="serif" style={{ fontSize: 22, letterSpacing: "-0.02em", lineHeight: 1 }}>142</div>
+                <div style={{ fontSize: 11, color: "var(--good,#2d7a4f)", fontWeight: 500 }}>↑ +24 vs mars</div>
               </div>
             </div>
 
-            {/* Top 3 podium */}
-            <div className="col gap-3" style={{ padding: 20, border: "1px solid var(--line)", borderRadius: 16 }}>
-              <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                <div className="serif" style={{ fontSize: 16 }}>Top 3 du mois</div>
-                <div className="dim" style={{ fontSize: 11 }}>Leads générés</div>
-              </div>
-              {active.slice(0, 3).map((c, i) => (
-                <div key={c.id} style={{
-                  display: "flex", alignItems: "center", gap: 12,
-                  padding: "12px 14px",
-                  background: i === 0 ? "linear-gradient(90deg,#fffaf0,var(--surface))" : "var(--surface-2)",
-                  border: i === 0 ? "1px solid #ecd5a8" : "1px solid var(--line)",
-                  borderRadius: 12, justifyContent: "space-between",
-                }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{
-                      width: 32, height: 32, borderRadius: "50%", flexShrink: 0,
-                      background: i === 0 ? "linear-gradient(135deg,var(--gold-2),var(--gold))" : i === 1 ? "var(--ink-4)" : "var(--surface-3)",
-                      color: i < 2 ? "white" : "var(--ink-3)",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 11, fontWeight: 600,
-                    }}>{i === 0 ? <Icon.Crown size={14}/> : `#${i+1}`}</div>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 500 }}>{c.prenom} {c.nom}</div>
-                      <div className="dim" style={{ fontSize: 11 }}>{c.poste}</div>
-                    </div>
-                  </div>
-                  <div className="serif" style={{ fontSize: 22, color: i === 0 ? "var(--gold)" : "var(--ink)" }}>{c.leads}</div>
-                </div>
+            <div style={{
+              clipPath: vis ? "inset(0 0% 0 0)" : "inset(0 100% 0 0)",
+              transition: "clip-path 1300ms cubic-bezier(0.25,0.1,0.25,1) 380ms",
+            }}>
+              <svg viewBox={`0 0 ${cW} ${cH + 8}`} style={{ width: "100%", height: 110, display: "block", overflow: "visible" }}
+                onMouseLeave={() => setHoveredDay(null)}>
+                <defs>
+                  <linearGradient id="dpGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#b8843e" stopOpacity="0.20"/>
+                    <stop offset="90%" stopColor="#b8843e" stopOpacity="0.01"/>
+                  </linearGradient>
+                </defs>
+                {[0,0.33,0.66,1].map((f, gi) => {
+                  const gy = pY + (1 - f) * (cH - pY * 2);
+                  return <line key={gi} x1={pX} y1={gy} x2={cW-pX} y2={gy} stroke="var(--line)" strokeWidth="1" strokeDasharray="3 6" opacity="0.8"/>;
+                })}
+                <path d={areaPath} fill="url(#dpGrad)"/>
+                <path d={linePath} fill="none" stroke="#b8843e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                {pts.map((p, i) => (
+                  <g key={i}>
+                    <rect x={p.x - 10} y={0} width={20} height={cH} fill="transparent" style={{ cursor: "crosshair" }} onMouseEnter={() => setHoveredDay(i)}/>
+                    {hoveredDay === i && (
+                      <g>
+                        <line x1={p.x} y1={pY} x2={p.x} y2={cH - pY} stroke="#b8843e" strokeWidth="1.5" strokeDasharray="3 3" opacity="0.5"/>
+                        <circle cx={p.x} cy={p.y} r={4.5} fill="white" stroke="#b8843e" strokeWidth="2.5"/>
+                        <circle cx={p.x} cy={p.y} r={2} fill="#b8843e"/>
+                        <rect x={Math.max(2, Math.min(p.x - 26, cW - 60))} y={p.y - 31} width={52} height={24} rx={6} fill="#1a1815" opacity="0.9"/>
+                        <text x={Math.max(2, Math.min(p.x - 26, cW - 60)) + 26} y={p.y - 15} textAnchor="middle" fill="white" fontSize="10.5" fontWeight="600" fontFamily="system-ui">{p.val} leads</text>
+                        <text x={Math.max(2, Math.min(p.x - 26, cW - 60)) + 26} y={p.y - 3} textAnchor="middle" fill="rgba(255,255,255,0.55)" fontSize="9" fontFamily="system-ui">{p.day} avr</text>
+                      </g>
+                    )}
+                  </g>
+                ))}
+              </svg>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", paddingLeft: pX, paddingRight: pX, marginTop: 3 }}>
+              {["1 avr","8 avr","15 avr","22 avr","30 avr"].map((l,i) => (
+                <div key={i} className="dim" style={{ fontSize: 10 }}>{l}</div>
               ))}
+            </div>
+          </div>
+
+          {/* Bottom row */}
+          <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 16 }} className="dash-grid">
+
+            {/* Barchart membres */}
+            <div style={{ padding: 20, borderRadius: 14, border: "1px solid var(--line)", background: "var(--surface-2)", ...FADE(450) }}>
+              <div className="serif" style={{ fontSize: 15, marginBottom: 2 }}>Performance membres</div>
+              <div className="dim" style={{ fontSize: 11, marginBottom: 18 }}>Leads générés · classement</div>
+              <div className="col gap-5">
+                {active.map((c, i) => {
+                  const pct = (c.leads / (active[0]?.leads || 1)) * 100;
+                  return (
+                    <div key={c.id}>
+                      <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                        <div className="row gap-3" style={{ alignItems: "center" }}>
+                          <div style={{
+                            width: 26, height: 26, borderRadius: "50%", flexShrink: 0,
+                            background: i === 0 ? "linear-gradient(135deg,#b8843e,#d4a855)" : "var(--surface-3)",
+                            color: i === 0 ? "white" : "var(--ink-3)",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            fontSize: 9, fontWeight: 700,
+                          }}>
+                            {i === 0 ? <Icon.Crown size={11}/> : `#${i+1}`}
+                          </div>
+                          <div className="col" style={{ gap: 1 }}>
+                            <div style={{ fontWeight: 500, fontSize: 13 }}>{c.prenom} {c.nom}</div>
+                            <div className="dim" style={{ fontSize: 10 }}>{c.poste}</div>
+                          </div>
+                        </div>
+                        <div className="row gap-1" style={{ alignItems: "baseline" }}>
+                          <span className="serif" style={{ fontSize: 20 }}>{c.leads}</span>
+                          <span className="dim" style={{ fontSize: 10 }}>leads</span>
+                        </div>
+                      </div>
+                      <div style={{ height: 7, background: "var(--surface)", borderRadius: 999, overflow: "hidden" }}>
+                        <div style={{
+                          height: "100%",
+                          width: vis ? `${pct}%` : "0%",
+                          background: barColors[i] || barColors[2],
+                          borderRadius: 999,
+                          transition: `width 950ms cubic-bezier(0.34,1.56,0.64,1) ${600 + i * 130}ms`,
+                        }}/>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Donut + Top 3 */}
+            <div style={{ padding: 20, borderRadius: 14, border: "1px solid var(--line)", ...FADE(580) }}>
+              <div className="serif" style={{ fontSize: 15, marginBottom: 2 }}>Répartition événements</div>
+              <div className="dim" style={{ fontSize: 11, marginBottom: 14 }}>142 leads · Avr 2026</div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 16 }}>
+                <div style={{ position: "relative", flexShrink: 0 }}>
+                  <svg viewBox="0 0 128 128" style={{ width: 96, height: 96, transform: "rotate(-90deg)" }}>
+                    <circle cx={dcx} cy={dcy} r={r} fill="none" stroke="var(--surface-2)" strokeWidth={15}/>
+                    {donutSegs.map((seg, i) => (
+                      <circle key={i} cx={dcx} cy={dcy} r={r} fill="none"
+                        stroke={seg.color} strokeWidth={15} strokeLinecap="butt"
+                        strokeDasharray={`${vis ? seg.dashLen : 0} ${circ}`}
+                        strokeDashoffset={seg.cumOffset}
+                        style={{ transition: `stroke-dasharray 900ms cubic-bezier(0.34,1.56,0.64,1) ${680 + i * 100}ms` }}
+                      />
+                    ))}
+                  </svg>
+                  <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                    <div className="serif" style={{ fontSize: 18, lineHeight: 1 }}>142</div>
+                    <div className="dim" style={{ fontSize: 9 }}>leads</div>
+                  </div>
+                </div>
+                <div className="col gap-2" style={{ flex: 1 }}>
+                  {eventData.map((e, i) => (
+                    <div key={i} className="row" style={{ alignItems: "center", gap: 6 }}>
+                      <div style={{ width: 8, height: 8, borderRadius: 2, background: e.color, flexShrink: 0 }}/>
+                      <div className="col" style={{ flex: 1 }}>
+                        <div style={{ fontSize: 11, fontWeight: 500 }}>{e.label}</div>
+                        <div className="dim" style={{ fontSize: 9 }}>{e.pct}%</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
+                <div className="row" style={{ justifyContent: "space-between", marginBottom: 8 }}>
+                  <div style={{ fontSize: 12, fontWeight: 500 }}>Top 3 du mois</div>
+                  <div className="dim" style={{ fontSize: 10 }}>Leads générés</div>
+                </div>
+                <div className="col gap-2">
+                  {active.slice(0, 3).map((c, i) => (
+                    <div key={c.id} style={{
+                      display: "flex", alignItems: "center", gap: 8, padding: "9px 12px",
+                      background: i === 0 ? "linear-gradient(90deg,#fffaf0,var(--surface))" : "var(--surface-2)",
+                      border: i === 0 ? "1px solid #ecd5a8" : "1px solid var(--line)",
+                      borderRadius: 10, justifyContent: "space-between",
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{
+                          width: 26, height: 26, borderRadius: "50%", flexShrink: 0,
+                          background: i === 0 ? "linear-gradient(135deg,var(--gold-2),var(--gold))" : i === 1 ? "var(--ink-4)" : "var(--surface-3)",
+                          color: i < 2 ? "white" : "var(--ink-3)",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          fontSize: 9, fontWeight: 600,
+                        }}>{i === 0 ? <Icon.Crown size={11}/> : `#${i+1}`}</div>
+                        <div>
+                          <div style={{ fontSize: 12, fontWeight: 500 }}>{c.prenom} {c.nom}</div>
+                          <div className="dim" style={{ fontSize: 10 }}>{c.poste}</div>
+                        </div>
+                      </div>
+                      <div className="serif" style={{ fontSize: 18, color: i === 0 ? "var(--gold)" : "var(--ink)" }}>{c.leads}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
       <style>{`
-        @media (max-width: 800px) { .dash-grid { grid-template-columns: 1fr !important; } }
+        @media (max-width: 900px) {
+          .dash-grid { grid-template-columns: 1fr !important; }
+          .dash-kpi  { grid-template-columns: repeat(2,1fr) !important; }
+        }
       `}</style>
     </section>
   );
