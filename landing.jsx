@@ -386,323 +386,281 @@ function ConversionTimeline() {
 function DashboardPreview() {
   const collabs = window.CARTALIS_DATA.collaborators;
   const active = collabs.filter(c => c.statut === "actif").sort((a, b) => b.leads - a.leads);
-
-  const sectionRef = React.useRef(null);
-  const [vis, setVis] = useStateL(false);
-  const [hoveredDay, setHoveredDay] = useStateL(null);
-  const [kpi1, setKpi1] = useStateL(0);
-  const [kpi2, setKpi2] = useStateL(0);
-  const [kpi3, setKpi3] = useStateL(0);
-  const [kpi4, setKpi4] = useStateL(0);
+  const [slide, setSlide] = useStateL(0);
+  const [fading, setFading] = useStateL(false);
+  const SLIDES = ["Vue d'ensemble", "Tableau membres", "Détail canal"];
 
   useEffectL(() => {
-    const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) setVis(true); },
-      { threshold: 0.1 }
-    );
-    if (sectionRef.current) obs.observe(sectionRef.current);
-    return () => obs.disconnect();
+    const t = setInterval(() => {
+      setFading(true);
+      setTimeout(() => { setSlide(s => (s + 1) % 3); setFading(false); }, 320);
+    }, 4500);
+    return () => clearInterval(t);
   }, []);
 
-  useEffectL(() => {
-    if (!vis) return;
-    const go = (setter, target, delay) => {
-      setTimeout(() => {
-        let s = null, r;
-        const fn = (ts) => {
-          if (!s) s = ts;
-          const p = Math.min((ts - s) / 1050, 1);
-          setter(Math.round((1 - Math.pow(1 - p, 3)) * target));
-          if (p < 1) r = requestAnimationFrame(fn);
-        };
-        r = requestAnimationFrame(fn);
-      }, delay);
-    };
-    go(setKpi1, 142, 0);
-    go(setKpi2, 198, 120);
-    go(setKpi3, 74, 240);
-    go(setKpi4, 3, 360);
-  }, [vis]);
+  const goTo = (i) => { setFading(true); setTimeout(() => { setSlide(i); setFading(false); }, 220); };
 
-  // ── SVG area chart ──
-  const dailyData = [4,3,5,4,7,6,8,5,4,7,9,6,5,8,10,7,6,9,11,8,7,10,12,9,8,11,10,13,12,14];
-  const cW = 560, cH = 110, pX = 6, pY = 8;
-  const maxD = Math.max(...dailyData);
-  const pts = dailyData.map((v, i) => ({
-    x: pX + (i / (dailyData.length - 1)) * (cW - pX * 2),
-    y: pY + (1 - v / maxD) * (cH - pY * 2),
-    val: v, day: i + 1,
-  }));
-  function buildPath(pp) {
-    if (pp.length < 2) return "";
-    let d = `M ${pp[0].x.toFixed(1)},${pp[0].y.toFixed(1)}`;
-    for (let i = 1; i < pp.length; i++) {
-      const a = pp[i-1], b = pp[i];
-      const mx = (a.x + b.x) / 2;
-      d += ` C ${mx.toFixed(1)},${a.y.toFixed(1)} ${mx.toFixed(1)},${b.y.toFixed(1)} ${b.x.toFixed(1)},${b.y.toFixed(1)}`;
-    }
-    return d;
-  }
-  const linePath = buildPath(pts);
-  const areaPath = linePath + ` L ${cW - pX},${cH} L ${pX},${cH} Z`;
+  // ── Slide 0 : vue d'ensemble (KPIs + Top 3 podium) ──
+  const Slide0 = () => (
+    <div className="col gap-4">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12 }}>
+        {[
+          { label: "Total leads ce mois", value: "142", delta: "+24 vs mois dernier", trend: "up" },
+          { label: "Meilleur membre",      value: "Emma L.",      delta: "42 leads", trend: "neutral" },
+          { label: "Membres actifs",       value: "3",            delta: "sur 4", trend: "neutral" },
+        ].map((m, i) => (
+          <div key={i} style={{ padding: "14px 16px", borderRadius: 12, border: "1px solid var(--line)", background: "var(--surface)" }}>
+            <div style={{ fontSize: 9, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-3)", marginBottom: 6 }}>{m.label}</div>
+            <div className="serif" style={{ fontSize: 26, lineHeight: 1, letterSpacing: "-0.02em", marginBottom: 4 }}>{m.value}</div>
+            <div style={{ fontSize: 10, color: m.trend === "up" ? "var(--good,#2d7a4f)" : "var(--ink-4)" }}>{m.trend === "up" ? "↑ " : ""}{m.delta}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ padding: "16px 18px", borderRadius: 12, border: "1px solid var(--line)" }}>
+        <div className="row" style={{ justifyContent: "space-between", marginBottom: 14 }}>
+          <div className="serif" style={{ fontSize: 13 }}>Top 3 du mois</div>
+          <div className="dim" style={{ fontSize: 10 }}>Classement des interactions générées</div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
+          {active.slice(0,3).map((c,i) => (
+            <div key={c.id} style={{
+              padding: 14, borderRadius: 10, textAlign: "center",
+              background: i === 0 ? "linear-gradient(180deg,#fffaf0,#f5edd9)" : "var(--surface-2)",
+              border: i === 0 ? "1px solid #ecd5a8" : "1px solid var(--line)",
+            }}>
+              <div style={{
+                width: 30, height: 30, borderRadius: "50%", margin: "0 auto 8px",
+                background: i === 0 ? "linear-gradient(135deg,var(--gold-2),var(--gold))" : i === 1 ? "var(--ink-4)" : "var(--surface-3)",
+                color: i < 2 ? "white" : "var(--ink-3)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 9, fontWeight: 700,
+              }}>{i === 0 ? <Icon.Crown size={12}/> : `#${i+1}`}</div>
+              <div className="serif" style={{ fontSize: 13 }}>{c.prenom} {c.nom}</div>
+              <div className="dim" style={{ fontSize: 9, marginBottom: 6 }}>{c.poste}</div>
+              <div className="serif" style={{ fontSize: 22, lineHeight: 1, color: i === 0 ? "var(--gold)" : "var(--ink)" }}>{c.leads}</div>
+              <div className="dim" style={{ fontSize: 9 }}>leads ce mois</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 
-  // ── Donut chart ──
-  const eventData = [
-    { label: "Salon Immobilier", color: "#b8843e", value: 58, pct: 41 },
-    { label: "Réseau MEDEF",     color: "#c9a050", value: 47, pct: 33 },
-    { label: "Portes ouvertes",  color: "#d4b878", value: 23, pct: 16 },
-    { label: "Sans étiquette",   color: "#ddd0ad", value: 14, pct: 10 },
-  ];
-  const r = 44, dcx = 64, dcy = 64, circ = 2 * Math.PI * r;
-  const donutSegs = eventData.map((e, i) => {
-    const cumFrac = eventData.slice(0, i).reduce((s, x) => s + x.value, 0) / 142;
-    return { ...e, dashLen: (e.value / 142) * circ, cumOffset: -(cumFrac * circ) };
-  });
+  // ── Slide 1 : tableau membres ──
+  const Slide1 = () => (
+    <div style={{ borderRadius: 12, border: "1px solid var(--line)", overflow: "hidden" }}>
+      <div className="row" style={{ justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid var(--line)", background: "var(--surface)" }}>
+        <div className="serif" style={{ fontSize: 13 }}>Membres</div>
+        <span className="dim" style={{ fontSize: 10 }}>3 membres</span>
+      </div>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+        <thead>
+          <tr style={{ background: "var(--surface-2)" }}>
+            {["Membre","Poste","Rôle","Leads","Actions canal","Dernier clic","Actions"].map(h => (
+              <th key={h} style={{ textAlign: "left", padding: "8px 14px", fontWeight: 500, color: "var(--ink-3)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {active.map((c,i) => {
+            const isResp = c.role_membre === "responsable";
+            return (
+              <tr key={c.id} style={{ borderTop: "1px solid var(--line)" }}>
+                <td style={{ padding: "10px 14px" }}>
+                  <div className="row gap-2">
+                    <div style={{ width: 22, height: 22, borderRadius: "50%", background: "var(--surface-3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, fontWeight: 600, flexShrink: 0 }}>{c.prenom[0]}{c.nom[0]}</div>
+                    <div>
+                      <div style={{ fontWeight: 500, fontSize: 11 }}>{c.prenom} {c.nom}</div>
+                      <div className="dim" style={{ fontSize: 9 }}>{c.email}</div>
+                    </div>
+                  </div>
+                </td>
+                <td style={{ padding: "10px 14px", color: "var(--ink-3)", fontSize: 10 }}>{c.poste}</td>
+                <td style={{ padding: "10px 14px" }}>
+                  <span style={{
+                    display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 999, fontSize: 9, fontWeight: 500,
+                    background: isResp ? "rgba(45,122,79,0.1)" : "var(--surface-2)",
+                    color: isResp ? "var(--good,#2d7a4f)" : "var(--ink-3)",
+                    border: isResp ? "1px solid rgba(45,122,79,0.2)" : "1px solid var(--line)",
+                  }}>
+                    {isResp ? <Icon.Crown size={8}/> : <Icon.User size={8}/>}
+                    {isResp ? "Responsable" : "Collaborateur"}
+                  </span>
+                </td>
+                <td style={{ padding: "10px 14px" }}><span className="serif" style={{ fontSize: 16 }}>{c.leads}</span></td>
+                <td style={{ padding: "10px 14px" }}>
+                  <span className="serif" style={{ fontSize: 16, borderBottom: "1px dashed var(--ink-4)", cursor: "pointer" }}>{Math.round(c.leads * 1.4)}</span>
+                </td>
+                <td style={{ padding: "10px 14px", color: "var(--ink-3)", fontSize: 10 }}>{c.last_click}</td>
+                <td style={{ padding: "10px 14px" }}>
+                  <div className="row gap-1">
+                    <div style={{ width: 22, height: 22, borderRadius: 6, background: "var(--surface-2)", border: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.Crown size={9}/></div>
+                    <div style={{ width: 22, height: 22, borderRadius: 6, background: "var(--surface-2)", border: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.Trash size={9}/></div>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
 
-  // ── Sparklines ──
-  function sp(vals) {
-    const mx = Math.max(...vals), mn = Math.min(...vals), rng = mx - mn || 1;
-    return buildPath(vals.map((v, i) => ({
-      x: (i / (vals.length - 1)) * 68,
-      y: 22 - ((v - mn) / rng) * 19 - 1,
-    })));
-  }
-
-  const barColors = ["linear-gradient(90deg,#b8843e,#d4a855)","linear-gradient(90deg,#c9a050,#dbb86a)","linear-gradient(90deg,#d4b878,#e4cb96)"];
-  const FADE = (delay) => ({
-    opacity: vis ? 1 : 0,
-    transform: vis ? "translateY(0)" : "translateY(14px)",
-    transition: `opacity 480ms ease ${delay}ms, transform 480ms ease ${delay}ms`,
-  });
+  // ── Slide 2 : modal détail canal (Emma Laurent) ──
+  const Slide2 = () => {
+    const c = active[0];
+    if (!c) return null;
+    const channels = [
+      { label: "Mail",      color: "#8a6d3b", pct: 29, val: 28, icon: <Icon.Mail size={10}/> },
+      { label: "WhatsApp",  color: "#25d366", pct: 24, val: 23, icon: <Icon.WhatsApp size={10}/> },
+      { label: "Instagram", color: "#c13584", pct: 20, val: 19, icon: <Icon.Instagram size={10}/> },
+      { label: "LinkedIn",  color: "#0a66c2", pct: 13, val: 12, icon: <Icon.Linkedin size={10}/> },
+      { label: "Site web",  color: "#1a1815", pct: 7,  val: 7,  icon: <Icon.Globe size={10}/> },
+      { label: "CRM",       color: "#b8843e", pct: 6,  val: 6,  icon: <Icon.User size={10}/> },
+    ];
+    return (
+      <div style={{ background: "white", borderRadius: 16, border: "1px solid var(--line)", padding: "20px 24px", maxWidth: 440, margin: "0 auto", boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
+        <div className="serif" style={{ fontSize: 17, marginBottom: 2 }}>Détail — {c.prenom} {c.nom}</div>
+        <div className="dim" style={{ fontSize: 10, marginBottom: 14 }}>{c.poste} · 30 derniers jours</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 16 }}>
+          {[
+            { label: "Leads", val: c.leads, gold: false },
+            { label: "Action add contact", val: Math.round(c.leads*1.4), gold: true, sub: "clics sur le bouton" },
+            { label: "Clics canaux", val: 95, gold: false },
+          ].map((m,i) => (
+            <div key={i} style={{ padding: "10px 12px", borderRadius: 10, border: `1px solid ${m.gold ? "var(--gold)" : "var(--line)"}`, background: m.gold ? "linear-gradient(135deg,#fdf3df,#f1deb6)" : "var(--surface)" }}>
+              <div style={{ fontSize: 8, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--ink-3)", marginBottom: 4 }}>{m.label}</div>
+              <div className="serif" style={{ fontSize: 22, lineHeight: 1 }}>{m.val}</div>
+              {m.sub && <div className="dim" style={{ fontSize: 8, marginTop: 3 }}>{m.sub}</div>}
+            </div>
+          ))}
+        </div>
+        <div className="col gap-3">
+          {channels.map((ch,i) => (
+            <div key={i} className="col gap-1">
+              <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+                <div className="row gap-2" style={{ alignItems: "center" }}>
+                  <div style={{ width: 20, height: 20, borderRadius: 5, background: "var(--surface-2)", color: ch.color, display: "flex", alignItems: "center", justifyContent: "center" }}>{ch.icon}</div>
+                  <div style={{ fontSize: 11, fontWeight: 500 }}>{ch.label}</div>
+                </div>
+                <div className="row gap-2" style={{ alignItems: "baseline" }}>
+                  <span className="dim" style={{ fontSize: 9 }}>{ch.pct}%</span>
+                  <span className="serif" style={{ fontSize: 15 }}>{ch.val}</span>
+                </div>
+              </div>
+              <div style={{ height: 3, background: "var(--surface-2)", borderRadius: 999, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${ch.pct / 29 * 100}%`, background: ch.color, borderRadius: 999 }}/>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
 
   return (
-    <section ref={sectionRef} style={{ padding: "120px 0", position: "relative" }}>
-      <div className="container col gap-10">
+    <section style={{ padding: "120px 0", position: "relative" }}>
+      <div className="container col gap-12">
         <SectionHeader
           eyebrow="Dashboard"
           title="Suivez les performances de vos équipes."
           subtitle="Cartalis permet aux entreprises de visualiser quels collaborateurs génèrent le plus d'interactions grâce à leurs cartes digitales."
         />
 
-        <div className="card" style={{ padding: 28, maxWidth: 1100, margin: "0 auto", width: "100%", boxShadow: "0 12px 56px rgba(0,0,0,0.10)" }}>
-
-          {/* Header bar */}
-          <div className="row" style={{ justifyContent: "space-between", paddingBottom: 18, borderBottom: "1px solid var(--line)", marginBottom: 22, flexWrap: "wrap", gap: 10 }}>
-            <div className="row gap-3" style={{ alignItems: "center" }}>
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--good)", boxShadow: "0 0 0 3px rgba(45,122,79,0.15)" }}/>
-              <div className="serif" style={{ fontSize: 17 }}>Performance des membres</div>
-            </div>
-            <div className="row gap-2" style={{ flexWrap: "wrap" }}>
-              <div className="chip">Jan 2026 → Avr 2026</div>
-              <div className="chip">Tous les membres</div>
-              <div className="chip">Tous les événements</div>
-            </div>
-          </div>
-
-          {/* KPI cards */}
-          <div className="dash-kpi" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 20 }}>
-            {[
-              { label: "Leads ce mois",   val: kpi1, sfx: "",   delta: "↑ +20.3%", sp: sp([88,100,112,118,142]) },
-              { label: "Total scans",      val: kpi2, sfx: "",   delta: "↑ +15.1%", sp: sp([142,155,168,185,198]) },
-              { label: "Taux conversion",  val: kpi3, sfx: "%",  delta: "↑ +3 pts",  sp: sp([68,71,70,73,74]) },
-              { label: "Membres actifs",   val: kpi4, sfx: "/4", delta: "Équipe active", sp: sp([2,3,3,3,3]) },
-            ].map((k, i) => (
-              <div key={i} style={{
-                padding: "16px 18px", borderRadius: 14,
-                background: "var(--surface-2)", border: "1px solid var(--line)",
-                position: "relative", overflow: "hidden",
-                ...FADE(i * 70),
-              }}>
-                <svg viewBox="0 0 68 24" style={{ position: "absolute", right: 6, bottom: 6, width: 68, height: 24, opacity: 0.18, pointerEvents: "none" }}>
-                  <path d={k.sp} fill="none" stroke="#b8843e" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-                <div style={{ fontSize: 10, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-3)", marginBottom: 8 }}>{k.label}</div>
-                <div className="serif" style={{ fontSize: 34, lineHeight: 1, letterSpacing: "-0.03em", marginBottom: 6 }}>{k.val}{k.sfx}</div>
-                <div style={{ fontSize: 11, fontWeight: 500, color: "var(--good,#2d7a4f)" }}>{k.delta}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Area chart */}
-          <div style={{ padding: "18px 18px 12px", borderRadius: 14, background: "var(--surface-2)", border: "1px solid var(--line)", marginBottom: 18, ...FADE(300) }}>
-            <div className="row" style={{ justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
-              <div>
-                <div className="serif" style={{ fontSize: 15 }}>Évolution des leads</div>
-                <div className="dim" style={{ fontSize: 11, marginTop: 1 }}>Avril 2026 · 30 jours</div>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <div className="serif" style={{ fontSize: 22, letterSpacing: "-0.02em", lineHeight: 1 }}>142</div>
-                <div style={{ fontSize: 11, color: "var(--good,#2d7a4f)", fontWeight: 500 }}>↑ +24 vs mars</div>
-              </div>
-            </div>
-
-            <div style={{
-              clipPath: vis ? "inset(0 0% 0 0)" : "inset(0 100% 0 0)",
-              transition: "clip-path 1300ms cubic-bezier(0.25,0.1,0.25,1) 380ms",
-            }}>
-              <svg viewBox={`0 0 ${cW} ${cH + 8}`} style={{ width: "100%", height: 110, display: "block", overflow: "visible" }}
-                onMouseLeave={() => setHoveredDay(null)}>
-                <defs>
-                  <linearGradient id="dpGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#b8843e" stopOpacity="0.20"/>
-                    <stop offset="90%" stopColor="#b8843e" stopOpacity="0.01"/>
-                  </linearGradient>
-                </defs>
-                {[0,0.33,0.66,1].map((f, gi) => {
-                  const gy = pY + (1 - f) * (cH - pY * 2);
-                  return <line key={gi} x1={pX} y1={gy} x2={cW-pX} y2={gy} stroke="var(--line)" strokeWidth="1" strokeDasharray="3 6" opacity="0.8"/>;
-                })}
-                <path d={areaPath} fill="url(#dpGrad)"/>
-                <path d={linePath} fill="none" stroke="#b8843e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                {pts.map((p, i) => (
-                  <g key={i}>
-                    <rect x={p.x - 10} y={0} width={20} height={cH} fill="transparent" style={{ cursor: "crosshair" }} onMouseEnter={() => setHoveredDay(i)}/>
-                    {hoveredDay === i && (
-                      <g>
-                        <line x1={p.x} y1={pY} x2={p.x} y2={cH - pY} stroke="#b8843e" strokeWidth="1.5" strokeDasharray="3 3" opacity="0.5"/>
-                        <circle cx={p.x} cy={p.y} r={4.5} fill="white" stroke="#b8843e" strokeWidth="2.5"/>
-                        <circle cx={p.x} cy={p.y} r={2} fill="#b8843e"/>
-                        <rect x={Math.max(2, Math.min(p.x - 26, cW - 60))} y={p.y - 31} width={52} height={24} rx={6} fill="#1a1815" opacity="0.9"/>
-                        <text x={Math.max(2, Math.min(p.x - 26, cW - 60)) + 26} y={p.y - 15} textAnchor="middle" fill="white" fontSize="10.5" fontWeight="600" fontFamily="system-ui">{p.val} leads</text>
-                        <text x={Math.max(2, Math.min(p.x - 26, cW - 60)) + 26} y={p.y - 3} textAnchor="middle" fill="rgba(255,255,255,0.55)" fontSize="9" fontFamily="system-ui">{p.day} avr</text>
-                      </g>
-                    )}
-                  </g>
-                ))}
-              </svg>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", paddingLeft: pX, paddingRight: pX, marginTop: 3 }}>
-              {["1 avr","8 avr","15 avr","22 avr","30 avr"].map((l,i) => (
-                <div key={i} className="dim" style={{ fontSize: 10 }}>{l}</div>
+        {/* ── Browser mockup ── */}
+        <div style={{ maxWidth: 980, margin: "0 auto", width: "100%", filter: "drop-shadow(0 24px 64px rgba(0,0,0,0.14))" }}>
+          {/* Browser chrome */}
+          <div style={{
+            background: "#f0ede8", borderRadius: "16px 16px 0 0",
+            padding: "10px 16px", display: "flex", alignItems: "center", gap: 12,
+            borderBottom: "1px solid #ddd8d0",
+          }}>
+            <div className="row gap-2">
+              {["#ff5f57","#febc2e","#28c840"].map((c,i) => (
+                <div key={i} style={{ width: 10, height: 10, borderRadius: "50%", background: c }}/>
               ))}
             </div>
+            <div style={{
+              flex: 1, maxWidth: 320, margin: "0 auto",
+              background: "white", borderRadius: 6, padding: "4px 12px",
+              fontSize: 11, color: "var(--ink-3)", display: "flex", alignItems: "center", gap: 6,
+              border: "1px solid #e0dbd4",
+            }}>
+              <Icon.Globe size={10}/>
+              app.cartalis.fr/dashboard
+            </div>
           </div>
 
-          {/* Bottom row */}
-          <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 16 }} className="dash-grid">
-
-            {/* Barchart membres */}
-            <div style={{ padding: 20, borderRadius: 14, border: "1px solid var(--line)", background: "var(--surface-2)", ...FADE(450) }}>
-              <div className="serif" style={{ fontSize: 15, marginBottom: 2 }}>Performance membres</div>
-              <div className="dim" style={{ fontSize: 11, marginBottom: 18 }}>Leads générés · classement</div>
-              <div className="col gap-5">
-                {active.map((c, i) => {
-                  const pct = (c.leads / (active[0]?.leads || 1)) * 100;
-                  return (
-                    <div key={c.id}>
-                      <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                        <div className="row gap-3" style={{ alignItems: "center" }}>
-                          <div style={{
-                            width: 26, height: 26, borderRadius: "50%", flexShrink: 0,
-                            background: i === 0 ? "linear-gradient(135deg,#b8843e,#d4a855)" : "var(--surface-3)",
-                            color: i === 0 ? "white" : "var(--ink-3)",
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                            fontSize: 9, fontWeight: 700,
-                          }}>
-                            {i === 0 ? <Icon.Crown size={11}/> : `#${i+1}`}
-                          </div>
-                          <div className="col" style={{ gap: 1 }}>
-                            <div style={{ fontWeight: 500, fontSize: 13 }}>{c.prenom} {c.nom}</div>
-                            <div className="dim" style={{ fontSize: 10 }}>{c.poste}</div>
-                          </div>
-                        </div>
-                        <div className="row gap-1" style={{ alignItems: "baseline" }}>
-                          <span className="serif" style={{ fontSize: 20 }}>{c.leads}</span>
-                          <span className="dim" style={{ fontSize: 10 }}>leads</span>
-                        </div>
-                      </div>
-                      <div style={{ height: 7, background: "var(--surface)", borderRadius: 999, overflow: "hidden" }}>
-                        <div style={{
-                          height: "100%",
-                          width: vis ? `${pct}%` : "0%",
-                          background: barColors[i] || barColors[2],
-                          borderRadius: 999,
-                          transition: `width 950ms cubic-bezier(0.34,1.56,0.64,1) ${600 + i * 130}ms`,
-                        }}/>
-                      </div>
-                    </div>
-                  );
-                })}
+          {/* App header */}
+          <div style={{
+            background: "rgba(251,250,247,0.95)", borderBottom: "1px solid var(--line)",
+            padding: "0 24px", display: "flex", alignItems: "center", justifyContent: "space-between",
+            height: 48,
+          }}>
+            <div className="row gap-3" style={{ alignItems: "center" }}>
+              <div style={{ width: 22, height: 22, borderRadius: 6, background: "linear-gradient(135deg,var(--gold-2),var(--gold))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "white" }}>C</div>
+              <div style={{ width: 1, height: 18, background: "var(--line)" }}/>
+              <div className="serif" style={{ fontSize: 14, letterSpacing: "-0.01em" }}>
+                {["Dashboard","Membres","Détail canal"][slide]}
               </div>
             </div>
-
-            {/* Donut + Top 3 */}
-            <div style={{ padding: 20, borderRadius: 14, border: "1px solid var(--line)", ...FADE(580) }}>
-              <div className="serif" style={{ fontSize: 15, marginBottom: 2 }}>Répartition événements</div>
-              <div className="dim" style={{ fontSize: 11, marginBottom: 14 }}>142 leads · Avr 2026</div>
-
-              <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 16 }}>
-                <div style={{ position: "relative", flexShrink: 0 }}>
-                  <svg viewBox="0 0 128 128" style={{ width: 96, height: 96, transform: "rotate(-90deg)" }}>
-                    <circle cx={dcx} cy={dcy} r={r} fill="none" stroke="var(--surface-2)" strokeWidth={15}/>
-                    {donutSegs.map((seg, i) => (
-                      <circle key={i} cx={dcx} cy={dcy} r={r} fill="none"
-                        stroke={seg.color} strokeWidth={15} strokeLinecap="butt"
-                        strokeDasharray={`${vis ? seg.dashLen : 0} ${circ}`}
-                        strokeDashoffset={seg.cumOffset}
-                        style={{ transition: `stroke-dasharray 900ms cubic-bezier(0.34,1.56,0.64,1) ${680 + i * 100}ms` }}
-                      />
-                    ))}
-                  </svg>
-                  <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                    <div className="serif" style={{ fontSize: 18, lineHeight: 1 }}>142</div>
-                    <div className="dim" style={{ fontSize: 9 }}>leads</div>
-                  </div>
-                </div>
-                <div className="col gap-2" style={{ flex: 1 }}>
-                  {eventData.map((e, i) => (
-                    <div key={i} className="row" style={{ alignItems: "center", gap: 6 }}>
-                      <div style={{ width: 8, height: 8, borderRadius: 2, background: e.color, flexShrink: 0 }}/>
-                      <div className="col" style={{ flex: 1 }}>
-                        <div style={{ fontSize: 11, fontWeight: 500 }}>{e.label}</div>
-                        <div className="dim" style={{ fontSize: 9 }}>{e.pct}%</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+            <div className="row gap-3" style={{ alignItems: "center" }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 999, background: "rgba(45,122,79,0.1)", border: "1px solid rgba(45,122,79,0.2)", fontSize: 10, color: "var(--good,#2d7a4f)", fontWeight: 500 }}>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--good,#2d7a4f)", display: "inline-block" }}/>
+                Team
               </div>
+              <div style={{ fontSize: 11, fontWeight: 500 }}>Diego Lamperim</div>
+              <div style={{ width: 28, height: 28, borderRadius: "50%", background: "linear-gradient(135deg,var(--gold-2),var(--gold))", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 600 }}>DL</div>
+            </div>
+          </div>
 
-              <div style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
-                <div className="row" style={{ justifyContent: "space-between", marginBottom: 8 }}>
-                  <div style={{ fontSize: 12, fontWeight: 500 }}>Top 3 du mois</div>
-                  <div className="dim" style={{ fontSize: 10 }}>Leads générés</div>
-                </div>
-                <div className="col gap-2">
-                  {active.slice(0, 3).map((c, i) => (
-                    <div key={c.id} style={{
-                      display: "flex", alignItems: "center", gap: 8, padding: "9px 12px",
-                      background: i === 0 ? "linear-gradient(90deg,#fffaf0,var(--surface))" : "var(--surface-2)",
-                      border: i === 0 ? "1px solid #ecd5a8" : "1px solid var(--line)",
-                      borderRadius: 10, justifyContent: "space-between",
-                    }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <div style={{
-                          width: 26, height: 26, borderRadius: "50%", flexShrink: 0,
-                          background: i === 0 ? "linear-gradient(135deg,var(--gold-2),var(--gold))" : i === 1 ? "var(--ink-4)" : "var(--surface-3)",
-                          color: i < 2 ? "white" : "var(--ink-3)",
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                          fontSize: 9, fontWeight: 600,
-                        }}>{i === 0 ? <Icon.Crown size={11}/> : `#${i+1}`}</div>
-                        <div>
-                          <div style={{ fontSize: 12, fontWeight: 500 }}>{c.prenom} {c.nom}</div>
-                          <div className="dim" style={{ fontSize: 10 }}>{c.poste}</div>
-                        </div>
-                      </div>
-                      <div className="serif" style={{ fontSize: 18, color: i === 0 ? "var(--gold)" : "var(--ink)" }}>{c.leads}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+          {/* Dashboard content */}
+          <div style={{
+            background: "var(--bg,#fbfaf7)", padding: "24px",
+            borderRadius: "0 0 16px 16px",
+            minHeight: 440,
+          }}>
+            {/* Page title */}
+            <div className="col gap-1" style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-3)" }}>DASHBOARD · AVRIL 2026</div>
+              <div className="serif" style={{ fontSize: 22, letterSpacing: "-0.02em" }}>Performance des membres</div>
+              <div className="dim" style={{ fontSize: 11 }}>Chaque clic sur « Enregistrer dans mes contacts » est comptabilisé comme un lead généré.</div>
+            </div>
+
+            {/* Slide content */}
+            <div style={{
+              opacity: fading ? 0 : 1,
+              transform: fading ? "translateY(6px)" : "translateY(0)",
+              transition: "opacity 280ms ease, transform 280ms ease",
+            }}>
+              {slide === 0 && <Slide0/>}
+              {slide === 1 && <Slide1/>}
+              {slide === 2 && <Slide2/>}
             </div>
           </div>
         </div>
+
+        {/* Tab indicators */}
+        <div className="row gap-3" style={{ justifyContent: "center", alignItems: "center" }}>
+          {SLIDES.map((label, i) => (
+            <button key={i} onClick={() => goTo(i)} style={{
+              display: "flex", alignItems: "center", gap: 7,
+              padding: "7px 16px", borderRadius: 999, border: "1px solid var(--line)",
+              background: slide === i ? "var(--ink)" : "transparent",
+              color: slide === i ? "white" : "var(--ink-3)",
+              fontSize: 12, fontWeight: slide === i ? 600 : 400,
+              cursor: "pointer", transition: "all 200ms",
+            }}>
+              <div style={{
+                width: 6, height: 6, borderRadius: "50%",
+                background: slide === i ? "white" : "var(--ink-4)",
+                transition: "background 200ms",
+              }}/>
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
-      <style>{`
-        @media (max-width: 900px) {
-          .dash-grid { grid-template-columns: 1fr !important; }
-          .dash-kpi  { grid-template-columns: repeat(2,1fr) !important; }
-        }
-      `}</style>
     </section>
   );
 }
