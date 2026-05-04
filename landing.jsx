@@ -629,34 +629,12 @@ function DashboardPreview() {
         />
 
         {/* ── Browser mockup ── */}
-        <div style={{ maxWidth: 980, margin: "0 auto", width: "100%", filter: "drop-shadow(0 24px 64px rgba(0,0,0,0.14))" }}>
-          {/* Browser chrome */}
-          <div style={{
-            background: "#f0ede8", borderRadius: "16px 16px 0 0",
-            padding: "10px 16px", display: "flex", alignItems: "center", gap: 12,
-            borderBottom: "1px solid #ddd8d0",
-          }}>
-            <div className="row gap-2">
-              {["#ff5f57","#febc2e","#28c840"].map((c,i) => (
-                <div key={i} style={{ width: 10, height: 10, borderRadius: "50%", background: c }}/>
-              ))}
-            </div>
-            <div style={{
-              flex: 1, maxWidth: 320, margin: "0 auto",
-              background: "white", borderRadius: 6, padding: "4px 12px",
-              fontSize: 11, color: "var(--ink-3)", display: "flex", alignItems: "center", gap: 6,
-              border: "1px solid #e0dbd4",
-            }}>
-              <Icon.Globe size={10}/>
-              app.cartalis.fr/dashboard
-            </div>
-          </div>
-
+        <div style={{ maxWidth: 980, margin: "0 auto", width: "100%", filter: "drop-shadow(0 24px 64px rgba(0,0,0,0.14))", borderRadius: "16px 16px 0 0", overflow: "hidden" }}>
           {/* App header */}
           <div style={{
             background: "rgba(251,250,247,0.95)", borderBottom: "1px solid var(--line)",
             padding: "0 24px", display: "flex", alignItems: "center", justifyContent: "space-between",
-            height: 48,
+            height: 48, borderRadius: "16px 16px 0 0",
           }}>
             <div className="row gap-3" style={{ alignItems: "center" }}>
               <div style={{ width: 22, height: 22, borderRadius: 6, background: "linear-gradient(135deg,var(--gold-2),var(--gold))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "white" }}>C</div>
