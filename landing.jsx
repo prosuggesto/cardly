@@ -16,7 +16,7 @@ function useInView(ref, { threshold = 0.1 } = {}) {
 }
 
 // Compteur animé pour les chiffres
-function AnimatedCounter({ end, duration = 2000, suffix = "" }) {
+function AnimatedCounter({ end, duration = 3500, suffix = "" }) {
   const [count, setCount] = useStateL(0);
   const [started, setStarted] = useStateL(false);
   const ref = useRefL(null);
@@ -702,7 +702,7 @@ function DashboardPreview() {
 
   return (
     <section style={{ padding: "120px 0", position: "relative" }}>
-      <div className="container col gap-12">
+      <AnimatedSection className="container col gap-12">
         <SectionHeader
           eyebrow="Dashboard"
           title="Suivez les performances de vos équipes."
@@ -794,7 +794,7 @@ function DashboardPreview() {
             </button>
           ))}
         </div>
-      </div>
+      </AnimatedSection>
     </section>
   );
 }
