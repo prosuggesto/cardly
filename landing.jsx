@@ -268,6 +268,7 @@ const HERO_CARD = {
 function HeroSection({ navigate }) {
   const [heroFlipped, setHeroFlipped] = useStateL(false);
   const [imgsReady, setImgsReady] = useStateL(false);
+  const [step, setStep] = useStateL(0);
 
   useEffectL(() => {
     let loaded = 0;
@@ -276,18 +277,43 @@ function HeroSection({ navigate }) {
     srcs.forEach(src => {
       const img = new Image();
       img.onload = onLoad;
-      img.onerror = onLoad; // don't block on error
+      img.onerror = onLoad;
       img.src = src;
     });
   }, []);
+
+  // Sequential reveal: each step unlocks the next element
+  useEffectL(() => {
+    const delays = [
+      100,   // 1: badge chip + title
+      700,   // 2: subtitle
+      1200,  // 3: bouton "Créer ma carte"
+      1420,  // 4: bouton "Voir la démo"
+      1640,  // 5: stat "7 jours"
+      1860,  // 6: stat "0 papier à imprimer"
+      2080,  // 7: stat "0 app à installer"
+      2400,  // 8: carte droite + badges
+    ];
+    const timers = delays.map((delay, idx) =>
+      setTimeout(() => setStep(s => Math.max(s, idx + 1)), delay)
+    );
+    return () => timers.forEach(clearTimeout);
+  }, []);
+
+  // Helper: fade-up style for a given step threshold
+  const fi = (minStep) => ({
+    opacity: step >= minStep ? 1 : 0,
+    transform: step >= minStep ? "translateY(0)" : "translateY(22px)",
+    transition: "opacity 600ms ease-out, transform 600ms ease-out",
+  });
 
   return (
     <section style={{ position: "relative", paddingTop: 60, paddingBottom: 100, overflow: "hidden" }}>
       <div className="hero-bg" />
       <div className="container">
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, alignItems: "center" }} className="hero-grid">
-          <div className="col gap-6 fade-up">
-            <div className="chip chip-gold" style={{ alignSelf: "flex-start" }}>
+          <div className="col gap-6">
+            <div className="chip chip-gold" style={{ alignSelf: "flex-start", ...fi(1) }}>
               <Icon.Sparkle size={12} />
               <span>Nouveau · Cartes 3D génératives</span>
             </div>
@@ -297,45 +323,49 @@ function HeroSection({ navigate }) {
               margin: 0,
               letterSpacing: "-0.025em",
               textWrap: "balance",
+              ...fi(1),
             }}>
               Transformez chaque<br/>rencontre en{" "}
               <span style={{ fontStyle: "italic", color: "var(--gold)" }}>opportunité</span><br/>commerciale.
             </h1>
-            <p className="muted" style={{ fontSize: 18, lineHeight: 1.55, maxWidth: 520, margin: 0, textWrap: "pretty" }}>
+            <p className="muted" style={{ fontSize: 18, lineHeight: 1.55, maxWidth: 520, margin: 0, textWrap: "pretty", ...fi(2) }}>
               Cartalis remplace la carte de visite papier par une carte digitale 3D, interactive et mesurable. Vos prospects scannent, enregistrent votre contact, et vous suivez les interactions générées par vos équipes.
             </p>
             <div className="row gap-3" style={{ marginTop: 8 }}>
-              <button className="btn btn-primary btn-lg" onClick={() => navigate("/auth?mode=signup")}>
-                Créer ma carte <Icon.ArrowRight size={16} />
-              </button>
-              <button className="btn btn-lg" onClick={() => navigate("/app")}>Voir la démo</button>
+              <div style={fi(3)}>
+                <button className="btn btn-primary btn-lg" onClick={() => navigate("/auth?mode=signup")}>
+                  Créer ma carte <Icon.ArrowRight size={16} />
+                </button>
+              </div>
+              <div style={fi(4)}>
+                <button className="btn btn-lg" onClick={() => navigate("/app")}>Voir la démo</button>
+              </div>
             </div>
             <div className="row gap-6" style={{ marginTop: 20 }}>
-              <div className="col gap-1">
-                <div className="serif" style={{ fontSize: 28 }}><AnimatedCounter end={7} duration={800} suffix=" jours" /></div>
+              <div className="col gap-1" style={fi(5)}>
+                <div className="serif" style={{ fontSize: 28 }}><AnimatedCounter end={7} suffix=" jours" /></div>
                 <div className="dim" style={{ fontSize: 12 }}>Essai gratuit</div>
               </div>
-              <div style={{ width: 1, background: "var(--line)" }} />
-              <div className="col gap-1">
+              <div style={{ width: 1, background: "var(--line)", ...fi(5) }} />
+              <div className="col gap-1" style={fi(6)}>
                 <div className="serif" style={{ fontSize: 28 }}><AnimatedCounter end={0} suffix=" papier à imprimer" /></div>
                 <div className="dim" style={{ fontSize: 12 }}>À imprimer</div>
               </div>
-              <div style={{ width: 1, background: "var(--line)" }} />
-              <div className="col gap-1">
-                <div className="serif" style={{ fontSize: 28 }}><AnimatedCounter end={0} duration={800} /></div>
+              <div style={{ width: 1, background: "var(--line)", ...fi(6) }} />
+              <div className="col gap-1" style={fi(7)}>
+                <div className="serif" style={{ fontSize: 28 }}><AnimatedCounter end={0} /></div>
                 <div className="dim" style={{ fontSize: 12 }}>App à installer</div>
               </div>
             </div>
           </div>
 
-          {/* Hero card visual */}
-          <div style={{ position: "relative", height: 520, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {/* Hero card visual — appears after all left content */}
+          <div style={{ position: "relative", height: 520, display: "flex", alignItems: "center", justifyContent: "center", ...fi(8) }}>
             <div style={{
               position: "absolute", width: 420, height: 420, borderRadius: "50%",
               background: "radial-gradient(circle, rgba(244,220,175,0.5), transparent 70%)",
               filter: "blur(20px)",
             }} />
-            {/* Skeleton shown while images load */}
             {!imgsReady && (
               <div style={{
                 width: 420, aspectRatio: "1.75/1", borderRadius: 20,
@@ -350,7 +380,7 @@ function HeroSection({ navigate }) {
               onMouseEnter={() => setHeroFlipped(true)}
               onMouseLeave={() => setHeroFlipped(false)}
               style={{
-                cursor: "pointer", position: "relative", zIndex: 1,
+                cursor: "pointer", zIndex: 1,
                 opacity: imgsReady ? 1 : 0,
                 transition: "opacity 400ms ease",
                 position: imgsReady ? "relative" : "absolute",
@@ -373,20 +403,7 @@ function HeroSection({ navigate }) {
                 fieldColors={{ name: "#1a150e", entreprise: "#b88a3e", poste: "#6a5a4a", phone: "#3a2f22", email: "#3a2f22", web: "#3a2f22" }}
               />
             </div>
-            {/* Flip hint */}
-            <div style={{
-              position: "absolute", bottom: "14%", left: "32%", transform: "translateX(-50%)",
-              display: "flex", alignItems: "center", gap: 6,
-              fontSize: 12, color: "var(--ink-3)", opacity: 0.7,
-              pointerEvents: "none", whiteSpace: "nowrap",
-              animation: "float-soft 4s ease-in-out infinite",
-            }}>
-              <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 12a9 9 0 0115-6.7L21 8M21 3v5h-5M21 12a9 9 0 01-15 6.7L3 16M3 21v-5h5"/>
-              </svg>
-              Cliquez pour retourner
-            </div>
-            {/* Badges always rendered above the 3D card */}
+            {/* Badges */}
             <div style={{ position: "absolute", inset: 0, zIndex: 10, pointerEvents: "none" }}>
               <FloatingBadge style={{ top: "8%", left: "-2%", pointerEvents: "auto" }} delay={0}>
                 <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#4f8a5f" }}></span>
