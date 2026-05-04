@@ -1257,6 +1257,10 @@ function PricingSection({ navigate }) {
 }
 
 function PricingCard({ name, price, period, tagline, features, excluded, cta, onCta, featured, contactPhone, contactEmail }) {
+  const [expanded, setExpanded] = useStateL(false);
+  const VISIBLE = 5;
+  const visibleFeatures = expanded ? features : features.slice(0, VISIBLE);
+  const hasMore = features.length > VISIBLE;
   return (
     <div className="card" style={{
       padding: 32,
@@ -1283,17 +1287,27 @@ function PricingCard({ name, price, period, tagline, features, excluded, cta, on
       </div>
       <div style={{ height: 1, background: "var(--line)" }} />
       <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
-        {features.map((f, i) => (
+        {visibleFeatures.map((f, i) => (
           <li key={i} className="row gap-2" style={{ fontSize: 14, alignItems: "flex-start" }}>
             <Icon.Check size={14} /> <span>{f}</span>
           </li>
         ))}
-        {excluded && excluded.map((f, i) => (
+        {expanded && excluded && excluded.map((f, i) => (
           <li key={i} className="row gap-2" style={{ fontSize: 14, alignItems: "flex-start", color: "var(--ink-4)" }}>
             <Icon.X size={14} /> <span>{f}</span>
           </li>
         ))}
       </ul>
+      {hasMore && (
+        <button
+          type="button"
+          onClick={() => setExpanded(e => !e)}
+          style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--ink-3)", display: "flex", alignItems: "center", gap: 4, padding: 0, alignSelf: "flex-start" }}
+        >
+          {expanded ? "Voir moins" : `Voir plus (${features.length - VISIBLE} autres)`}
+          <span style={{ display: "inline-flex", transform: expanded ? "rotate(180deg)" : "none", transition: "transform 200ms" }}><Icon.ChevronDown size={13} /></span>
+        </button>
+      )}
       {(contactPhone || contactEmail) && (
         <div className="col gap-1" style={{ fontSize: 13, color: "var(--ink-3)" }}>
           {contactPhone && <div className="row gap-2"><Icon.Phone size={12}/>{contactPhone}</div>}
