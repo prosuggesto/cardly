@@ -738,17 +738,15 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
   const setFieldColor = (key, color) => setFieldColors(fc => ({ ...fc, [key]: color }));
   const [fieldSides, setFieldSides] = useStateP({ name: "recto", entreprise: "recto", poste: "recto", phone: "recto", email: "recto", web: "recto" });
   const setFieldSide = (key, side) => setFieldSides(fs => ({ ...fs, [key]: side }));
-  const [fieldSizes, setFieldSizes] = useStateP({ name: 1.82, entreprise: 1.12, poste: 1.0, phone: 0.94, email: 0.94, web: 0.94 });
-  const bumpFieldSize = (key, delta) => setFieldSizes(fs => ({ ...fs, [key]: Math.max(0.5, Math.min(2, Math.round(((fs[key] || 1) + delta) * 10) / 10)) }));
+  const STYLE_SIZE_MAP = { titre: 1.8, "sous-titre": 1.15, corps: 1.0, legende: 0.8 };
+  const [fieldSizes, setFieldSizes] = useStateP({ name: 1.8, entreprise: 1.15, poste: 1.0, phone: 0.8, email: 0.8, web: 0.8 });
+  const bumpFieldSize = (key, delta) => setFieldSizes(fs => ({ ...fs, [key]: Math.max(0.5, Math.min(3, Math.round(((fs[key] || 1) + delta) * 10) / 10)) }));
   const [fieldFonts, setFieldFonts] = useStateP({ name: "default", entreprise: "default", poste: "default", phone: "default", email: "default", web: "default" });
   const setFieldFont = (key, font) => setFieldFonts(ff => ({ ...ff, [key]: font }));
-  const [fieldStyles, setFieldStyles] = useStateP({ name: "titre", entreprise: "sous-titre", poste: "sous-titre", phone: "corps", email: "corps", web: "corps" });
-  const STYLE_SIZE_MAP = { titre: 1.4, "sous-titre": 1.15, corps: 1.0, legende: 0.8 };
+  const [fieldStyles, setFieldStyles] = useStateP({ name: "titre", entreprise: "sous-titre", poste: "corps", phone: "legende", email: "legende", web: "legende" });
   const setFieldStyle = (key, style) => {
     setFieldStyles(fs => ({ ...fs, [key]: style }));
-    const baseMultipliers = { name: 1.82, entreprise: 1.12, poste: 1.0, phone: 0.94, email: 0.94, web: 0.94 };
-    const newSize = (baseMultipliers[key] || 1) * (STYLE_SIZE_MAP[style] || 1);
-    setFieldSizes(fs => ({ ...fs, [key]: newSize }));
+    setFieldSizes(fs => ({ ...fs, [key]: STYLE_SIZE_MAP[style] || 1.0 }));
   };
   const [logoSide, setLogoSide] = useStateP("both"); // "recto" | "verso" | "both"
   const [logoSizeRecto, setLogoSizeRecto] = useStateP(1);
