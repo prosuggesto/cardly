@@ -1193,7 +1193,7 @@ function PricingSection({ navigate }) {
         <SectionHeader
           eyebrow="Tarifs"
           title="Choisissez l'offre adaptée à votre activité."
-          subtitle="Tous les plans incluent 7 jours d'essai gratuit. Sans engagement."
+          subtitle=""
         />
         <div style={{ display: "flex", justifyContent: "center" }}>
           <div style={{ display: "inline-flex", border: "1px solid var(--line-2)", borderRadius: 12, overflow: "hidden", fontSize: 14, fontWeight: 500 }}>
