@@ -1,6 +1,63 @@
 /* Cartalis — Landing page */
 
-const { useState: useStateL, useEffect: useEffectL } = React;
+const { useState: useStateL, useEffect: useEffectL, useRef: useRefL } = React;
+
+// Hook pour détecter si un élément est visible dans le viewport
+function useInView(ref, { threshold = 0.1 } = {}) {
+  const [isVisible, setIsVisible] = useStateL(false);
+  useEffectL(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) setIsVisible(true);
+    }, { threshold });
+    if (ref.current) observer.observe(ref.current);
+    return () => ref.current && observer.unobserve(ref.current);
+  }, [threshold]);
+  return isVisible;
+}
+
+// Compteur animé pour les chiffres
+function AnimatedCounter({ end, duration = 800, suffix = "" }) {
+  const [count, setCount] = useStateL(0);
+  const [started, setStarted] = useStateL(false);
+  const ref = useRefL(null);
+  const isVisible = useInView(ref);
+
+  useEffectL(() => {
+    if (isVisible && !started) {
+      setStarted(true);
+      const startTime = Date.now();
+      const step = () => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        setCount(Math.floor(end * progress));
+        if (progress < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    }
+  }, [isVisible, started, end, duration]);
+
+  return <span ref={ref}>{count}{suffix}</span>;
+}
+
+// Section animée au scroll
+function AnimatedSection({ children, style, ...props }) {
+  const ref = useRefL(null);
+  const isVisible = useInView(ref, { threshold: 0.15 });
+  return (
+    <div
+      ref={ref}
+      style={{
+        ...style,
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? "translateY(0)" : "translateY(24px)",
+        transition: "opacity 600ms ease, transform 600ms ease",
+      }}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+}
 
 function PublicHeader({ navigate }) {
   const [scrolled, setScrolled] = useStateL(false);
@@ -126,17 +183,17 @@ function HeroSection({ navigate }) {
             </div>
             <div className="row gap-6" style={{ marginTop: 20 }}>
               <div className="col gap-1">
-                <div className="serif" style={{ fontSize: 28 }}>7 jours</div>
+                <div className="serif" style={{ fontSize: 28 }}><AnimatedCounter end={7} duration={800} suffix=" jours" /></div>
                 <div className="dim" style={{ fontSize: 12 }}>Essai gratuit</div>
               </div>
               <div style={{ width: 1, background: "var(--line)" }} />
               <div className="col gap-1">
-                <div className="serif" style={{ fontSize: 28 }}>+340%</div>
+                <div className="serif" style={{ fontSize: 28 }}>+<AnimatedCounter end={340} duration={800} suffix="%" /></div>
                 <div className="dim" style={{ fontSize: 12 }}>De prospects qualifiés</div>
               </div>
               <div style={{ width: 1, background: "var(--line)" }} />
               <div className="col gap-1">
-                <div className="serif" style={{ fontSize: 28 }}>0</div>
+                <div className="serif" style={{ fontSize: 28 }}><AnimatedCounter end={0} duration={800} /></div>
                 <div className="dim" style={{ fontSize: 12 }}>App à installer</div>
               </div>
             </div>
@@ -243,13 +300,13 @@ function CarouselSection() {
   return (
     <section id="features" style={{ padding: "100px 0 80px", overflow: "hidden" }} className="section-bg-soft">
       {/* Header centré */}
-      <div className="container col gap-2" style={{ marginBottom: 48 }}>
+      <AnimatedSection className="container col gap-2" style={{ marginBottom: 48 }}>
         <SectionHeader
           eyebrow="Designs"
           title="Des cartes digitales qui marquent les esprits."
           subtitle="Choisissez un design, ajoutez vos informations, partagez votre carte en un scan."
         />
-      </div>
+      </AnimatedSection>
 
       {/* Bande pleine largeur avec masque de fondu sur les bords */}
       <div
@@ -300,7 +357,7 @@ function CarouselSection() {
             </div>
           ))}
         </div>
-      </div>
+      </AnimatedSection>
 
       <style>{`
         @keyframes carousel-scroll {
@@ -321,7 +378,7 @@ function WhySection() {
   ];
   return (
     <section id="why" style={{ padding: "120px 0" }}>
-      <div className="container col gap-10">
+      <AnimatedSection className="container col gap-10">
         <SectionHeader
           eyebrow="Pourquoi Cartalis"
           title="Une carte papier se donne. Une carte digitale convertit."
@@ -336,7 +393,7 @@ function WhySection() {
             </div>
           ))}
         </div>
-      </div>
+      </AnimatedSection>
     </section>
   );
 }
@@ -352,7 +409,7 @@ function ConversionTimeline() {
   ];
   return (
     <section style={{ padding: "120px 0" }} className="section-bg-mid">
-      <div className="container col gap-10">
+      <AnimatedSection className="container col gap-10">
         <SectionHeader
           eyebrow="Conversion"
           title="Une carte de visite qui ne se contente pas d'être jolie. Elle convertit."
@@ -378,7 +435,7 @@ function ConversionTimeline() {
             </div>
           ))}
         </div>
-      </div>
+      </AnimatedSection>
     </section>
   );
 }
@@ -938,7 +995,7 @@ window.Metric = Metric;
 function PricingSection({ navigate }) {
   return (
     <section id="pricing" style={{ padding: "120px 0" }} className="section-bg-soft">
-      <div className="container col gap-10">
+      <AnimatedSection className="container col gap-10">
         <SectionHeader
           eyebrow="Tarifs"
           title="Choisissez l'offre adaptée à votre activité."
@@ -997,7 +1054,7 @@ function PricingSection({ navigate }) {
             onCta={() => window.location.href = "mailto:contact.cardly@gmail.com"}
           />
         </div>
-      </div>
+      </AnimatedSection>
     </section>
   );
 }
@@ -1065,7 +1122,7 @@ function FAQSection() {
   const [open, setOpen] = useStateL(0);
   return (
     <section id="faq" style={{ padding: "120px 0" }}>
-      <div className="container-narrow col gap-10">
+      <AnimatedSection className="container-narrow col gap-10">
         <SectionHeader eyebrow="Questions" title="On répond à tout, simplement." />
         <div className="card" style={{ padding: 8, overflow: "hidden" }}>
           {items.map((it, i) => (
@@ -1091,7 +1148,7 @@ function FAQSection() {
             </div>
           ))}
         </div>
-      </div>
+      </AnimatedSection>
     </section>
   );
 }
