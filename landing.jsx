@@ -1186,6 +1186,7 @@ window.Metric = Metric;
 function PricingSection({ navigate }) {
   const [expandedCount, setExpandedCount] = useStateL(0);
   const onExpandChange = (isExpanded) => setExpandedCount(c => isExpanded ? c + 1 : c - 1);
+  const [billing, setBilling] = useStateL("mensuel");
   return (
     <section id="pricing" style={{ padding: "120px 0" }} className="section-bg-soft">
       <AnimatedSection className="container col gap-10">
@@ -1194,9 +1195,38 @@ function PricingSection({ navigate }) {
           title="Choisissez l'offre adaptée à votre activité."
           subtitle="Tous les plans incluent 7 jours d'essai gratuit. Sans engagement."
         />
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <div style={{ display: "inline-flex", border: "1px solid var(--line-2)", borderRadius: 12, overflow: "hidden", fontSize: 14, fontWeight: 500 }}>
+            {[["mensuel", "Mensuel"], ["annuel", "Annuel"]].map(([val, label]) => (
+              <button
+                key={val}
+                type="button"
+                onClick={() => setBilling(val)}
+                style={{
+                  padding: "10px 24px",
+                  border: "none",
+                  cursor: "pointer",
+                  background: billing === val ? "var(--ink)" : "transparent",
+                  color: billing === val ? "white" : "var(--ink-3)",
+                  transition: "background 150ms, color 150ms",
+                  display: "flex", alignItems: "center", gap: 8,
+                }}
+              >
+                {label}
+                {val === "annuel" && (
+                  <span style={{
+                    fontSize: 11, fontWeight: 600, padding: "2px 6px", borderRadius: 6,
+                    background: billing === "annuel" ? "rgba(255,255,255,0.2)" : "var(--gold)",
+                    color: billing === "annuel" ? "white" : "white",
+                  }}>-20%</span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20, alignItems: expandedCount > 0 ? "start" : "stretch" }}>
           <PricingCard
-            name="Solo" price="9€" period="/mois"
+            name="Solo" basePrice={9} billing={billing}
             tagline="Tout Cartalis pour une seule personne : créez, personnalisez et partagez vos cartes digitales 3D sans limite."
             features={[
               "1 utilisateur",
@@ -1220,7 +1250,7 @@ function PricingSection({ navigate }) {
           />
           <PricingCard
             featured
-            name="Team" price="49,99€" period="/mois"
+            name="Team" basePrice={49.99} billing={billing}
             tagline="Toutes les fonctionnalités de Cartalis, avec un espace équipe pour gérer vos collaborateurs et suivre leurs performances."
             features={[
               "Jusqu'à 10 collaborateurs",
@@ -1261,7 +1291,7 @@ function PricingSection({ navigate }) {
   );
 }
 
-function PricingCard({ name, price, period, tagline, features, excluded, cta, onCta, featured, contactPhone, contactEmail, onExpandChange }) {
+function PricingCard({ name, price, basePrice, billing, period, tagline, features, excluded, cta, onCta, featured, contactPhone, contactEmail, onExpandChange }) {
   const [expanded, setExpanded] = useStateL(false);
   const VISIBLE = 5;
   const visibleFeatures = expanded ? features : features.slice(0, VISIBLE);
@@ -1271,6 +1301,18 @@ function PricingCard({ name, price, period, tagline, features, excluded, cta, on
     setExpanded(next);
     onExpandChange && onExpandChange(next);
   };
+  const isAnnuel = billing === "annuel";
+  const displayPrice = basePrice != null
+    ? (isAnnuel
+        ? (Math.round(basePrice * 0.8 * 100) / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€"
+        : basePrice.toLocaleString("fr-FR") + "€")
+    : price;
+  const displayPeriod = basePrice != null
+    ? (isAnnuel ? "/mois, facturé annuellement" : "/mois")
+    : period;
+  const originalPrice = basePrice != null && isAnnuel
+    ? basePrice.toLocaleString("fr-FR") + "€"
+    : null;
   return (
     <div className="card" style={{
       padding: 32,
@@ -1291,9 +1333,12 @@ function PricingCard({ name, price, period, tagline, features, excluded, cta, on
         <div className="serif" style={{ fontSize: 22 }}>{name}</div>
         <div className="dim" style={{ fontSize: 13 }}>{tagline}</div>
       </div>
-      <div className="row gap-1" style={{ alignItems: "baseline" }}>
-        <div className="serif" style={{ fontSize: 44, lineHeight: 1, letterSpacing: "-0.02em" }}>{price}</div>
-        {period && <div className="dim" style={{ fontSize: 14 }}>{period}</div>}
+      <div className="col gap-1">
+        <div className="row gap-2" style={{ alignItems: "baseline" }}>
+          <div className="serif" style={{ fontSize: 44, lineHeight: 1, letterSpacing: "-0.02em" }}>{displayPrice}</div>
+          {originalPrice && <div className="dim" style={{ fontSize: 16, textDecoration: "line-through" }}>{originalPrice}</div>}
+        </div>
+        {displayPeriod && <div className="dim" style={{ fontSize: 13 }}>{displayPeriod}</div>}
       </div>
       <div style={{ height: 1, background: "var(--line)" }} />
       <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
