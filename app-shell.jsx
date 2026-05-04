@@ -924,7 +924,7 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
                     <input type="number" defaultValue={100} className="no-spinner" tabIndex={-1} readOnly style={{ width: 34, padding: "3px 4px", fontSize: 11, textAlign: "center", background: "transparent", border: "none", outline: "none", fontVariantNumeric: "tabular-nums" }} />
                     <span style={{ fontSize: 10, color: "var(--ink-3)", paddingRight: 5 }}>%</span>
                   </div>
-                  <select aria-hidden="true" tabIndex={-1} className="input" style={{ padding: "3px 4px", fontSize: 11, height: 26, width: 64, visibility: "hidden" }}>
+                  <select aria-hidden="true" tabIndex={-1} className="input" style={{ padding: "3px 4px", fontSize: 11, height: 26, width: 86, visibility: "hidden" }}>
                     <option>Défaut</option>
                   </select>
                   <button
@@ -1076,7 +1076,7 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
                           value={fieldFonts[colorKey] || "default"}
                           onChange={(e) => setFieldFont(colorKey, e.target.value)}
                           className="input"
-                          style={{ padding: "3px 4px", fontSize: 11, height: 26, width: 64, opacity: card[k] && editable ? 1 : 0.5 }}
+                          style={{ padding: "3px 4px", fontSize: 11, height: 26, width: 86, opacity: card[k] && editable ? 1 : 0.5 }}
                           title="Police"
                         >
                           {FONT_OPTIONS.map(o => (
