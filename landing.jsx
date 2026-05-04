@@ -40,12 +40,13 @@ function AnimatedCounter({ end, duration = 800, suffix = "" }) {
 }
 
 // Section animée au scroll
-function AnimatedSection({ children, style, ...props }) {
+function AnimatedSection({ children, style, className, ...props }) {
   const ref = useRefL(null);
   const isVisible = useInView(ref, { threshold: 0.15 });
   return (
     <div
       ref={ref}
+      className={className}
       style={{
         ...style,
         opacity: isVisible ? 1 : 0,
