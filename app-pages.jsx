@@ -1121,3 +1121,149 @@ function ContactRow({ icon, label }) {
   );
 }
 window.PublicCardPage = PublicCardPage;
+
+// ---------- Support NFC ----------
+function NFCSupportPage() {
+  const { useState: useStateN } = React;
+  const [copied, setCopied] = useStateN(false);
+  const [selectedCard, setSelectedCard] = useStateN("card-001");
+  const [showRegenerateConfirm, setShowRegenerateConfirm] = useStateN(false);
+  const toast = useToast();
+  const cards = window.CARTALIS_DATA.cards;
+  const nfcLink = "https://cartalis.fr/nfc/8a7f9d-exemple";
+
+  const copyLink = () => {
+    setCopied(true);
+    toast.push("Lien NFC copié", { icon: <Icon.Copy size={14} /> });
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const STEPS = [
+    "Achetez une carte NFC, un sticker NFC ou un badge NFC compatible.",
+    "Téléchargez l'application gratuite NFC Tools.",
+    "Ouvrez NFC Tools et allez dans \"Écrire\".",
+    "Choisissez \"Ajouter un enregistrement\".",
+    "Sélectionnez \"URL\".",
+    "Collez votre lien NFC Cartalis.",
+    "Appuyez sur \"Écrire\".",
+    "Approchez votre carte NFC du téléphone.",
+    "C'est terminé.",
+  ];
+
+  return (
+    <div className="col gap-6 fade-up" style={{ maxWidth: 720, margin: "0 auto" }}>
+      {/* Header */}
+      <div className="col gap-2">
+        <h1 className="serif" style={{ fontSize: "clamp(28px, 4vw, 40px)", margin: 0, letterSpacing: "-0.02em" }}>
+          Support NFC
+        </h1>
+        <p className="dim" style={{ fontSize: 15, margin: 0 }}>
+          Utilisez votre carte Cartalis avec n'importe quel support NFC compatible.
+        </p>
+      </div>
+
+      {/* Explanatory banner */}
+      <div style={{
+        background: "linear-gradient(135deg, #fffaf0, #fdf3df)",
+        border: "1px solid #ecd5a8",
+        borderRadius: 14, padding: "18px 22px",
+        display: "flex", gap: 16, alignItems: "flex-start",
+      }}>
+        <div style={{ flexShrink: 0, marginTop: 2 }}><Icon.Nfc size={20} /></div>
+        <div className="col gap-1">
+          <div style={{ fontWeight: 500, fontSize: 14 }}>Votre support NFC reste le même. Votre carte digitale peut changer quand vous voulez.</div>
+          <div className="dim" style={{ fontSize: 13 }}>Idéal pour utiliser une carte physique tout en gardant la flexibilité du digital.</div>
+        </div>
+      </div>
+
+      {/* NFC link block */}
+      <div className="card" style={{ padding: 24 }}>
+        <div className="col gap-4">
+          <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+            <div className="serif" style={{ fontSize: 17 }}>Votre lien NFC</div>
+            <span className="chip chip-jade"><span className="chip-dot" />Actif</span>
+          </div>
+          <div style={{
+            background: "var(--surface-2)", border: "1px solid var(--line)",
+            borderRadius: 10, padding: "12px 16px",
+            fontFamily: "var(--font-mono, monospace)", fontSize: 13,
+            color: "var(--ink-2)", wordBreak: "break-all",
+          }}>
+            {nfcLink}
+          </div>
+          <div className="row gap-2" style={{ flexWrap: "wrap" }}>
+            <button className="btn btn-primary btn-sm row gap-2" onClick={copyLink}>
+              <Icon.Copy size={13} /> {copied ? "Copié !" : "Copier le lien"}
+            </button>
+            <button className="btn btn-sm row gap-2" onClick={() => toast.push("Ouverture du lien…")}>
+              <Icon.ArrowRight size={13} /> Ouvrir le lien
+            </button>
+            {!showRegenerateConfirm ? (
+              <button className="btn btn-ghost btn-sm row gap-2" style={{ marginLeft: "auto", color: "var(--ink-3)", fontSize: 12 }} onClick={() => setShowRegenerateConfirm(true)}>
+                <Icon.Refresh size={12} /> Régénérer
+              </button>
+            ) : (
+              <div className="row gap-2" style={{ marginLeft: "auto", alignItems: "center" }}>
+                <span style={{ fontSize: 12, color: "var(--ink-3)" }}>L'ancien lien ne fonctionnera plus.</span>
+                <button className="btn btn-sm" style={{ fontSize: 12, background: "#c0392b", color: "white", border: "none" }} onClick={() => { setShowRegenerateConfirm(false); toast.push("Lien régénéré"); }}>Confirmer</button>
+                <button className="btn btn-ghost btn-sm" style={{ fontSize: 12 }} onClick={() => setShowRegenerateConfirm(false)}>Annuler</button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Card selector */}
+      <div className="card" style={{ padding: 24 }}>
+        <div className="col gap-4">
+          <div className="serif" style={{ fontSize: 17 }}>Carte affichée lors du scan NFC</div>
+          <div className="col gap-2">
+            <select
+              className="input"
+              value={selectedCard}
+              onChange={(e) => { setSelectedCard(e.target.value); toast.push("Carte associée mise à jour"); }}
+              style={{ padding: "10px 14px", fontSize: 14, maxWidth: 360 }}
+            >
+              {cards.map(c => (
+                <option key={c.id} value={c.id}>{c.nom_carte || `Carte ${c.id}`}</option>
+              ))}
+            </select>
+            <div className="dim" style={{ fontSize: 13 }}>
+              Vous pouvez changer cette carte à tout moment sans reprogrammer votre support NFC.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tutorial */}
+      <div className="card" style={{ padding: 24 }}>
+        <div className="col gap-4">
+          <div className="serif" style={{ fontSize: 17 }}>Comment programmer votre carte NFC ?</div>
+          <div className="col gap-3">
+            {STEPS.map((step, i) => (
+              <div key={i} className="row gap-3" style={{ alignItems: "flex-start" }}>
+                <div style={{
+                  flexShrink: 0, width: 26, height: 26, borderRadius: "50%",
+                  background: "var(--ink)", color: "white",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 12, fontWeight: 600,
+                }}>{i + 1}</div>
+                <span style={{ fontSize: 14, paddingTop: 4 }}>{step}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{
+            background: "var(--surface-2)", borderRadius: 10, padding: "12px 16px",
+            fontSize: 13, color: "var(--ink-3)", borderLeft: "3px solid var(--gold)",
+          }}>
+            La version gratuite de NFC Tools suffit normalement pour écrire une URL sur une puce NFC.
+          </div>
+          <div className="dim" style={{ fontSize: 13 }}>
+            Vous pouvez utiliser n'importe quel support NFC compatible — carte, sticker, badge ou porte-clés.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+window.NFCSupportPage = NFCSupportPage;

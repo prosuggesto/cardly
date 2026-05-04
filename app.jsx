@@ -98,6 +98,7 @@ function App() {
         {tab === "crm" && <CrmPage role={tweaks.role} />}
         {tab === "secret" && <SecretCodePage role={tweaks.role} plan={tweaks.plan} onUpgrade={() => setTab("subscription")} />}
         {tab === "feedback" && <FeedbackPage />}
+        {tab === "nfc" && <NFCSupportPage />}
         {tab === "subscription" && <SubscriptionPage plan={tweaks.plan} onSetPlan={(p) => setTweak("plan", p)} />}
       </AppLayout>
     );
