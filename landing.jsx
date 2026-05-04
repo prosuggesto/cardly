@@ -1381,7 +1381,7 @@ function FAQSection() {
   const items = [
     { q: "Est-ce que Cartalis remplace vraiment une carte papier ?", a: "Oui. L'objectif est de proposer une alternative plus moderne, plus écologique et surtout plus mesurable qu'une carte papier." },
     { q: "Le prospect doit-il installer une application ?", a: "Non. Le prospect scanne simplement le QR code et arrive sur une page web." },
-    { q: "Puis-je personnaliser ma carte ?", a: "Oui. Vous pouvez modifier les informations affichées, importer un logo, importer une image pour le recto et verso, et selon votre plan, générer un visuel par IA." },
+    { q: "Puis-je personnaliser ma carte ?", a: "Oui. Vous pouvez modifier les informations affichées, importer un logo, importer une image pour le recto et verso, et générer un visuel par IA." },
     { q: "Comment fonctionne le compte entreprise ?", a: "Le chef d'entreprise obtient un code secret qu'il transmet à ses collaborateurs. Les collaborateurs s'inscrivent avec ce code, puis le chef valide leur accès." },
     { q: "Que se passe-t-il après l'essai gratuit ?", a: "Après 7 jours, les cartes restent visibles dans l'espace utilisateur, mais elles sont floutées et le QR code n'est plus actif tant qu'un abonnement n'est pas choisi." },
   ];
