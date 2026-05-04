@@ -317,8 +317,8 @@ function HeroSection({ navigate }) {
               </div>
               <div style={{ width: 1, background: "var(--line)" }} />
               <div className="col gap-1">
-                <div className="serif" style={{ fontSize: 28 }}>+<AnimatedCounter end={340} duration={800} suffix="%" /></div>
-                <div className="dim" style={{ fontSize: 12 }}>De prospects qualifiés</div>
+                <div className="serif" style={{ fontSize: 28 }}><AnimatedCounter end={0} suffix=" papier à imprimer" /></div>
+                <div className="dim" style={{ fontSize: 12 }}>À imprimer</div>
               </div>
               <div style={{ width: 1, background: "var(--line)" }} />
               <div className="col gap-1">
@@ -375,7 +375,7 @@ function HeroSection({ navigate }) {
             </div>
             {/* Flip hint */}
             <div style={{
-              position: "absolute", bottom: "14%", left: "50%", transform: "translateX(-50%)",
+              position: "absolute", bottom: "14%", left: "32%", transform: "translateX(-50%)",
               display: "flex", alignItems: "center", gap: 6,
               fontSize: 12, color: "var(--ink-3)", opacity: 0.7,
               pointerEvents: "none", whiteSpace: "nowrap",
@@ -580,9 +580,9 @@ function DashboardPreview() {
   const FilterChip = ({ children }) => (
     <span style={{
       display: "inline-flex", alignItems: "center", gap: 5,
-      padding: "5px 10px", borderRadius: 999,
-      background: "var(--surface)", border: "1px solid var(--line)",
-      fontSize: 10, color: "var(--ink-2)", whiteSpace: "nowrap",
+      padding: "7px 12px", borderRadius: 999,
+      background: "white", border: "1px solid var(--line)",
+      fontSize: 11, color: "var(--ink-2)", whiteSpace: "nowrap", fontWeight: 500,
     }}>{children} <Icon.ChevronDown size={9}/></span>
   );
 
@@ -600,7 +600,7 @@ function DashboardPreview() {
   const Slide0 = () => (
     <div className="col gap-4">
       {/* Filtres */}
-      <div style={{ padding: 10, borderRadius: 12, border: "1px solid var(--line)", background: "var(--surface)", display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+      <div style={{ padding: "12px 14px", borderRadius: 12, border: "1px solid var(--line)", background: "white", display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <FilterChip>Janvier</FilterChip>
         <FilterChip>2026</FilterChip>
         <span style={{ fontSize: 11, color: "var(--ink-4)" }}>→</span>
@@ -610,9 +610,9 @@ function DashboardPreview() {
         <FilterChip>Tous les événements</FilterChip>
         <button style={{
           marginLeft: "auto",
-          padding: "5px 14px", borderRadius: 999,
+          padding: "7px 16px", borderRadius: 999,
           background: "var(--ink)", color: "white", border: "none",
-          fontSize: 10, fontWeight: 500, cursor: "pointer",
+          fontSize: 11, fontWeight: 600, cursor: "pointer",
         }}>Filtrer</button>
       </div>
 
