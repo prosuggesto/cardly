@@ -16,7 +16,7 @@ function useInView(ref, { threshold = 0.1 } = {}) {
 }
 
 // Compteur animé pour les chiffres
-function AnimatedCounter({ end, duration = 800, suffix = "" }) {
+function AnimatedCounter({ end, duration = 2000, suffix = "" }) {
   const [count, setCount] = useStateL(0);
   const [started, setStarted] = useStateL(false);
   const ref = useRefL(null);
@@ -42,7 +42,7 @@ function AnimatedCounter({ end, duration = 800, suffix = "" }) {
 // Section animée au scroll
 function AnimatedSection({ children, style, className, ...props }) {
   const ref = useRefL(null);
-  const isVisible = useInView(ref, { threshold: 0.15 });
+  const isVisible = useInView(ref, { threshold: 0.25 });
   return (
     <div
       ref={ref}
@@ -50,8 +50,8 @@ function AnimatedSection({ children, style, className, ...props }) {
       style={{
         ...style,
         opacity: isVisible ? 1 : 0,
-        transform: isVisible ? "translateY(0)" : "translateY(24px)",
-        transition: "opacity 600ms ease, transform 600ms ease",
+        transform: isVisible ? "translateY(0)" : "translateY(48px)",
+        transition: "opacity 900ms cubic-bezier(0.34, 1.56, 0.64, 1), transform 900ms cubic-bezier(0.34, 1.56, 0.64, 1)",
       }}
       {...props}
     >
@@ -836,7 +836,7 @@ function ScanPreviewSection() {
 
   return (
     <section style={{ padding: "120px 0" }} className="section-bg-soft">
-      <div className="container">
+      <AnimatedSection className="container">
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "center" }} className="scan-grid">
 
           {/* Left — explication */}
@@ -974,7 +974,7 @@ function ScanPreviewSection() {
             </div>
           </div>
         </div>
-      </div>
+      </AnimatedSection>
       <style>{`
         @media (max-width: 860px) { .scan-grid { grid-template-columns: 1fr !important; } }
       `}</style>
