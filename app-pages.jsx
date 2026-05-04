@@ -462,7 +462,7 @@ function CollabStatsModal({ collab, onClose }) {
                   <div style={{ fontSize: 13, fontWeight: 500 }}>{ch.label}</div>
                 </div>
                 <div className="row gap-2" style={{ alignItems: "baseline" }}>
-                  <span className="dim" style={{ fontSize: 11 }}>{Math.round((ch.clicks / totalClicks) * 100)}%</span>
+                  {!ch.isScans && <span className="dim" style={{ fontSize: 11 }}>{Math.round((ch.clicks / totalClicks) * 100)}%</span>}
                   <span className="serif" style={{ fontSize: 18 }}>{ch.clicks}</span>
                 </div>
               </div>

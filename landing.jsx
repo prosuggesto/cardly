@@ -815,7 +815,7 @@ function DashboardPreview() {
                   <div style={{ fontSize: 10.5, fontWeight: 500 }}>{ch.label}</div>
                 </div>
                 <div className="row gap-2" style={{ alignItems: "baseline" }}>
-                  <span className="dim" style={{ fontSize: 9 }}>{ch.pct}%</span>
+                  {ch.label !== "Scans" && <span className="dim" style={{ fontSize: 9 }}>{ch.pct}%</span>}
                   <span className="serif" style={{ fontSize: 14 }}>{ch.val}</span>
                 </div>
               </div>
