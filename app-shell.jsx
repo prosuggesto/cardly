@@ -906,27 +906,9 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
 
             {/* Visibility toggles */}
             <div className="card" style={{ padding: 20 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, gap: 12 }}>
                 <div className="serif" style={{ fontSize: 17 }}>Champs visibles</div>
-                <div className="row gap-2" style={{ alignItems: "center", flexShrink: 0 }}>
-                  <label style={{ position: "relative", width: 20, height: 20, borderRadius: 5, border: "1.5px solid var(--line-2)", overflow: "hidden", cursor: editable ? "pointer" : "not-allowed", flexShrink: 0, background: applyAllColor }}>
-                    <input type="color" value={applyAllColor} disabled={!editable} onChange={(e) => setApplyAllColor(e.target.value)} style={{ opacity: 0, position: "absolute", inset: 0, width: "100%", height: "100%", cursor: "pointer" }} />
-                  </label>
-                  {/* Invisible clones of per-field controls — guarantees identical layout/widths */}
-                  <button aria-hidden="true" tabIndex={-1} style={{ background: "none", border: "none", padding: 0, display: "inline-flex", alignItems: "center", visibility: "hidden" }}>
-                    <span className="toggle on"></span>
-                  </button>
-                  <div aria-hidden="true" style={{ display: "inline-flex", border: "1px solid var(--line-2)", borderRadius: 7, overflow: "hidden", fontSize: 11, fontWeight: 500, visibility: "hidden" }}>
-                    <button tabIndex={-1} style={{ padding: "4px 9px", background: "var(--ink)", color: "white", border: "none" }}>Recto</button>
-                    <button tabIndex={-1} style={{ padding: "4px 9px", background: "transparent", color: "var(--ink-3)", border: "none" }}>Verso</button>
-                  </div>
-                  <div aria-hidden="true" style={{ display: "inline-flex", alignItems: "center", border: "1px solid var(--line-2)", borderRadius: 7, overflow: "hidden", fontSize: 11, visibility: "hidden" }}>
-                    <input type="number" defaultValue={100} className="no-spinner" tabIndex={-1} readOnly style={{ width: 34, padding: "3px 4px", fontSize: 11, textAlign: "center", background: "transparent", border: "none", outline: "none", fontVariantNumeric: "tabular-nums" }} />
-                    <span style={{ fontSize: 10, color: "var(--ink-3)", paddingRight: 5 }}>%</span>
-                  </div>
-                  <select aria-hidden="true" tabIndex={-1} className="input" style={{ padding: "3px 4px", fontSize: 11, height: 26, width: 86, visibility: "hidden" }}>
-                    <option>Défaut</option>
-                  </select>
+                <div style={{ display: "flex", alignItems: "center", gap: 16, flexShrink: 0 }}>
                   <button
                     type="button"
                     disabled={!editable}
@@ -936,6 +918,31 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
                   >
                     Appliquer à tous
                   </button>
+                  <div className="row gap-2" style={{ alignItems: "center", flexShrink: 0 }}>
+                    <label style={{ position: "relative", width: 20, height: 20, borderRadius: 5, border: "1.5px solid var(--line-2)", overflow: "hidden", cursor: editable ? "pointer" : "not-allowed", flexShrink: 0, background: applyAllColor }}>
+                      <input type="color" value={applyAllColor} disabled={!editable} onChange={(e) => setApplyAllColor(e.target.value)} style={{ opacity: 0, position: "absolute", inset: 0, width: "100%", height: "100%", cursor: "pointer" }} />
+                    </label>
+                    {/* Invisible clones of per-field controls — guarantees identical layout/widths */}
+                    <button aria-hidden="true" tabIndex={-1} style={{ background: "none", border: "none", padding: 0, display: "inline-flex", alignItems: "center", visibility: "hidden" }}>
+                      <span className="toggle on"></span>
+                    </button>
+                    <div aria-hidden="true" style={{ display: "inline-flex", border: "1px solid var(--line-2)", borderRadius: 7, overflow: "hidden", fontSize: 11, fontWeight: 500, visibility: "hidden" }}>
+                      <button tabIndex={-1} style={{ padding: "4px 9px", background: "var(--ink)", color: "white", border: "none" }}>Recto</button>
+                      <button tabIndex={-1} style={{ padding: "4px 9px", background: "transparent", color: "var(--ink-3)", border: "none" }}>Verso</button>
+                    </div>
+                    <div aria-hidden="true" style={{ display: "inline-flex", alignItems: "center", border: "1px solid var(--line-2)", borderRadius: 7, overflow: "hidden", fontSize: 11, visibility: "hidden" }}>
+                      <input type="number" defaultValue={100} className="no-spinner" tabIndex={-1} readOnly style={{ width: 34, padding: "3px 4px", fontSize: 11, textAlign: "center", background: "transparent", border: "none", outline: "none", fontVariantNumeric: "tabular-nums" }} />
+                      <span style={{ fontSize: 10, color: "var(--ink-3)", paddingRight: 5 }}>%</span>
+                    </div>
+                    <div aria-hidden="true" style={{ display: "inline-flex", border: "1px solid var(--line-2)", borderRadius: 7, overflow: "hidden", visibility: "hidden" }}>
+                      <button tabIndex={-1} style={{ padding: "3px 6px", border: "none", fontSize: 11, lineHeight: 1 }}><strong>G</strong></button>
+                      <button tabIndex={-1} style={{ padding: "3px 6px", border: "none", fontSize: 11, lineHeight: 1 }}><em>I</em></button>
+                      <button tabIndex={-1} style={{ padding: "3px 6px", border: "none", fontSize: 11, lineHeight: 1 }}><span style={{ textDecoration: "underline" }}>S</span></button>
+                    </div>
+                    <select aria-hidden="true" tabIndex={-1} className="input" style={{ padding: "3px 4px", fontSize: 11, height: 26, width: 86, visibility: "hidden" }}>
+                      <option>Défaut</option>
+                    </select>
+                  </div>
                 </div>
               </div>
               <div className="col gap-1">
