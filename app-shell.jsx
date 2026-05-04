@@ -738,10 +738,18 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
   const setFieldColor = (key, color) => setFieldColors(fc => ({ ...fc, [key]: color }));
   const [fieldSides, setFieldSides] = useStateP({ name: "recto", entreprise: "recto", poste: "recto", phone: "recto", email: "recto", web: "recto" });
   const setFieldSide = (key, side) => setFieldSides(fs => ({ ...fs, [key]: side }));
-  const [fieldSizes, setFieldSizes] = useStateP({ name: 1, entreprise: 1, poste: 1, phone: 1, email: 1, web: 1 });
+  const [fieldSizes, setFieldSizes] = useStateP({ name: 1.82, entreprise: 1.12, poste: 1.0, phone: 0.94, email: 0.94, web: 0.94 });
   const bumpFieldSize = (key, delta) => setFieldSizes(fs => ({ ...fs, [key]: Math.max(0.5, Math.min(2, Math.round(((fs[key] || 1) + delta) * 10) / 10)) }));
   const [fieldFonts, setFieldFonts] = useStateP({ name: "default", entreprise: "default", poste: "default", phone: "default", email: "default", web: "default" });
   const setFieldFont = (key, font) => setFieldFonts(ff => ({ ...ff, [key]: font }));
+  const [fieldStyles, setFieldStyles] = useStateP({ name: "titre", entreprise: "sous-titre", poste: "sous-titre", phone: "corps", email: "corps", web: "corps" });
+  const STYLE_SIZE_MAP = { titre: 1.4, "sous-titre": 1.15, corps: 1.0, legende: 0.8 };
+  const setFieldStyle = (key, style) => {
+    setFieldStyles(fs => ({ ...fs, [key]: style }));
+    const baseMultipliers = { name: 1.82, entreprise: 1.12, poste: 1.0, phone: 0.94, email: 0.94, web: 0.94 };
+    const newSize = (baseMultipliers[key] || 1) * (STYLE_SIZE_MAP[style] || 1);
+    setFieldSizes(fs => ({ ...fs, [key]: newSize }));
+  };
   const [logoSide, setLogoSide] = useStateP("both"); // "recto" | "verso" | "both"
   const [logoSizeRecto, setLogoSizeRecto] = useStateP(1);
   const [logoSizeVerso, setLogoSizeVerso] = useStateP(1);
@@ -761,6 +769,12 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
     { value: "mono",       label: "Mono" },
     { value: "dancing",    label: "Dancing" },
     { value: "script",     label: "Script" },
+  ];
+  const TEXT_STYLE_OPTIONS = [
+    { value: "titre",      label: "Titre" },
+    { value: "sous-titre", label: "Sous-titre" },
+    { value: "corps",      label: "Corps" },
+    { value: "legende",    label: "Légende" },
   ];
   const toast = useToast();
   const isAdminOnEnterprise = card.type === "enterprise" && role === "collaborator";
@@ -1050,6 +1064,20 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
                           />
                           <span style={{ fontSize: 10, color: "var(--ink-3)", paddingRight: 5 }}>%</span>
                         </div>
+                      )}
+                      {colorKey && (
+                        <select
+                          disabled={!editable || !card[k]}
+                          value={fieldStyles[colorKey] || "corps"}
+                          onChange={(e) => setFieldStyle(colorKey, e.target.value)}
+                          className="input"
+                          style={{ padding: "3px 4px", fontSize: 11, height: 26, width: 72, opacity: card[k] && editable ? 1 : 0.5 }}
+                          title="Style de texte"
+                        >
+                          {TEXT_STYLE_OPTIONS.map(o => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
+                          ))}
+                        </select>
                       )}
                       {colorKey && (
                         <select
