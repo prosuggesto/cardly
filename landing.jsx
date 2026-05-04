@@ -39,23 +39,30 @@ function AnimatedCounter({ end, duration = 2000, suffix = "" }) {
   return <span ref={ref}>{count}{suffix}</span>;
 }
 
-// Section animée au scroll
+// Section avec apparition progressive des enfants au scroll
 function AnimatedSection({ children, style, className, ...props }) {
   const ref = useRefL(null);
-  const isVisible = useInView(ref, { threshold: 0.25 });
+  const isVisible = useInView(ref, { threshold: 0.15 });
+
   return (
     <div
       ref={ref}
       className={className}
-      style={{
-        ...style,
-        opacity: isVisible ? 1 : 0,
-        transform: isVisible ? "translateY(0)" : "translateY(48px)",
-        transition: "opacity 900ms cubic-bezier(0.34, 1.56, 0.64, 1), transform 900ms cubic-bezier(0.34, 1.56, 0.64, 1)",
-      }}
+      style={style}
       {...props}
     >
-      {children}
+      {React.Children.map(children, (child, idx) => (
+        <div
+          key={idx}
+          style={{
+            opacity: isVisible ? 1 : 0,
+            transform: isVisible ? "translateY(0)" : "translateY(32px)",
+            transition: `opacity 700ms ease ${idx * 100}ms, transform 700ms ease ${idx * 100}ms`,
+          }}
+        >
+          {child}
+        </div>
+      ))}
     </div>
   );
 }
