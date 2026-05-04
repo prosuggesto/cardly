@@ -594,13 +594,27 @@ function DashboardPreview() {
   const [fading, setFading] = useStateL(false);
   const SLIDES = ["Vue d'ensemble", "Tableau membres", "Détail canal"];
 
+  // Exactly matches FilterSelect in the real dashboard (glass, 44px height, rounded-rect)
+  const glassChip = {
+    background: "rgba(255,255,255,0.45)",
+    backdropFilter: "blur(20px) saturate(180%)",
+    WebkitBackdropFilter: "blur(20px) saturate(180%)",
+    border: "1px solid rgba(255,255,255,0.65)",
+    boxShadow: "0 4px 24px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.8)",
+  };
   const FilterChip = ({ children }) => (
     <span style={{
-      display: "inline-flex", alignItems: "center", gap: 5,
-      padding: "7px 12px", borderRadius: 999,
-      background: "white", border: "1px solid var(--line)",
-      fontSize: 11, color: "var(--ink-2)", whiteSpace: "nowrap", fontWeight: 500,
-    }}>{children} <Icon.ChevronDown size={9}/></span>
+      ...glassChip,
+      display: "inline-flex", alignItems: "center", gap: 8,
+      padding: "9px 14px", borderRadius: 14,
+      height: 44, fontSize: 13, fontWeight: 500,
+      color: "var(--ink)", whiteSpace: "nowrap",
+    }}>
+      {children}
+      <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.45, flexShrink: 0 }}>
+        <path d="M6 9l6 6 6-6"/>
+      </svg>
+    </span>
   );
 
   useEffectL(() => {
@@ -616,21 +630,16 @@ function DashboardPreview() {
   // ── Slide 0 : vue d'ensemble (filtres + KPIs + Top 3 podium + demandes) ──
   const Slide0 = () => (
     <div className="col gap-4">
-      {/* Filtres */}
-      <div style={{ padding: "12px 14px", borderRadius: 12, border: "1px solid var(--line)", background: "white", display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+      {/* Filtres — identical to real dashboard */}
+      <div className="card" style={{ padding: 16, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", width: "fit-content" }}>
         <FilterChip>Janvier</FilterChip>
         <FilterChip>2026</FilterChip>
-        <span style={{ fontSize: 11, color: "var(--ink-4)" }}>→</span>
+        <span className="dim" style={{ alignSelf: "center", fontSize: 13 }}>→</span>
         <FilterChip>Avril</FilterChip>
         <FilterChip>2026</FilterChip>
         <FilterChip>Tous les membres</FilterChip>
         <FilterChip>Tous les événements</FilterChip>
-        <button style={{
-          marginLeft: "auto",
-          padding: "7px 16px", borderRadius: 999,
-          background: "var(--ink)", color: "white", border: "none",
-          fontSize: 11, fontWeight: 600, cursor: "pointer",
-        }}>Filtrer</button>
+        <button className="btn btn-primary btn-sm">Filtrer</button>
       </div>
 
       {/* Métriques */}
