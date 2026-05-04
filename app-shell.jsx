@@ -733,7 +733,7 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
   const [logoUrl, setLogoUrl] = useStateP(null);
   const [frontImageUrl, setFrontImageUrl] = useStateP(null);
   const [backImageUrl, setBackImageUrl] = useStateP(null);
-  const [fieldColors, setFieldColors] = useStateP({ name: "#2a241a", entreprise: "#2a241a", poste: "#b8843e", phone: "#2a241a", email: "#2a241a", web: "#2a241a" });
+  const [fieldColors, setFieldColors] = useStateP({ name: "#2a241a", entreprise: "#2a241a", poste: "#2a241a", phone: "#2a241a", email: "#2a241a", web: "#2a241a" });
   const [applyAllColor, setApplyAllColor] = useStateP("#2a241a");
   const setFieldColor = (key, color) => setFieldColors(fc => ({ ...fc, [key]: color }));
   const [fieldSides, setFieldSides] = useStateP({ name: "recto", entreprise: "recto", poste: "recto", phone: "recto", email: "recto", web: "recto" });
@@ -906,9 +906,9 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
 
             {/* Visibility toggles */}
             <div className="card" style={{ padding: 20 }}>
-              <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
                 <div className="serif" style={{ fontSize: 17 }}>Champs visibles</div>
-                <div className="row gap-2" style={{ alignItems: "center", flexShrink: 0, position: "relative" }}>
+                <div className="row gap-2" style={{ alignItems: "center", flexShrink: 0 }}>
                   <label style={{ position: "relative", width: 20, height: 20, borderRadius: 5, border: "1.5px solid var(--line-2)", overflow: "hidden", cursor: editable ? "pointer" : "not-allowed", flexShrink: 0, background: applyAllColor }}>
                     <input type="color" value={applyAllColor} disabled={!editable} onChange={(e) => setApplyAllColor(e.target.value)} style={{ opacity: 0, position: "absolute", inset: 0, width: "100%", height: "100%", cursor: "pointer" }} />
                   </label>
@@ -927,21 +927,12 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
                   <select aria-hidden="true" tabIndex={-1} className="input" style={{ padding: "3px 4px", fontSize: 11, height: 26, width: 64, visibility: "hidden" }}>
                     <option>Défaut</option>
                   </select>
-                  {/* Apply-all button absolutely positioned to the right of the color box */}
                   <button
                     type="button"
                     disabled={!editable}
                     onClick={() => setFieldColors({ name: applyAllColor, entreprise: applyAllColor, poste: applyAllColor, phone: applyAllColor, email: applyAllColor, web: applyAllColor })}
                     className="btn btn-sm btn-ghost"
-                    style={{
-                      position: "absolute",
-                      left: 28,
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      fontSize: 12,
-                      padding: "4px 10px",
-                      whiteSpace: "nowrap",
-                    }}
+                    style={{ fontSize: 12, padding: "4px 10px", whiteSpace: "nowrap" }}
                   >
                     Appliquer à tous
                   </button>
