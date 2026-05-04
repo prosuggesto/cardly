@@ -39,29 +39,45 @@ function AnimatedCounter({ end, duration = 2000, suffix = "" }) {
   return <span ref={ref}>{count}{suffix}</span>;
 }
 
-// Section avec apparition progressive des enfants au scroll
-function AnimatedSection({ children, style, className, ...props }) {
+// Composant pour item animé individuellement
+function AnimatedItem({ children }) {
   const ref = useRefL(null);
-  const isVisible = useInView(ref, { threshold: 0.15 });
+  const [isVisible, setIsVisible] = useStateL(false);
+
+  useEffectL(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+        }
+      },
+      { threshold: 0.2 }
+    );
+
+    if (ref.current) observer.observe(ref.current);
+    return () => ref.current && observer.unobserve(ref.current);
+  }, []);
 
   return (
     <div
       ref={ref}
-      className={className}
-      style={style}
-      {...props}
+      style={{
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? "translateY(0)" : "translateY(32px)",
+        transition: "opacity 700ms ease-out, transform 700ms ease-out",
+      }}
     >
+      {children}
+    </div>
+  );
+}
+
+// Section avec animation des enfants
+function AnimatedSection({ children, style, className, ...props }) {
+  return (
+    <div className={className} style={style} {...props}>
       {React.Children.map(children, (child, idx) => (
-        <div
-          key={idx}
-          style={{
-            opacity: isVisible ? 1 : 0,
-            transform: isVisible ? "translateY(0)" : "translateY(32px)",
-            transition: `opacity 700ms ease ${idx * 100}ms, transform 700ms ease ${idx * 100}ms`,
-          }}
-        >
-          {child}
-        </div>
+        <AnimatedItem key={idx}>{child}</AnimatedItem>
       ))}
     </div>
   );
