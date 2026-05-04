@@ -416,7 +416,9 @@ function CollabStatsModal({ collab, onClose }) {
   const seed = (collab.id || "x").split("").reduce((a, ch) => a + ch.charCodeAt(0), 0);
   const rng = (n, mod) => ((seed * 9301 + n * 49297) % mod);
   const totalActions = Math.round(collab.leads * 1.4);
+  const scans = Math.round(collab.leads * 1.5);
   const channels = [
+    { key: "scans", label: "Scans", icon: <Icon.QrCode size={14} />, color: "#6b5b4f", clicks: scans, isScans: true },
     { key: "mail", label: "Mail", icon: <Icon.Mail size={14} />, color: "#8a6d3b", weight: 28 + rng(1, 12) },
     { key: "whatsapp", label: "WhatsApp", icon: <Icon.WhatsApp size={14} />, color: "#25d366", weight: 24 + rng(2, 14) },
     { key: "instagram", label: "Instagram", icon: <Icon.Instagram size={14} />, color: "#c13584", weight: 14 + rng(3, 12) },
@@ -424,8 +426,8 @@ function CollabStatsModal({ collab, onClose }) {
     { key: "website", label: "Site web", icon: <Icon.Globe size={14} />, color: "#1a1815", weight: 6 + rng(5, 10) },
     { key: "crm", label: "CRM", icon: <Icon.User size={14} />, color: "#b8843e", weight: 8 + rng(6, 10) },
   ];
-  const totalW = channels.reduce((s, c) => s + c.weight, 0);
-  const withClicks = channels.map(c => ({ ...c, clicks: Math.max(1, Math.round(totalActions * (c.weight / totalW) * 1.6)) }));
+  const totalW = channels.filter(c => !c.isScans).reduce((s, c) => s + c.weight, 0);
+  const withClicks = channels.map(c => c.isScans ? c : { ...c, clicks: Math.max(1, Math.round(totalActions * (c.weight / totalW) * 1.6)) });
   const totalClicks = withClicks.reduce((s, c) => s + c.clicks, 0);
   const max = Math.max(...withClicks.map(c => c.clicks));
 

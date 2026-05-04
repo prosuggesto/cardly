@@ -361,7 +361,9 @@ function CardStatsModal({ open, onClose, card }) {
   const seed = (card.id || "x").split("").reduce((a, c) => a + c.charCodeAt(0), 0);
   const rng = (n, mod) => ((seed * 9301 + n * 49297) % mod);
   const saves = (card.leads != null ? card.leads : 32) + 10 + rng(1, 18);
+  const scans = Math.round(saves * 1.2);
   const channels = [
+    { key: "scans", label: "Scans", icon: <Icon.QrCode size={14} />, color: "#6b5b4f", clicks: scans },
     { key: "mail", label: "Mail", icon: <Icon.Mail size={14} />, color: "#8a6d3b", clicks: 18 + rng(2, 30) },
     { key: "whatsapp", label: "WhatsApp", icon: <Icon.WhatsApp size={14} />, color: "#25d366", clicks: 14 + rng(3, 28) },
     { key: "instagram", label: "Instagram", icon: <Icon.Instagram size={14} />, color: "#c13584", clicks: 9 + rng(4, 22) },

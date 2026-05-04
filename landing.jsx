@@ -343,8 +343,8 @@ function HeroSection({ navigate }) {
             </div>
             <div className="row gap-6" style={{ marginTop: 20 }}>
               <div className="col gap-1" style={fi(5)}>
-                <div className="serif" style={{ fontSize: 28 }}><AnimatedCounter end={7} suffix=" jours" /></div>
-                <div className="dim" style={{ fontSize: 12 }}>Essai gratuit</div>
+                <div className="serif" style={{ fontSize: 28 }}>∞</div>
+                <div className="dim" style={{ fontSize: 12 }}>Cartes illimitées</div>
               </div>
               <div style={{ width: 1, background: "var(--line)", ...fi(5) }} />
               <div className="col gap-1" style={fi(6)}>
@@ -546,7 +546,7 @@ function WhySection() {
 
 function ConversionTimeline() {
   const steps = [
-    { n: "01", t: "Le commercial montre sa carte 3D", d: "Une présentation moderne et mémorable." },
+    { n: "01", t: "Le commercial montre sa carte 3D ou sa carte NFC", d: "Une présentation moderne et mémorable." },
     { n: "02", t: "Le prospect scanne le QR code", d: "Pas d'app, juste un scan rapide." },
     { n: "03", t: "Page contact premium", d: "Toutes les infos en un coup d'œil." },
     { n: "04", t: "Clic « Enregistrer le contact »", d: "Le contact est ajouté immédiatement." },
@@ -780,6 +780,7 @@ function DashboardPreview() {
     const c = active[0];
     if (!c) return null;
     const channels = [
+      { label: "Scans",     color: "#6b5b4f", pct: 100, val: 119, icon: <Icon.QrCode size={10}/> },
       { label: "Mail",      color: "#8a6d3b", pct: 29, val: 28, icon: <Icon.Mail size={10}/> },
       { label: "WhatsApp",  color: "#25d366", pct: 24, val: 23, icon: <Icon.WhatsApp size={10}/> },
       { label: "Instagram", color: "#c13584", pct: 20, val: 19, icon: <Icon.Instagram size={10}/> },
