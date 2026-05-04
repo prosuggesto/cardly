@@ -1195,54 +1195,60 @@ function PricingSection({ navigate }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20, alignItems: "stretch" }}>
           <PricingCard
             name="Solo" price="9€" period="/mois"
-            tagline="Pour indépendants et commerciaux solo."
+            tagline="Tout Cartalis pour une seule personne : créez, personnalisez et partagez vos cartes digitales 3D sans limite."
             features={[
-              "1 carte digitale 3D",
-              "QR code personnel",
-              "Bouton enregistrer le contact",
-              "Bouton WhatsApp",
-              "Personnalisation basique",
-              "Statistiques personnelles",
-              "Essai gratuit 7 jours",
+              "1 utilisateur",
+              "Cartes digitales 3D illimitées",
+              "Personnalisation avancée des cartes",
+              "Import logo + images recto/verso",
+              "QR code et lien public partageable",
+              "Compatibilité support NFC externe",
+              "Ajout contact + partage infos prospect auto-remplissage CRM",
+              "Ouverture automatique WhatsApp et mail avec message pré-rempli",
+              "Redirection automatique vers réseaux sociaux et site web",
+              "Statistiques personnelles complètes",
+              "Statistiques par carte",
+              "CRM avec export CSV",
+              "Base CRM nettoyée tous les 30 jours pour sécurité optimal",
+              "Génération IA disponible",
             ]}
-            excluded={["Génération IA non incluse"]}
             cta="Commencer en solo"
             onCta={() => navigate("/auth?mode=signup&plan=solo")}
           />
           <PricingCard
             featured
             name="Team" price="49,99€" period="/mois"
-            tagline="Pour entreprises jusqu'à 10 collaborateurs."
+            tagline="Toutes les fonctionnalités de Cartalis, avec un espace équipe pour gérer vos collaborateurs et suivre leurs performances."
             features={[
               "Jusqu'à 10 collaborateurs",
-              "Carte entreprise partagée",
-              "Cartes personnelles",
-              "Dashboard équipe",
-              "Validation des collaborateurs",
-              "Code secret entreprise",
+              "Tout le plan Solo inclus",
+              "Cartes digitales 3D illimitées par collaborateur",
+              "Cartes entreprise illimitées et partageables avec l'équipe",
+              "Cartes personnelles illimitées",
+              "QR code et lien public par collaborateur",
+              "Dashboard d'équipe complet",
               "Statistiques par collaborateur",
-              "Personnalisation avancée",
-              "Génération d'image IA",
-              "Import logo",
-              "Essai gratuit 7 jours",
+              "Statistiques par carte",
+              "CRM d'équipe avec export CSV",
+              "Base CRM nettoyée tous les 30 jours",
+              "Génération IA disponible",
             ]}
             cta="Créer mon équipe"
             onCta={() => navigate("/auth?mode=signup&plan=team")}
           />
           <PricingCard
             name="Enterprise" price="Sur devis" period=""
-            tagline="Pour équipes de plus de 10 collaborateurs."
+            tagline="Une offre personnalisée pour déployer Cartalis à plus grande échelle."
             features={[
-              "Nombre de collaborateurs personnalisé",
-              "Accompagnement personnalisé",
-              "Design sur mesure",
+              "Plus de 10 collaborateurs",
+              "Tout le plan Team inclus",
               "Support prioritaire",
-              "Conditions adaptées",
+              "Formation Cartalis",
             ]}
             contactPhone="07 67 56 92 24"
-            contactEmail="contact.cardly@gmail.com"
+            contactEmail="contact.cartalis@gmail.com"
             cta="Contacter Cartalis"
-            onCta={() => window.location.href = "mailto:contact.cardly@gmail.com"}
+            onCta={() => window.location.href = "mailto:contact.cartalis@gmail.com"}
           />
         </div>
       </AnimatedSection>
