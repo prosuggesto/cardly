@@ -1383,7 +1383,7 @@ function FAQSection() {
     { q: "Le prospect doit-il installer une application ?", a: "Non. Le prospect scanne simplement le QR code et arrive sur une page web." },
     { q: "Puis-je personnaliser ma carte ?", a: "Oui. Vous pouvez modifier les informations affichées, importer un logo, importer une image pour le recto et verso, et générer un visuel par IA." },
     { q: "Comment fonctionne le compte entreprise ?", a: "Le chef d'entreprise obtient un code secret qu'il transmet à ses collaborateurs. Les collaborateurs s'inscrivent avec ce code, puis le chef valide leur accès." },
-    { q: "Que se passe-t-il après l'essai gratuit ?", a: "Après 7 jours, les cartes restent visibles dans l'espace utilisateur, mais elles sont floutées et le QR code n'est plus actif tant qu'un abonnement n'est pas choisi." },
+    { q: "Cartalis fonctionne-t-il avec les cartes NFC ?", a: "Oui. Cartalis est 100% digitale, mais vous pouvez utiliser votre lien Cartalis sur n'importe quel support NFC compatible. Vous pouvez changer la carte digitale affichée à tout moment sans reprogrammer votre support NFC. Votre lien NFC reste toujours le même, vous gardez la flexibilité du digital." },
   ];
   const [open, setOpen] = useStateL(0);
   return (
