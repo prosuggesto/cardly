@@ -418,7 +418,7 @@ function CollabStatsModal({ collab, onClose }) {
   const totalActions = Math.round(collab.leads * 1.4);
   const scans = Math.round(collab.leads * 1.5);
   const channels = [
-    { key: "scans", label: "Scans", icon: <Icon.QrCode size={14} />, color: "#6b5b4f", clicks: scans, isScans: true },
+    { key: "scans", label: "Scans", icon: <Icon.QR size={14} />, color: "#6b5b4f", clicks: scans, isScans: true },
     { key: "mail", label: "Mail", icon: <Icon.Mail size={14} />, color: "#8a6d3b", weight: 28 + rng(1, 12) },
     { key: "whatsapp", label: "WhatsApp", icon: <Icon.WhatsApp size={14} />, color: "#25d366", weight: 24 + rng(2, 14) },
     { key: "instagram", label: "Instagram", icon: <Icon.Instagram size={14} />, color: "#c13584", weight: 14 + rng(3, 12) },

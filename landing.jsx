@@ -780,7 +780,7 @@ function DashboardPreview() {
     const c = active[0];
     if (!c) return null;
     const channels = [
-      { label: "Scans",     color: "#6b5b4f", pct: 100, val: 119, icon: <Icon.QrCode size={10}/> },
+      { label: "Scans",     color: "#6b5b4f", pct: 100, val: 119, icon: <Icon.QR size={10}/> },
       { label: "Mail",      color: "#8a6d3b", pct: 29, val: 28, icon: <Icon.Mail size={10}/> },
       { label: "WhatsApp",  color: "#25d366", pct: 24, val: 23, icon: <Icon.WhatsApp size={10}/> },
       { label: "Instagram", color: "#c13584", pct: 20, val: 19, icon: <Icon.Instagram size={10}/> },
