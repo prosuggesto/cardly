@@ -109,11 +109,17 @@ function Card3D({
 }) {
   const FONT_FAMILIES = {
     default: undefined,
-    display: "var(--font-display), Georgia, 'Times New Roman', serif",
-    serif: "Georgia, 'Times New Roman', serif",
-    sans: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
-    mono: "var(--font-mono), 'Courier New', monospace",
-    script: "'Brush Script MT', 'Lucida Handwriting', cursive",
+    display:    "var(--font-display), Georgia, 'Times New Roman', serif",
+    serif:      "Georgia, 'Times New Roman', serif",
+    sans:       "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+    mono:       "var(--font-mono), 'Courier New', monospace",
+    script:     "'Brush Script MT', 'Lucida Handwriting', cursive",
+    playfair:   "'Playfair Display', Georgia, serif",
+    lora:       "'Lora', Georgia, serif",
+    raleway:    "'Raleway', 'Helvetica Neue', sans-serif",
+    montserrat: "'Montserrat', 'Helvetica Neue', sans-serif",
+    cinzel:     "'Cinzel', 'Times New Roman', serif",
+    dancing:    "'Dancing Script', cursive",
   };
   const D = design || (card && window.CARTALIS_DATA.getDesign(card.design)) || window.CARTALIS_DATA.cardDesigns[0];
   const ratio = 0.63; // typical card aspect

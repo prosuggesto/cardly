@@ -749,12 +749,18 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
   const [logoSizeRectoDraft, setLogoSizeRectoDraft] = useStateP(undefined);
   const [logoSizeVersoDraft, setLogoSizeVersoDraft] = useStateP(undefined);
   const FONT_OPTIONS = [
-    { value: "default", label: "Défaut" },
-    { value: "display", label: "Display" },
-    { value: "serif", label: "Serif" },
-    { value: "sans", label: "Sans" },
-    { value: "mono", label: "Mono" },
-    { value: "script", label: "Script" },
+    { value: "default",    label: "Défaut" },
+    { value: "display",    label: "Display" },
+    { value: "playfair",   label: "Playfair" },
+    { value: "cinzel",     label: "Cinzel" },
+    { value: "lora",       label: "Lora" },
+    { value: "serif",      label: "Serif" },
+    { value: "raleway",    label: "Raleway" },
+    { value: "montserrat", label: "Montserrat" },
+    { value: "sans",       label: "Sans" },
+    { value: "mono",       label: "Mono" },
+    { value: "dancing",    label: "Dancing" },
+    { value: "script",     label: "Script" },
   ];
   const toast = useToast();
   const isAdminOnEnterprise = card.type === "enterprise" && role === "collaborator";
