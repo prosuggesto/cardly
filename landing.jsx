@@ -1184,6 +1184,8 @@ function Metric({ label, value, delta, trend }) {
 window.Metric = Metric;
 
 function PricingSection({ navigate }) {
+  const [expandedCount, setExpandedCount] = useStateL(0);
+  const onExpandChange = (isExpanded) => setExpandedCount(c => isExpanded ? c + 1 : c - 1);
   return (
     <section id="pricing" style={{ padding: "120px 0" }} className="section-bg-soft">
       <AnimatedSection className="container col gap-10">
@@ -1192,7 +1194,7 @@ function PricingSection({ navigate }) {
           title="Choisissez l'offre adaptée à votre activité."
           subtitle="Tous les plans incluent 7 jours d'essai gratuit. Sans engagement."
         />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20, alignItems: "start" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20, alignItems: expandedCount > 0 ? "start" : "stretch" }}>
           <PricingCard
             name="Solo" price="9€" period="/mois"
             tagline="Tout Cartalis pour une seule personne : créez, personnalisez et partagez vos cartes digitales 3D sans limite."
@@ -1214,6 +1216,7 @@ function PricingSection({ navigate }) {
             ]}
             cta="Commencer en solo"
             onCta={() => navigate("/auth?mode=signup&plan=solo")}
+            onExpandChange={onExpandChange}
           />
           <PricingCard
             featured
@@ -1235,6 +1238,7 @@ function PricingSection({ navigate }) {
             ]}
             cta="Créer mon équipe"
             onCta={() => navigate("/auth?mode=signup&plan=team")}
+            onExpandChange={onExpandChange}
           />
           <PricingCard
             name="Enterprise" price="Sur devis" period=""
@@ -1249,6 +1253,7 @@ function PricingSection({ navigate }) {
             contactEmail="contact.cartalis@gmail.com"
             cta="Contacter Cartalis"
             onCta={() => window.location.href = "mailto:contact.cartalis@gmail.com"}
+            onExpandChange={onExpandChange}
           />
         </div>
       </AnimatedSection>
@@ -1256,11 +1261,16 @@ function PricingSection({ navigate }) {
   );
 }
 
-function PricingCard({ name, price, period, tagline, features, excluded, cta, onCta, featured, contactPhone, contactEmail }) {
+function PricingCard({ name, price, period, tagline, features, excluded, cta, onCta, featured, contactPhone, contactEmail, onExpandChange }) {
   const [expanded, setExpanded] = useStateL(false);
   const VISIBLE = 5;
   const visibleFeatures = expanded ? features : features.slice(0, VISIBLE);
   const hasMore = features.length > VISIBLE;
+  const toggle = () => {
+    const next = !expanded;
+    setExpanded(next);
+    onExpandChange && onExpandChange(next);
+  };
   return (
     <div className="card" style={{
       padding: 32,
@@ -1301,7 +1311,7 @@ function PricingCard({ name, price, period, tagline, features, excluded, cta, on
       {hasMore && (
         <button
           type="button"
-          onClick={() => setExpanded(e => !e)}
+          onClick={toggle}
           style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--ink-3)", display: "flex", alignItems: "center", gap: 4, padding: 0, alignSelf: "flex-start" }}
         >
           {expanded ? "Voir moins" : `Voir plus (${features.length - VISIBLE} autres)`}
