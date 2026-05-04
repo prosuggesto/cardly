@@ -1192,7 +1192,7 @@ function PricingSection({ navigate }) {
           title="Choisissez l'offre adaptée à votre activité."
           subtitle="Tous les plans incluent 7 jours d'essai gratuit. Sans engagement."
         />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20, alignItems: "stretch" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20, alignItems: "start" }}>
           <PricingCard
             name="Solo" price="9€" period="/mois"
             tagline="Tout Cartalis pour une seule personne : créez, personnalisez et partagez vos cartes digitales 3D sans limite."
