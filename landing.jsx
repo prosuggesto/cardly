@@ -16,7 +16,7 @@ function useInView(ref, { threshold = 0.1 } = {}) {
 }
 
 // Compteur animé pour les chiffres
-function AnimatedCounter({ end, duration = 3500, suffix = "" }) {
+function AnimatedCounter({ end, duration = 6000, suffix = "" }) {
   const [count, setCount] = useStateL(0);
   const [started, setStarted] = useStateL(false);
   const ref = useRefL(null);
@@ -39,7 +39,7 @@ function AnimatedCounter({ end, duration = 3500, suffix = "" }) {
   return <span ref={ref}>{count}{suffix}</span>;
 }
 
-// Composant pour item animé individuellement
+// Composant pour item animé individuellement (vertical)
 function AnimatedItem({ children }) {
   const ref = useRefL(null);
   const [isVisible, setIsVisible] = useStateL(false);
@@ -68,6 +68,56 @@ function AnimatedItem({ children }) {
       }}
     >
       {children}
+    </div>
+  );
+}
+
+// Groupe d'items avec stagger horizontal (gauche à droite)
+function AnimatedStaggerGroup({ children, columns = 3 }) {
+  const containerRef = useRefL(null);
+  const [visibleItems, setVisibleItems] = useStateL(new Set());
+
+  useEffectL(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setVisibleItems((prev) => new Set([...prev, entry.target]));
+          }
+        });
+      },
+      { threshold: 0.15 }
+    );
+
+    if (containerRef.current) {
+      const items = containerRef.current.children;
+      Array.from(items).forEach((item) => observer.observe(item));
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        display: "grid",
+        gridTemplateColumns: `repeat(${columns}, 1fr)`,
+        gap: 20,
+      }}
+    >
+      {React.Children.map(children, (child, idx) => (
+        <div
+          key={idx}
+          style={{
+            opacity: visibleItems.has ? 1 : 0,
+            transform: visibleItems.has ? "translateX(0)" : `translateX(-40px)`,
+            transition: `opacity 600ms ease-out ${idx * 120}ms, transform 600ms ease-out ${idx * 120}ms`,
+          }}
+        >
+          {child}
+        </div>
+      ))}
     </div>
   );
 }
@@ -408,7 +458,7 @@ function WhySection() {
           title="Une carte papier se donne. Une carte digitale convertit."
           subtitle="Une carte de visite classique dépend de la mémoire du prospect. Cartalis transforme ce moment en action immédiate : scanner, enregistrer, contacter."
         />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20 }}>
+        <AnimatedStaggerGroup columns={4}>
           {items.map((it, i) => (
             <div key={i} className="card" style={{ padding: 28 }}>
               <div className="serif" style={{ fontSize: 24, color: "var(--gold)", marginBottom: 12 }}>0{i+1}</div>
@@ -416,7 +466,7 @@ function WhySection() {
               <p className="muted" style={{ margin: 0, fontSize: 14, lineHeight: 1.6, textWrap: "pretty" }}>{it.d}</p>
             </div>
           ))}
-        </div>
+        </AnimatedStaggerGroup>
       </AnimatedSection>
     </section>
   );
@@ -439,7 +489,7 @@ function ConversionTimeline() {
           title="Une carte de visite qui ne se contente pas d'être jolie. Elle convertit."
           subtitle="Cartalis transforme une interaction physique en relation digitale. Le prospect ne repart pas seulement avec votre nom : il peut enregistrer votre contact, ouvrir une conversation et garder un lien direct avec vous."
         />
-        <div style={{ position: "relative", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20 }}>
+        <AnimatedStaggerGroup columns={3}>
           {steps.map((s, i) => (
             <div key={i} className="col gap-3" style={{ position: "relative" }}>
               <div className="row gap-3" style={{ alignItems: "center" }}>
@@ -458,7 +508,7 @@ function ConversionTimeline() {
               <div className="muted" style={{ fontSize: 13, lineHeight: 1.5 }}>{s.d}</div>
             </div>
           ))}
-        </div>
+        </AnimatedStaggerGroup>
       </AnimatedSection>
     </section>
   );
