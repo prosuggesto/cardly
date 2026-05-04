@@ -15,26 +15,44 @@ function useInView(ref, { threshold = 0.1 } = {}) {
   return isVisible;
 }
 
-// Compteur animé pour les chiffres
-function AnimatedCounter({ end, duration = 6000, suffix = "" }) {
+// Spring animation pour compteur (fluide comme Framer Motion)
+function AnimatedCounter({ end, suffix = "" }) {
   const [count, setCount] = useStateL(0);
   const [started, setStarted] = useStateL(false);
   const ref = useRefL(null);
   const isVisible = useInView(ref);
+  const velocityRef = useRefL(0);
+  const currentRef = useRefL(0);
 
   useEffectL(() => {
     if (isVisible && !started) {
       setStarted(true);
-      const startTime = Date.now();
-      const step = () => {
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        setCount(Math.floor(end * progress));
-        if (progress < 1) requestAnimationFrame(step);
+      let animationId;
+
+      const animate = () => {
+        const target = end;
+        const damping = 0.85; // damping factor (lower = more bouncy)
+        const stiffness = 0.15; // stiffness factor
+
+        // Spring physics
+        const distance = target - currentRef.current;
+        velocityRef.current += distance * stiffness;
+        velocityRef.current *= damping;
+        currentRef.current += velocityRef.current;
+
+        // Stop when close enough
+        if (Math.abs(distance) < 0.5 && Math.abs(velocityRef.current) < 0.1) {
+          setCount(Math.round(target));
+        } else {
+          setCount(Math.round(currentRef.current));
+          animationId = requestAnimationFrame(animate);
+        }
       };
-      requestAnimationFrame(step);
+
+      animationId = requestAnimationFrame(animate);
+      return () => cancelAnimationFrame(animationId);
     }
-  }, [isVisible, started, end, duration]);
+  }, [isVisible, started, end]);
 
   return <span ref={ref}>{count}{suffix}</span>;
 }
@@ -119,6 +137,44 @@ function AnimatedStaggerGroup({ children, columns = 3 }) {
         </div>
       ))}
     </div>
+  );
+}
+
+// Texte avec animation phrase par phrase
+function AnimatedText({ children }) {
+  const ref = useRefL(null);
+  const [visibleSpans, setVisibleSpans] = useStateL(0);
+  const isInView = useInView(ref, { threshold: 0.3 });
+
+  // Diviser en phrases (utiliser les points, points d'exclamation, points d'interrogation)
+  const phrases = typeof children === "string"
+    ? children.split(/(?<=[.!?])\s+/).filter(Boolean)
+    : [children];
+
+  useEffectL(() => {
+    if (isInView && visibleSpans < phrases.length) {
+      const timer = setTimeout(() => {
+        setVisibleSpans((prev) => Math.min(prev + 1, phrases.length));
+      }, 200); // Délai entre chaque phrase
+      return () => clearTimeout(timer);
+    }
+  }, [isInView, visibleSpans, phrases.length]);
+
+  return (
+    <span ref={ref}>
+      {phrases.map((phrase, idx) => (
+        <span
+          key={idx}
+          style={{
+            opacity: idx < visibleSpans ? 1 : 0,
+            transition: "opacity 500ms ease-out",
+          }}
+        >
+          {phrase}
+          {idx < phrases.length - 1 ? " " : ""}
+        </span>
+      ))}
+    </span>
   );
 }
 
