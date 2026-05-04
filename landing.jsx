@@ -386,9 +386,19 @@ function ConversionTimeline() {
 function DashboardPreview() {
   const collabs = window.CARTALIS_DATA.collaborators;
   const active = collabs.filter(c => c.statut === "actif").sort((a, b) => b.leads - a.leads);
+  const pending = collabs.filter(c => c.statut === "en_attente");
   const [slide, setSlide] = useStateL(0);
   const [fading, setFading] = useStateL(false);
   const SLIDES = ["Vue d'ensemble", "Tableau membres", "Détail canal"];
+
+  const FilterChip = ({ children }) => (
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: 5,
+      padding: "5px 10px", borderRadius: 999,
+      background: "var(--surface)", border: "1px solid var(--line)",
+      fontSize: 10, color: "var(--ink-2)", whiteSpace: "nowrap",
+    }}>{children} <Icon.ChevronDown size={9}/></span>
+  );
 
   useEffectL(() => {
     const t = setInterval(() => {
@@ -400,14 +410,32 @@ function DashboardPreview() {
 
   const goTo = (i) => { setFading(true); setTimeout(() => { setSlide(i); setFading(false); }, 220); };
 
-  // ── Slide 0 : vue d'ensemble (KPIs + Top 3 podium) ──
+  // ── Slide 0 : vue d'ensemble (filtres + KPIs + Top 3 podium + demandes) ──
   const Slide0 = () => (
     <div className="col gap-4">
+      {/* Filtres */}
+      <div style={{ padding: 10, borderRadius: 12, border: "1px solid var(--line)", background: "var(--surface)", display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+        <FilterChip>Janvier</FilterChip>
+        <FilterChip>2026</FilterChip>
+        <span style={{ fontSize: 11, color: "var(--ink-4)" }}>→</span>
+        <FilterChip>Avril</FilterChip>
+        <FilterChip>2026</FilterChip>
+        <FilterChip>Tous les membres</FilterChip>
+        <FilterChip>Tous les événements</FilterChip>
+        <button style={{
+          marginLeft: "auto",
+          padding: "5px 14px", borderRadius: 999,
+          background: "var(--ink)", color: "white", border: "none",
+          fontSize: 10, fontWeight: 500, cursor: "pointer",
+        }}>Filtrer</button>
+      </div>
+
+      {/* Métriques */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12 }}>
         {[
           { label: "Total leads ce mois", value: "142", delta: "+24 vs mois dernier", trend: "up" },
           { label: "Meilleur membre",      value: "Emma L.",      delta: "42 leads", trend: "neutral" },
-          { label: "Membres actifs",       value: "3",            delta: "sur 4", trend: "neutral" },
+          { label: "Membres actifs",       value: String(active.length),            delta: `sur ${active.length + pending.length}`, trend: "neutral" },
         ].map((m, i) => (
           <div key={i} style={{ padding: "14px 16px", borderRadius: 12, border: "1px solid var(--line)", background: "var(--surface)" }}>
             <div style={{ fontSize: 9, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--ink-3)", marginBottom: 6 }}>{m.label}</div>
@@ -416,6 +444,8 @@ function DashboardPreview() {
           </div>
         ))}
       </div>
+
+      {/* Top 3 */}
       <div style={{ padding: "16px 18px", borderRadius: 12, border: "1px solid var(--line)" }}>
         <div className="row" style={{ justifyContent: "space-between", marginBottom: 14 }}>
           <div className="serif" style={{ fontSize: 13 }}>Top 3 du mois</div>
@@ -443,6 +473,33 @@ function DashboardPreview() {
           ))}
         </div>
       </div>
+
+      {/* Demandes membres */}
+      {pending.length > 0 && (
+        <div style={{ padding: "14px 16px", borderRadius: 12, border: "1px solid var(--line)" }}>
+          <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <div className="serif" style={{ fontSize: 13 }}>Demandes membres</div>
+            <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 9px", borderRadius: 999, background: "var(--surface-2)", border: "1px solid var(--line)", fontSize: 9, color: "var(--ink-3)", fontWeight: 500 }}>{pending.length} en attente</span>
+          </div>
+          <div className="col gap-2">
+            {pending.map(c => (
+              <div key={c.id} className="row" style={{ justifyContent: "space-between", alignItems: "center", padding: "8px 10px", background: "var(--surface-2)", borderRadius: 10, gap: 10, flexWrap: "wrap" }}>
+                <div className="row gap-2" style={{ alignItems: "center" }}>
+                  <div style={{ width: 26, height: 26, borderRadius: "50%", background: "var(--surface-3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 600, flexShrink: 0 }}>{c.prenom[0]}{c.nom[0]}</div>
+                  <div>
+                    <div style={{ fontWeight: 500, fontSize: 11 }}>{c.prenom} {c.nom}</div>
+                    <div className="dim" style={{ fontSize: 9 }}>{c.poste} · {c.email}</div>
+                  </div>
+                </div>
+                <div className="row gap-2">
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 999, background: "var(--surface)", border: "1px solid var(--line)", fontSize: 10, fontWeight: 500, color: "var(--ink-2)" }}><Icon.X size={9}/> Refuser</span>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 999, background: "var(--ink)", color: "white", fontSize: 10, fontWeight: 500 }}><Icon.Check size={9}/> Accepter</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -519,40 +576,44 @@ function DashboardPreview() {
       { label: "CRM",       color: "#b8843e", pct: 6,  val: 6,  icon: <Icon.User size={10}/> },
     ];
     return (
-      <div style={{ background: "white", borderRadius: 16, border: "1px solid var(--line)", padding: "20px 24px", maxWidth: 440, margin: "0 auto", boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
+      <div style={{ background: "white", borderRadius: 16, border: "1px solid var(--line)", padding: "20px 22px", maxWidth: 420, width: "100%", boxShadow: "0 16px 48px rgba(0,0,0,0.18)" }}>
         <div className="serif" style={{ fontSize: 17, marginBottom: 2 }}>Détail — {c.prenom} {c.nom}</div>
         <div className="dim" style={{ fontSize: 10, marginBottom: 14 }}>{c.poste} · 30 derniers jours</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, marginBottom: 14 }}>
           {[
             { label: "Leads", val: c.leads, gold: false },
             { label: "Action add contact", val: Math.round(c.leads*1.4), gold: true, sub: "clics sur le bouton" },
             { label: "Clics canaux", val: 95, gold: false },
           ].map((m,i) => (
-            <div key={i} style={{ padding: "10px 12px", borderRadius: 10, border: `1px solid ${m.gold ? "var(--gold)" : "var(--line)"}`, background: m.gold ? "linear-gradient(135deg,#fdf3df,#f1deb6)" : "var(--surface)" }}>
-              <div style={{ fontSize: 8, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--ink-3)", marginBottom: 4 }}>{m.label}</div>
-              <div className="serif" style={{ fontSize: 22, lineHeight: 1 }}>{m.val}</div>
-              {m.sub && <div className="dim" style={{ fontSize: 8, marginTop: 3 }}>{m.sub}</div>}
+            <div key={i} style={{ padding: "9px 10px", borderRadius: 10, border: `1px solid ${m.gold ? "var(--gold)" : "var(--line)"}`, background: m.gold ? "linear-gradient(135deg,#fdf3df,#f1deb6)" : "var(--surface)" }}>
+              <div style={{ fontSize: 7.5, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--ink-3)", marginBottom: 3, lineHeight: 1.3 }}>{m.label}</div>
+              <div className="serif" style={{ fontSize: 20, lineHeight: 1 }}>{m.val}</div>
+              {m.sub && <div className="dim" style={{ fontSize: 7.5, marginTop: 3 }}>{m.sub}</div>}
             </div>
           ))}
         </div>
-        <div className="col gap-3">
+        <div style={{ fontSize: 8.5, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 8 }}>Détail par canal</div>
+        <div className="col gap-2">
           {channels.map((ch,i) => (
-            <div key={i} className="col gap-1">
+            <div key={i} className="col" style={{ gap: 3 }}>
               <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
                 <div className="row gap-2" style={{ alignItems: "center" }}>
-                  <div style={{ width: 20, height: 20, borderRadius: 5, background: "var(--surface-2)", color: ch.color, display: "flex", alignItems: "center", justifyContent: "center" }}>{ch.icon}</div>
-                  <div style={{ fontSize: 11, fontWeight: 500 }}>{ch.label}</div>
+                  <div style={{ width: 18, height: 18, borderRadius: 5, background: "var(--surface-2)", color: ch.color, display: "flex", alignItems: "center", justifyContent: "center" }}>{ch.icon}</div>
+                  <div style={{ fontSize: 10.5, fontWeight: 500 }}>{ch.label}</div>
                 </div>
                 <div className="row gap-2" style={{ alignItems: "baseline" }}>
                   <span className="dim" style={{ fontSize: 9 }}>{ch.pct}%</span>
-                  <span className="serif" style={{ fontSize: 15 }}>{ch.val}</span>
+                  <span className="serif" style={{ fontSize: 14 }}>{ch.val}</span>
                 </div>
               </div>
-              <div style={{ height: 3, background: "var(--surface-2)", borderRadius: 999, overflow: "hidden" }}>
+              <div style={{ height: 2.5, background: "var(--surface-2)", borderRadius: 999, overflow: "hidden" }}>
                 <div style={{ height: "100%", width: `${ch.pct / 29 * 100}%`, background: ch.color, borderRadius: 999 }}/>
               </div>
             </div>
           ))}
+        </div>
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 14 }}>
+          <span style={{ display: "inline-flex", alignItems: "center", padding: "5px 14px", borderRadius: 999, background: "var(--surface)", border: "1px solid var(--line)", fontSize: 10, fontWeight: 500, color: "var(--ink-2)" }}>Fermer</span>
         </div>
       </div>
     );
@@ -635,7 +696,21 @@ function DashboardPreview() {
             }}>
               {slide === 0 && <Slide0/>}
               {slide === 1 && <Slide1/>}
-              {slide === 2 && <Slide2/>}
+              {slide === 2 && (
+                <div style={{ position: "relative" }}>
+                  <div style={{ filter: "blur(3px) saturate(0.85)", opacity: 0.55, pointerEvents: "none" }}>
+                    <Slide0/>
+                  </div>
+                  <div style={{
+                    position: "absolute", inset: 0,
+                    background: "rgba(20,18,15,0.18)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    padding: 16, borderRadius: 8,
+                  }}>
+                    <Slide2/>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
