@@ -15,36 +15,31 @@ function useInView(ref, { threshold = 0.1 } = {}) {
   return isVisible;
 }
 
-// Spring animation pour compteur (fluide comme Framer Motion)
+// Animated counter with easing function
 function AnimatedCounter({ end, suffix = "" }) {
   const [count, setCount] = useStateL(0);
   const [started, setStarted] = useStateL(false);
   const ref = useRefL(null);
   const isVisible = useInView(ref);
-  const velocityRef = useRefL(0);
-  const currentRef = useRefL(0);
 
   useEffectL(() => {
     if (isVisible && !started) {
       setStarted(true);
+      const start = Date.now();
+      const duration = 2000; // 2 second animation
       let animationId;
 
       const animate = () => {
-        const target = end;
-        const damping = 0.85; // damping factor (lower = more bouncy)
-        const stiffness = 0.15; // stiffness factor
+        const elapsed = Date.now() - start;
+        const progress = Math.min(elapsed / duration, 1);
 
-        // Spring physics
-        const distance = target - currentRef.current;
-        velocityRef.current += distance * stiffness;
-        velocityRef.current *= damping;
-        currentRef.current += velocityRef.current;
+        // Cubic easeOut: 1 - (1 - t)^3
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const current = end * eased;
 
-        // Stop when close enough
-        if (Math.abs(distance) < 0.5 && Math.abs(velocityRef.current) < 0.1) {
-          setCount(Math.round(target));
-        } else {
-          setCount(Math.round(currentRef.current));
+        setCount(Math.round(current));
+
+        if (progress < 1) {
           animationId = requestAnimationFrame(animate);
         }
       };
@@ -93,14 +88,16 @@ function AnimatedItem({ children }) {
 // Groupe d'items avec stagger horizontal (gauche à droite)
 function AnimatedStaggerGroup({ children, columns = 3 }) {
   const containerRef = useRefL(null);
-  const [visibleItems, setVisibleItems] = useStateL(new Set());
+  const [visibleIndices, setVisibleIndices] = useStateL(new Set());
+  const itemRefsRef = useRefL([]);
 
   useEffectL(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setVisibleItems((prev) => new Set([...prev, entry.target]));
+          const idx = itemRefsRef.current.indexOf(entry.target);
+          if (idx !== -1 && entry.isIntersecting) {
+            setVisibleIndices((prev) => new Set([...prev, idx]));
           }
         });
       },
@@ -108,12 +105,18 @@ function AnimatedStaggerGroup({ children, columns = 3 }) {
     );
 
     if (containerRef.current) {
+      itemRefsRef.current = [];
       const items = containerRef.current.children;
-      Array.from(items).forEach((item) => observer.observe(item));
+      Array.from(items).forEach((item) => {
+        itemRefsRef.current.push(item);
+        observer.observe(item);
+      });
     }
 
     return () => observer.disconnect();
   }, []);
+
+  const childArray = React.Children.toArray(children);
 
   return (
     <div
@@ -124,12 +127,12 @@ function AnimatedStaggerGroup({ children, columns = 3 }) {
         gap: 20,
       }}
     >
-      {React.Children.map(children, (child, idx) => (
+      {childArray.map((child, idx) => (
         <div
           key={idx}
           style={{
-            opacity: visibleItems.has ? 1 : 0,
-            transform: visibleItems.has ? "translateX(0)" : `translateX(-40px)`,
+            opacity: visibleIndices.has(idx) ? 1 : 0,
+            transform: visibleIndices.has(idx) ? "translateX(0)" : `translateX(-40px)`,
             transition: `opacity 600ms ease-out ${idx * 120}ms, transform 600ms ease-out ${idx * 120}ms`,
           }}
         >
@@ -905,6 +908,141 @@ function DashboardPreview() {
   );
 }
 
+// ---------- DelayedPhoneAnimation — Composant pour l'animation du téléphone avec délai ----------
+function DelayedPhoneAnimation({ scrollRef, scanFlipped, scanDesign }) {
+  const ref = useRefL(null);
+  const [isVisible, setIsVisible] = useStateL(false);
+
+  useEffectL(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+        }
+      },
+      { threshold: 0.2 }
+    );
+
+    if (ref.current) observer.observe(ref.current);
+    return () => ref.current && observer.unobserve(ref.current);
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? "translateY(0)" : "translateY(32px)",
+        transition: "opacity 700ms ease-out 400ms, transform 700ms ease-out 400ms",
+      }}
+    >
+      <div style={{
+        transform: "rotate(-4deg) perspective(900px) rotateY(6deg)",
+        animation: "float-soft 6s ease-in-out infinite",
+        filter: "drop-shadow(0 28px 60px rgba(0,0,0,0.22))",
+      }}>
+        <div style={{
+          width: 290, borderRadius: 44,
+          border: "10px solid #1a1a1a",
+          outline: "1px solid #333",
+          background: "var(--bg)",
+          overflow: "hidden", position: "relative",
+        }}>
+          {/* notch */}
+          <div style={{
+            position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
+            width: 86, height: 24, background: "#1a1a1a", borderRadius: "0 0 16px 16px", zIndex: 10,
+          }} />
+          {/* status bar */}
+          <div style={{ height: 36, background: "var(--bg)", display: "flex", alignItems: "flex-end", justifyContent: "space-between", padding: "0 20px 4px", fontSize: 10, color: "var(--ink-3)" }}>
+            <span>9:41</span><span style={{ letterSpacing: 1 }}>●●●</span>
+          </div>
+          {/* scrollable content */}
+          <div
+            ref={scrollRef}
+            style={{ padding: "4px 14px 24px", overflowY: "scroll", maxHeight: 540, scrollbarWidth: "none" }}
+          >
+            {/* mini header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <div style={{ fontSize: 10, color: "var(--ink-3)" }}>← Retour</div>
+              <div className="chip" style={{ fontSize: 10, padding: "2px 8px" }}>Carte scannée</div>
+            </div>
+
+            {/* carte 3D avec flip auto */}
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
+              <Card3D
+                card={SCAN_CARD_DATA}
+                design={scanDesign}
+                width={242}
+                float={false}
+                flipped={scanFlipped}
+                showQR={false}
+                logoUrl={SCAN_LOGO_URL}
+                logoSide="verso"
+                logoSizeVerso={0.45}
+                fieldSides={{ name: "verso", entreprise: "verso", poste: "verso", phone: "verso", email: "verso", web: "verso" }}
+                fieldSizes={{ name: 1.5, entreprise: 0.95, poste: 0.82, phone: 0.75, email: 0.75, web: 0.75 }}
+                fieldFonts={{ name: "display", entreprise: "display" }}
+                fieldColors={{ name: "#1a150e", entreprise: "#b88a3e", poste: "#6a5a4a", phone: "#2a241a", email: "#2a241a", web: "#2a241a" }}
+              />
+            </div>
+
+            {/* name + title */}
+            <div style={{ textAlign: "center", marginBottom: 12 }}>
+              <div className="serif" style={{ fontSize: 17, letterSpacing: "-0.01em" }}>
+                {SCAN_CARD_DATA.prenom_affiche} {SCAN_CARD_DATA.nom_affiche}
+              </div>
+              <div className="muted" style={{ fontSize: 11, marginTop: 2 }}>
+                {SCAN_CARD_DATA.poste_affiche} · {SCAN_CARD_DATA.entreprise_affiche}
+              </div>
+            </div>
+
+            {/* contact rows */}
+            <div className="col gap-2" style={{ marginBottom: 12 }}>
+              {[
+                { icon: <Icon.Phone size={11}/>, t: SCAN_CARD_DATA.telephone_affiche },
+                { icon: <Icon.Mail  size={11}/>, t: SCAN_CARD_DATA.email_affiche },
+                { icon: <Icon.Globe size={11}/>, t: SCAN_CARD_DATA.site_web },
+              ].map(({ icon, t }, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", background: "var(--surface-2)", borderRadius: 8, fontSize: 11 }}>
+                  <span className="dim">{icon}</span><span>{t}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* CTA principal */}
+            <button className="btn btn-primary" style={{ width: "100%", justifyContent: "center", fontSize: 12, padding: "10px 14px", marginBottom: 8 }}>
+              <Icon.User size={12} /> Enregistrer dans mes contacts
+            </button>
+
+            {/* boutons secondaires */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+              {[
+                { ic: Icon.WhatsApp, t: "WhatsApp" },
+                { ic: Icon.Mail,     t: "Email" },
+                { ic: Icon.User,     t: "Partager mes infos" },
+                { ic: Icon.Globe,    t: "Site web" },
+              ].map(({ ic: Ic, t }, i) => (
+                <button key={i} className="btn btn-sm" style={{ justifyContent: "center", fontSize: 11 }}>
+                  <Ic size={11} /> {t}
+                </button>
+              ))}
+            </div>
+
+            {/* réseaux sociaux */}
+            <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--line)" }}>
+              <Icon.Instagram size={36} />
+              <Icon.Linkedin size={36} />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ---------- ScanPreviewSection — ce que le prospect voit après le scan ----------
 const SCAN_CARD_DATA = {
   id: "scan-demo",
@@ -965,145 +1103,45 @@ function ScanPreviewSection() {
 
   return (
     <section style={{ padding: "120px 0" }} className="section-bg-soft">
-      <AnimatedSection className="container">
+      <div className="container">
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "center" }} className="scan-grid">
 
           {/* Left — explication */}
-          <div className="col gap-8 fade-up">
-            <SectionHeader
-              eyebrow="Expérience prospect"
-              title="Ce que voit votre prospect après le scan."
-              subtitle="Aucune application à installer. Une page instantanée avec toutes vos coordonnées et les actions clés."
-              align="left"
-            />
-            <div className="col gap-5">
-              {[
-                { icon: Icon.User,     t: "Enregistrement en 1 clic",  d: "Le prospect ajoute votre contact directement dans son carnet d'adresses." },
-                { icon: Icon.WhatsApp, t: "WhatsApp instantané",        d: "Lance une conversation WhatsApp sans saisir de numéro." },
-                { icon: Icon.Chart,    t: "Chaque action mesurée",      d: "Scans, clics, contacts enregistrés — tout est visible dans votre dashboard." },
-              ].map(({ icon: Ic, t, d }, i) => (
-                <div key={i} className="row gap-4" style={{ alignItems: "flex-start" }}>
-                  <div style={{
-                    width: 42, height: 42, borderRadius: 13, flexShrink: 0,
-                    background: "var(--surface)", border: "1px solid var(--line)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    boxShadow: "var(--shadow-1)",
-                  }}><Ic size={18} /></div>
-                  <div className="col gap-1">
-                    <div style={{ fontSize: 15, fontWeight: 500, letterSpacing: "-0.01em" }}>{t}</div>
-                    <div className="muted" style={{ fontSize: 13, lineHeight: 1.5 }}>{d}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Right — phone flottant et légèrement penché */}
-          <div style={{ display: "flex", justifyContent: "center" }}>
-            <div style={{
-              transform: "rotate(-4deg) perspective(900px) rotateY(6deg)",
-              animation: "float-soft 6s ease-in-out infinite",
-              filter: "drop-shadow(0 28px 60px rgba(0,0,0,0.22))",
-            }}>
-              <div style={{
-                width: 290, borderRadius: 44,
-                border: "10px solid #1a1a1a",
-                outline: "1px solid #333",
-                background: "var(--bg)",
-                overflow: "hidden", position: "relative",
-              }}>
-                {/* notch */}
-                <div style={{
-                  position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
-                  width: 86, height: 24, background: "#1a1a1a", borderRadius: "0 0 16px 16px", zIndex: 10,
-                }} />
-                {/* status bar */}
-                <div style={{ height: 36, background: "var(--bg)", display: "flex", alignItems: "flex-end", justifyContent: "space-between", padding: "0 20px 4px", fontSize: 10, color: "var(--ink-3)" }}>
-                  <span>9:41</span><span style={{ letterSpacing: 1 }}>●●●</span>
-                </div>
-                {/* scrollable content */}
-                <div
-                  ref={scrollRef}
-                  style={{ padding: "4px 14px 24px", overflowY: "scroll", maxHeight: 540, scrollbarWidth: "none" }}
-                >
-                  {/* mini header */}
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                    <div style={{ fontSize: 10, color: "var(--ink-3)" }}>← Retour</div>
-                    <div className="chip" style={{ fontSize: 10, padding: "2px 8px" }}>Carte scannée</div>
-                  </div>
-
-                  {/* carte 3D avec flip auto */}
-                  <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
-                    <Card3D
-                      card={SCAN_CARD_DATA}
-                      design={scanDesign}
-                      width={242}
-                      float={false}
-                      flipped={scanFlipped}
-                      showQR={false}
-                      logoUrl={SCAN_LOGO_URL}
-                      logoSide="verso"
-                      logoSizeVerso={0.45}
-                      fieldSides={{ name: "verso", entreprise: "verso", poste: "verso", phone: "verso", email: "verso", web: "verso" }}
-                      fieldSizes={{ name: 1.5, entreprise: 0.95, poste: 0.82, phone: 0.75, email: 0.75, web: 0.75 }}
-                      fieldFonts={{ name: "display", entreprise: "display" }}
-                      fieldColors={{ name: "#1a150e", entreprise: "#b88a3e", poste: "#6a5a4a", phone: "#2a241a", email: "#2a241a", web: "#2a241a" }}
-                    />
-                  </div>
-
-                  {/* name + title */}
-                  <div style={{ textAlign: "center", marginBottom: 12 }}>
-                    <div className="serif" style={{ fontSize: 17, letterSpacing: "-0.01em" }}>
-                      {SCAN_CARD_DATA.prenom_affiche} {SCAN_CARD_DATA.nom_affiche}
-                    </div>
-                    <div className="muted" style={{ fontSize: 11, marginTop: 2 }}>
-                      {SCAN_CARD_DATA.poste_affiche} · {SCAN_CARD_DATA.entreprise_affiche}
+          <AnimatedItem>
+            <div className="col gap-8 fade-up">
+              <SectionHeader
+                eyebrow="Expérience prospect"
+                title="Ce que voit votre prospect après le scan."
+                subtitle="Aucune application à installer. Une page instantanée avec toutes vos coordonnées et les actions clés."
+                align="left"
+              />
+              <div className="col gap-5">
+                {[
+                  { icon: Icon.User,     t: "Enregistrement en 1 clic",  d: "Le prospect ajoute votre contact directement dans son carnet d'adresses." },
+                  { icon: Icon.WhatsApp, t: "WhatsApp instantané",        d: "Lance une conversation WhatsApp sans saisir de numéro." },
+                  { icon: Icon.Chart,    t: "Chaque action mesurée",      d: "Scans, clics, contacts enregistrés — tout est visible dans votre dashboard." },
+                ].map(({ icon: Ic, t, d }, i) => (
+                  <div key={i} className="row gap-4" style={{ alignItems: "flex-start" }}>
+                    <div style={{
+                      width: 42, height: 42, borderRadius: 13, flexShrink: 0,
+                      background: "var(--surface)", border: "1px solid var(--line)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      boxShadow: "var(--shadow-1)",
+                    }}><Ic size={18} /></div>
+                    <div className="col gap-1">
+                      <div style={{ fontSize: 15, fontWeight: 500, letterSpacing: "-0.01em" }}>{t}</div>
+                      <div className="muted" style={{ fontSize: 13, lineHeight: 1.5 }}>{d}</div>
                     </div>
                   </div>
-
-                  {/* contact rows */}
-                  <div className="col gap-2" style={{ marginBottom: 12 }}>
-                    {[
-                      { icon: <Icon.Phone size={11}/>, t: SCAN_CARD_DATA.telephone_affiche },
-                      { icon: <Icon.Mail  size={11}/>, t: SCAN_CARD_DATA.email_affiche },
-                      { icon: <Icon.Globe size={11}/>, t: SCAN_CARD_DATA.site_web },
-                    ].map(({ icon, t }, i) => (
-                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", background: "var(--surface-2)", borderRadius: 8, fontSize: 11 }}>
-                        <span className="dim">{icon}</span><span>{t}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* CTA principal */}
-                  <button className="btn btn-primary" style={{ width: "100%", justifyContent: "center", fontSize: 12, padding: "10px 14px", marginBottom: 8 }}>
-                    <Icon.User size={12} /> Enregistrer dans mes contacts
-                  </button>
-
-                  {/* boutons secondaires */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-                    {[
-                      { ic: Icon.WhatsApp, t: "WhatsApp" },
-                      { ic: Icon.Mail,     t: "Email" },
-                      { ic: Icon.User,     t: "Partager mes infos" },
-                      { ic: Icon.Globe,    t: "Site web" },
-                    ].map(({ ic: Ic, t }, i) => (
-                      <button key={i} className="btn btn-sm" style={{ justifyContent: "center", fontSize: 11 }}>
-                        <Ic size={11} /> {t}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* réseaux sociaux */}
-                  <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--line)" }}>
-                    <Icon.Instagram size={36} />
-                    <Icon.Linkedin size={36} />
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
-          </div>
+          </AnimatedItem>
+
+          {/* Right — phone flottant et légèrement penché (with delay) */}
+          <DelayedPhoneAnimation scrollRef={scrollRef} scanFlipped={scanFlipped} scanDesign={scanDesign} />
         </div>
-      </AnimatedSection>
+      </div>
       <style>{`
         @media (max-width: 860px) { .scan-grid { grid-template-columns: 1fr !important; } }
       `}</style>
