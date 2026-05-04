@@ -102,6 +102,7 @@ function Card3D({
   fieldSides,        // { name, entreprise, poste, phone, email, web } — "recto" | "verso"
   fieldSizes,        // per-field font-size multiplier (default 1)
   fieldFonts,        // per-field font family key
+  fieldDecorations,  // per-field { bold, italic, underline }
   logoSize = 1,      // [legacy] logo size multiplier — used as fallback if no per-side size
   logoSide = "both", // "recto" | "verso" | "both"
   logoSizeRecto,     // recto-side size multiplier
@@ -194,10 +195,10 @@ function Card3D({
   const fields = !card ? [] : [
     { key: "name",  show: card.afficher_nom || card.afficher_prenom,
       text: `${card.afficher_prenom ? card.prenom_affiche : ""} ${card.afficher_nom ? card.nom_affiche : ""}`.trim(),
-      style: { fontSize: width * 0.034, fontWeight: 500, letterSpacing: "-0.01em" } },
+      style: { fontSize: width * 0.034, letterSpacing: "-0.01em" } },
     { key: "entreprise", show: card.afficher_entreprise,
       text: card.entreprise_affiche || window.CARTALIS_DATA.entreprise.nom_entreprise,
-      style: { fontSize: width * 0.034, fontWeight: 500, letterSpacing: "0.02em" } },
+      style: { fontSize: width * 0.034, letterSpacing: "0.02em" } },
     { key: "poste", show: card.afficher_poste,
       text: card.poste_affiche,
       style: { fontSize: width * 0.034, color: "var(--gold)", letterSpacing: "0.04em" } },
@@ -225,6 +226,7 @@ function Card3D({
     const fontKey = (fieldFonts && fieldFonts[f.key]) || "default";
     const fontFamily = FONT_FAMILIES[fontKey];
     const baseFontSize = f.style.fontSize;
+    const deco = (fieldDecorations && fieldDecorations[f.key]) || {};
     return (
       <div
         key={f.key}
@@ -236,6 +238,9 @@ function Card3D({
           color: (fieldColors && fieldColors[f.key]) || f.style.color || inkColorBack,
           fontSize: baseFontSize * sizeMul,
           ...(fontFamily ? { fontFamily } : {}),
+          ...(deco.bold ? { fontWeight: "700" } : {}),
+          ...(deco.italic ? { fontStyle: "italic" } : {}),
+          ...(deco.underline ? { textDecoration: "underline" } : {}),
           display: "inline-flex", alignItems: "center", gap: 6,
         }}
       >

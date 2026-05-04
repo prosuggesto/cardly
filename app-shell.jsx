@@ -738,16 +738,12 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
   const setFieldColor = (key, color) => setFieldColors(fc => ({ ...fc, [key]: color }));
   const [fieldSides, setFieldSides] = useStateP({ name: "recto", entreprise: "recto", poste: "recto", phone: "recto", email: "recto", web: "recto" });
   const setFieldSide = (key, side) => setFieldSides(fs => ({ ...fs, [key]: side }));
-  const STYLE_SIZE_MAP = { titre: 1.8, "sous-titre": 1.15, corps: 1.0, legende: 0.8 };
-  const [fieldSizes, setFieldSizes] = useStateP({ name: 1.8, entreprise: 1.15, poste: 1.0, phone: 0.8, email: 0.8, web: 0.8 });
+  const [fieldSizes, setFieldSizes] = useStateP({ name: 1, entreprise: 1, poste: 1, phone: 1, email: 1, web: 1 });
   const bumpFieldSize = (key, delta) => setFieldSizes(fs => ({ ...fs, [key]: Math.max(0.5, Math.min(3, Math.round(((fs[key] || 1) + delta) * 10) / 10)) }));
   const [fieldFonts, setFieldFonts] = useStateP({ name: "default", entreprise: "default", poste: "default", phone: "default", email: "default", web: "default" });
   const setFieldFont = (key, font) => setFieldFonts(ff => ({ ...ff, [key]: font }));
-  const [fieldStyles, setFieldStyles] = useStateP({ name: "titre", entreprise: "sous-titre", poste: "corps", phone: "legende", email: "legende", web: "legende" });
-  const setFieldStyle = (key, style) => {
-    setFieldStyles(fs => ({ ...fs, [key]: style }));
-    setFieldSizes(fs => ({ ...fs, [key]: STYLE_SIZE_MAP[style] || 1.0 }));
-  };
+  const [fieldDecorations, setFieldDecorations] = useStateP({ name: {}, entreprise: {}, poste: {}, phone: {}, email: {}, web: {} });
+  const toggleFieldDecoration = (key, prop) => setFieldDecorations(d => ({ ...d, [key]: { ...d[key], [prop]: !d[key]?.[prop] } }));
   const [logoSide, setLogoSide] = useStateP("both"); // "recto" | "verso" | "both"
   const [logoSizeRecto, setLogoSizeRecto] = useStateP(1);
   const [logoSizeVerso, setLogoSizeVerso] = useStateP(1);
@@ -767,12 +763,6 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
     { value: "mono",       label: "Mono" },
     { value: "dancing",    label: "Dancing" },
     { value: "script",     label: "Script" },
-  ];
-  const TEXT_STYLE_OPTIONS = [
-    { value: "titre",      label: "Titre" },
-    { value: "sous-titre", label: "Sous-titre" },
-    { value: "corps",      label: "Corps" },
-    { value: "legende",    label: "Légende" },
   ];
   const toast = useToast();
   const isAdminOnEnterprise = card.type === "enterprise" && role === "collaborator";
@@ -875,6 +865,7 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
               fieldSides={fieldSides}
               fieldSizes={fieldSizes}
               fieldFonts={fieldFonts}
+              fieldDecorations={fieldDecorations}
               logoSide={logoSide}
               logoSizeRecto={logoSizeRecto}
               logoSizeVerso={logoSizeVerso}
@@ -1063,20 +1054,31 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
                           <span style={{ fontSize: 10, color: "var(--ink-3)", paddingRight: 5 }}>%</span>
                         </div>
                       )}
-                      {colorKey && (
-                        <select
-                          disabled={!editable || !card[k]}
-                          value={fieldStyles[colorKey] || "corps"}
-                          onChange={(e) => setFieldStyle(colorKey, e.target.value)}
-                          className="input"
-                          style={{ padding: "3px 4px", fontSize: 11, height: 26, width: 72, opacity: card[k] && editable ? 1 : 0.5 }}
-                          title="Style de texte"
-                        >
-                          {TEXT_STYLE_OPTIONS.map(o => (
-                            <option key={o.value} value={o.value}>{o.label}</option>
-                          ))}
-                        </select>
-                      )}
+                      {colorKey && (() => {
+                        const deco = fieldDecorations[colorKey] || {};
+                        const active = { background: "var(--ink)", color: "white" };
+                        const inactive = { background: "transparent", color: "var(--ink-3)" };
+                        const btn = (prop, label, extraStyle = {}) => (
+                          <button
+                            key={prop}
+                            type="button"
+                            disabled={!editable || !card[k]}
+                            onClick={() => toggleFieldDecoration(colorKey, prop)}
+                            style={{
+                              padding: "3px 6px", border: "none", cursor: editable && card[k] ? "pointer" : "not-allowed",
+                              fontSize: 11, transition: "background 150ms", lineHeight: 1,
+                              ...(deco[prop] ? active : inactive), ...extraStyle,
+                            }}
+                          >{label}</button>
+                        );
+                        return (
+                          <div style={{ display: "inline-flex", border: "1px solid var(--line-2)", borderRadius: 7, overflow: "hidden", opacity: card[k] && editable ? 1 : 0.5 }}>
+                            {btn("bold", <strong>G</strong>)}
+                            {btn("italic", <em style={{ fontStyle: "italic" }}>I</em>)}
+                            {btn("underline", <span style={{ textDecoration: "underline" }}>S</span>)}
+                          </div>
+                        );
+                      })()}
                       {colorKey && (
                         <select
                           disabled={!editable || !card[k]}
