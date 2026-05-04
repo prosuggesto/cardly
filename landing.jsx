@@ -18,36 +18,32 @@ function useInView(ref, { threshold = 0.1 } = {}) {
 // Animated counter with easing function
 function AnimatedCounter({ end, suffix = "" }) {
   const [count, setCount] = useStateL(0);
-  const [started, setStarted] = useStateL(false);
+  const startedRef = useRefL(false); // ref to avoid triggering re-render
   const ref = useRefL(null);
   const isVisible = useInView(ref);
 
   useEffectL(() => {
-    if (isVisible && !started) {
-      setStarted(true);
-      const start = Date.now();
-      const duration = 2000; // 2 second animation
-      let animationId;
+    if (!isVisible || startedRef.current) return;
+    startedRef.current = true;
 
-      const animate = () => {
-        const elapsed = Date.now() - start;
-        const progress = Math.min(elapsed / duration, 1);
+    const startTime = Date.now();
+    const duration = 2000;
+    let animationId;
 
-        // Cubic easeOut: 1 - (1 - t)^3
-        const eased = 1 - Math.pow(1 - progress, 3);
-        const current = end * eased;
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // Cubic easeOut: 1 - (1 - t)^3
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setCount(Math.round(end * eased));
+      if (progress < 1) {
+        animationId = requestAnimationFrame(animate);
+      }
+    };
 
-        setCount(Math.round(current));
-
-        if (progress < 1) {
-          animationId = requestAnimationFrame(animate);
-        }
-      };
-
-      animationId = requestAnimationFrame(animate);
-      return () => cancelAnimationFrame(animationId);
-    }
-  }, [isVisible, started, end]);
+    animationId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationId);
+  }, [isVisible, end]);
 
   return <span ref={ref}>{count}{suffix}</span>;
 }
@@ -379,10 +375,10 @@ function HeroSection({ navigate }) {
             </div>
             {/* Flip hint */}
             <div style={{
-              position: "absolute", bottom: "2%", left: "50%", transform: "translateX(-50%)",
+              position: "absolute", bottom: "14%", left: "50%", transform: "translateX(-50%)",
               display: "flex", alignItems: "center", gap: 6,
               fontSize: 12, color: "var(--ink-3)", opacity: 0.7,
-              pointerEvents: "none",
+              pointerEvents: "none", whiteSpace: "nowrap",
               animation: "float-soft 4s ease-in-out infinite",
             }}>
               <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -935,7 +931,7 @@ function DelayedPhoneAnimation({ scrollRef, scanFlipped, scanDesign }) {
         justifyContent: "center",
         opacity: isVisible ? 1 : 0,
         transform: isVisible ? "translateY(0)" : "translateY(32px)",
-        transition: "opacity 700ms ease-out 400ms, transform 700ms ease-out 400ms",
+        transition: "opacity 700ms ease-out 900ms, transform 700ms ease-out 900ms",
       }}
     >
       <div style={{
