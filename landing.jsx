@@ -679,7 +679,7 @@ function DashboardPreview() {
           <div style={{
             background: "var(--bg,#fbfaf7)", padding: "24px",
             borderRadius: "0 0 16px 16px",
-            minHeight: 440,
+            minHeight: 520,
           }}>
             {/* Page title */}
             <div className="col gap-1" style={{ marginBottom: 20 }}>
