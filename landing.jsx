@@ -358,7 +358,7 @@ function CarouselSection() {
             </div>
           ))}
         </div>
-      </AnimatedSection>
+      </div>
 
       <style>{`
         @keyframes carousel-scroll {
