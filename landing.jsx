@@ -272,7 +272,7 @@ function HeroSection({ navigate }) {
 
   useEffectL(() => {
     let loaded = 0;
-    const srcs = ["assets/card-chinois-recto.png", "assets/card-chinois-verso.png"];
+    const srcs = ["assets/hero-card-front-4k.png", "assets/hero-card-back-4k.png"];
     const onLoad = () => { loaded++; if (loaded >= srcs.length) setImgsReady(true); };
     srcs.forEach(src => {
       const img = new Image();
@@ -392,8 +392,8 @@ function HeroSection({ navigate }) {
                 float={true}
                 showQR={false}
                 flipped={heroFlipped}
-                frontImageUrl="assets/card-chinois-recto.png"
-                backImageUrl="assets/card-chinois-verso.png"
+                frontImageUrl="assets/hero-card-front-4k.png"
+                backImageUrl="assets/hero-card-back-4k.png"
               />
             </div>
             {/* Badges */}
@@ -994,8 +994,8 @@ function DelayedPhoneAnimation({ scrollRef, scanFlipped, scanDesign }) {
                 float={false}
                 flipped={scanFlipped}
                 showQR={false}
-                frontImageUrl="assets/template-mockup-recto.png"
-                backImageUrl="assets/template-mockup-verso.png"
+                frontImageUrl="assets/mockup-card-front-4k.png"
+                backImageUrl="assets/mockup-card-back-4k.png"
               />
             </div>
 
