@@ -791,7 +791,7 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
     await new Promise(r => setTimeout(r, 80));
     try {
       const canvas = await window.html2canvas(card3d, {
-        scale: 2, backgroundColor: null, useCORS: true, allowTaint: true,
+        scale: 8, backgroundColor: null, useCORS: true, allowTaint: true,
         logging: false,
       });
       const a = document.createElement('a');
