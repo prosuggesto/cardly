@@ -391,12 +391,12 @@ function Card3D({
           <div className="card-face">
             {renderFront()}
             <div className="card-overlay" />
-            <div className="card-shine" />
+{!noShine && <div className="card-shine" />}
           </div>
           <div className="card-face card-face-back">
             {renderBack()}
             <div className="card-overlay" />
-            <div className="card-shine" />
+{!noShine && <div className="card-shine" />}
           </div>
         </div>
       </div>

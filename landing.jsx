@@ -269,10 +269,15 @@ function HeroSection({ navigate }) {
   const [heroFlipped, setHeroFlipped] = useStateL(false);
   const [imgsReady, setImgsReady] = useStateL(false);
   const [step, setStep] = useStateL(0);
+  const [landingCfg, setLandingCfg] = useStateL(() => {
+    try { return JSON.parse(localStorage.getItem('cartalis_landing_hero') || 'null'); } catch(e) { return null; }
+  });
+  const heroFront = (landingCfg && landingCfg.frontImageUrl) || "assets/hero-card-front-4k.png";
+  const heroBack  = (landingCfg && landingCfg.backImageUrl)  || "assets/hero-card-back-4k.png";
 
   useEffectL(() => {
     let loaded = 0;
-    const srcs = ["assets/hero-card-front-4k.png", "assets/hero-card-back-4k.png"];
+    const srcs = [heroFront, heroBack];
     const onLoad = () => { loaded++; if (loaded >= srcs.length) setImgsReady(true); };
     srcs.forEach(src => {
       const img = new Image();
@@ -392,8 +397,9 @@ function HeroSection({ navigate }) {
                 float={true}
                 showQR={false}
                 flipped={heroFlipped}
-                frontImageUrl="assets/hero-card-front-4k.png"
-                backImageUrl="assets/hero-card-back-4k.png"
+                frontImageUrl={heroFront}
+                backImageUrl={heroBack}
+                noShine={true}
               />
             </div>
             {/* Badges */}
@@ -994,8 +1000,9 @@ function DelayedPhoneAnimation({ scrollRef, scanFlipped, scanDesign }) {
                 float={false}
                 flipped={scanFlipped}
                 showQR={false}
-                frontImageUrl="assets/mockup-card-front-4k.png"
-                backImageUrl="assets/mockup-card-back-4k.png"
+                frontImageUrl={mockupFront}
+                backImageUrl={mockupBack}
+                noShine={true}
               />
             </div>
 
@@ -1080,6 +1087,11 @@ const SCAN_CARD_DATA = {
 function ScanPreviewSection() {
   const [scanFlipped, setScanFlipped] = useStateL(false);
   const scrollRef = React.useRef(null);
+  const [mockupCfg, setMockupCfg] = useStateL(() => {
+    try { return JSON.parse(localStorage.getItem('cartalis_landing_mockup') || 'null'); } catch(e) { return null; }
+  });
+  const mockupFront = (mockupCfg && mockupCfg.frontImageUrl) || "assets/mockup-card-front-4k.png";
+  const mockupBack  = (mockupCfg && mockupCfg.backImageUrl)  || "assets/mockup-card-back-4k.png";
   const scanDesign = window.CARTALIS_DATA.cardDesigns.find(d => d.id === "design-mon-fugi-vangog")
     || window.CARTALIS_DATA.cardDesigns[0];
 

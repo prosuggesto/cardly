@@ -882,6 +882,27 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
                 {downloading ? "Export…" : "↓ Verso"}
               </button>
             </div>
+            {/* Landing quick-set */}
+            <div className="row gap-2" style={{ flexWrap: "wrap", justifyContent: "center", marginTop: 6 }}>
+              <button className="btn btn-sm" style={{ background: "var(--gold)", color: "#fff", gap: 5 }} onClick={() => {
+                const D = window.CARTALIS_DATA.getDesign(card.design);
+                const cfg = { frontImageUrl: frontImageUrl || D.front || null, backImageUrl: backImageUrl || D.back || null, designId: card.design, designLabel: D.label };
+                localStorage.setItem("cartalis_landing_hero", JSON.stringify(cfg));
+                try { navigator.clipboard.writeText("HERO:" + card.design); } catch(e) {}
+                toast.push("✓ Hero mis à jour — Dites à Claude: HERO:" + card.design);
+              }}>
+                <Icon.Sparkle size={12}/> → Hero landing
+              </button>
+              <button className="btn btn-sm" style={{ background: "#1a2a3a", color: "#fff", gap: 5 }} onClick={() => {
+                const D = window.CARTALIS_DATA.getDesign(card.design);
+                const cfg = { frontImageUrl: frontImageUrl || D.front || null, backImageUrl: backImageUrl || D.back || null, designId: card.design, designLabel: D.label };
+                localStorage.setItem("cartalis_landing_mockup", JSON.stringify(cfg));
+                try { navigator.clipboard.writeText("MOCKUP:" + card.design); } catch(e) {}
+                toast.push("✓ Mockup mis à jour — Dites à Claude: MOCKUP:" + card.design);
+              }}>
+                <Icon.Card size={12}/> → Mockup landing
+              </button>
+            </div>
           </div>
 
           {/* Panel */}
