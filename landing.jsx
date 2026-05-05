@@ -269,15 +269,10 @@ function HeroSection({ navigate }) {
   const [heroFlipped, setHeroFlipped] = useStateL(false);
   const [imgsReady, setImgsReady] = useStateL(false);
   const [step, setStep] = useStateL(0);
-  const [heroCfg] = useStateL(() => { try { return JSON.parse(localStorage.getItem("cartalis_landing_hero")||"null"); } catch(e) { return null; } });
-  const _hD = heroCfg && window.CARTALIS_DATA.cardDesigns.find(d => d.id === heroCfg.designId);
-  const heroDesign = _hD || null;
-  const heroFront = (heroCfg && heroCfg.frontImageUrl) || "assets/card-chinois-recto.png";
-  const heroBack  = (heroCfg && heroCfg.backImageUrl)  || "assets/card-chinois-verso.png";
 
   useEffectL(() => {
     let loaded = 0;
-    const srcs = [heroFront, heroBack];
+    const srcs = ["assets/card-chinois-recto.png", "assets/card-chinois-verso.png"];
     const onLoad = () => { loaded++; if (loaded >= srcs.length) setImgsReady(true); };
     srcs.forEach(src => {
       const img = new Image();
@@ -392,18 +387,20 @@ function HeroSection({ navigate }) {
               }}
             >
               <Card3D
-                card={null}
-                design={heroDesign}
+                card={HERO_CARD}
                 width={420}
                 float={true}
                 showQR={false}
                 flipped={heroFlipped}
-                frontImageUrl={heroFront}
-                backImageUrl={heroBack}
-                logoUrl={heroCfg && heroCfg.logoUrl}
-                logoSide={heroCfg ? heroCfg.logoSide : "recto"}
-                logoSizeRecto={heroCfg ? heroCfg.logoSizeRecto : 0.52}
-                logoSizeVerso={heroCfg ? heroCfg.logoSizeVerso : 1}
+                frontImageUrl="assets/card-chinois-recto.png"
+                backImageUrl="assets/card-chinois-verso.png"
+                logoUrl={STUDIO_LOGO_URL}
+                logoSide="recto"
+                logoSizeRecto={0.52}
+                fieldSides={{ name: "verso", entreprise: "verso", poste: "verso", phone: "verso", email: "verso", web: "verso" }}
+                fieldSizes={{ name: 1.7, entreprise: 1.0, poste: 0.82, phone: 0.78, email: 0.78, web: 0.78 }}
+                fieldFonts={{ name: "display", entreprise: "display" }}
+                fieldColors={{ name: "#1a150e", entreprise: "#b88a3e", poste: "#6a5a4a", phone: "#3a2f22", email: "#3a2f22", web: "#3a2f22" }}
               />
             </div>
             {/* Badges */}
@@ -999,17 +996,19 @@ function DelayedPhoneAnimation({ scrollRef, scanFlipped, scanDesign }) {
             {/* carte 3D avec flip auto */}
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
               <Card3D
-                card={null}
+                card={SCAN_CARD_DATA}
                 design={scanDesign}
                 width={242}
                 float={false}
                 flipped={scanFlipped}
                 showQR={false}
-                frontImageUrl={mockupFront}
-                backImageUrl={mockupBack}
-                logoUrl={mockupCfg && mockupCfg.logoUrl}
-                logoSide={mockupCfg ? mockupCfg.logoSide : "verso"}
-                logoSizeVerso={mockupCfg ? mockupCfg.logoSizeVerso : 0.45}
+                logoUrl={SCAN_LOGO_URL}
+                logoSide="verso"
+                logoSizeVerso={0.45}
+                fieldSides={{ name: "verso", entreprise: "verso", poste: "verso", phone: "verso", email: "verso", web: "verso" }}
+                fieldSizes={{ name: 1.5, entreprise: 0.95, poste: 0.82, phone: 0.75, email: 0.75, web: 0.75 }}
+                fieldFonts={{ name: "display", entreprise: "display" }}
+                fieldColors={{ name: "#1a150e", entreprise: "#b88a3e", poste: "#6a5a4a", phone: "#2a241a", email: "#2a241a", web: "#2a241a" }}
               />
             </div>
 
@@ -1094,11 +1093,8 @@ const SCAN_CARD_DATA = {
 function ScanPreviewSection() {
   const [scanFlipped, setScanFlipped] = useStateL(false);
   const scrollRef = React.useRef(null);
-  const [mockupCfg] = useStateL(() => { try { return JSON.parse(localStorage.getItem("cartalis_landing_mockup")||"null"); } catch(e) { return null; } });
-  const _mD = mockupCfg && window.CARTALIS_DATA.cardDesigns.find(d => d.id === mockupCfg.designId);
-  const scanDesign = _mD || window.CARTALIS_DATA.cardDesigns.find(d => d.id === "design-mon-fugi-vangog") || window.CARTALIS_DATA.cardDesigns[0];
-  const mockupFront = (mockupCfg && mockupCfg.frontImageUrl) || null;
-  const mockupBack  = (mockupCfg && mockupCfg.backImageUrl)  || null;
+  const scanDesign = window.CARTALIS_DATA.cardDesigns.find(d => d.id === "design-mon-fugi-vangog")
+    || window.CARTALIS_DATA.cardDesigns[0];
 
   // Auto-flip la carte toutes les 3 s
   useEffectL(() => {
