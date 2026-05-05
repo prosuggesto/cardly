@@ -387,20 +387,13 @@ function HeroSection({ navigate }) {
               }}
             >
               <Card3D
-                card={HERO_CARD}
+                card={null}
                 width={420}
                 float={true}
                 showQR={false}
                 flipped={heroFlipped}
                 frontImageUrl="assets/card-chinois-recto.png"
                 backImageUrl="assets/card-chinois-verso.png"
-                logoUrl={STUDIO_LOGO_URL}
-                logoSide="recto"
-                logoSizeRecto={0.52}
-                fieldSides={{ name: "verso", entreprise: "verso", poste: "verso", phone: "verso", email: "verso", web: "verso" }}
-                fieldSizes={{ name: 1.7, entreprise: 1.0, poste: 0.82, phone: 0.78, email: 0.78, web: 0.78 }}
-                fieldFonts={{ name: "display", entreprise: "display" }}
-                fieldColors={{ name: "#1a150e", entreprise: "#b88a3e", poste: "#6a5a4a", phone: "#3a2f22", email: "#3a2f22", web: "#3a2f22" }}
               />
             </div>
             {/* Badges */}
@@ -996,19 +989,12 @@ function DelayedPhoneAnimation({ scrollRef, scanFlipped, scanDesign }) {
             {/* carte 3D avec flip auto */}
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
               <Card3D
-                card={SCAN_CARD_DATA}
+                card={null}
                 design={scanDesign}
                 width={242}
                 float={false}
                 flipped={scanFlipped}
                 showQR={false}
-                logoUrl={SCAN_LOGO_URL}
-                logoSide="verso"
-                logoSizeVerso={0.45}
-                fieldSides={{ name: "verso", entreprise: "verso", poste: "verso", phone: "verso", email: "verso", web: "verso" }}
-                fieldSizes={{ name: 1.5, entreprise: 0.95, poste: 0.82, phone: 0.75, email: 0.75, web: 0.75 }}
-                fieldFonts={{ name: "display", entreprise: "display" }}
-                fieldColors={{ name: "#1a150e", entreprise: "#b88a3e", poste: "#6a5a4a", phone: "#2a241a", email: "#2a241a", web: "#2a241a" }}
               />
             </div>
 
