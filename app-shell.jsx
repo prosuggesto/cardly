@@ -875,17 +875,39 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
               <button className="btn btn-sm" onClick={() => setFlipped(!flipped)}><Icon.Refresh size={13}/> Flip</button>
               <button className="btn btn-sm" style={{ background: "var(--gold)", color: "#fff", gap: 4 }} onClick={() => {
                 const D = window.CARTALIS_DATA.getDesign(card.design);
-                const id = "HERO:" + card.design;
-                try { navigator.clipboard.writeText(id); } catch(e) {}
-                toast.push("✓ ID copié ! Collez à Claude : " + id);
+                const D = window.CARTALIS_DATA.getDesign(card.design);
+                const cfg = {
+                  designId: card.design,
+                  frontImageUrl: (frontImageUrl && !frontImageUrl.startsWith('data:')) ? frontImageUrl : (D.front || null),
+                  backImageUrl:  (backImageUrl  && !backImageUrl.startsWith('data:'))  ? backImageUrl  : (D.back  || null),
+                  logoUrl:       (logoUrl && !logoUrl.startsWith('data:')) ? logoUrl : null,
+                  logoSide, logoSizeRecto, logoSizeVerso,
+                  fieldColors, fieldSides, fieldSizes, fieldFonts, fieldDecorations,
+                  positions: card.positions || {},
+                };
+                try { localStorage.setItem('cartalis_landing_hero', JSON.stringify(cfg)); } catch(e) {}
+                const clip = 'HERO:' + card.design;
+                try { navigator.clipboard.writeText(clip); } catch(e) {}
+                toast.push('✓ Carte hero sauvegardée ! ID: ' + card.design);
               }}>
                 ✨ Carte principale
               </button>
               <button className="btn btn-sm" style={{ background: "#1a2a3a", color: "#fff", gap: 4 }} onClick={() => {
                 const D = window.CARTALIS_DATA.getDesign(card.design);
-                const id = "MOCKUP:" + card.design;
-                try { navigator.clipboard.writeText(id); } catch(e) {}
-                toast.push("✓ ID copié ! Collez à Claude : " + id);
+                const D = window.CARTALIS_DATA.getDesign(card.design);
+                const cfg = {
+                  designId: card.design,
+                  frontImageUrl: (frontImageUrl && !frontImageUrl.startsWith('data:')) ? frontImageUrl : (D.front || null),
+                  backImageUrl:  (backImageUrl  && !backImageUrl.startsWith('data:'))  ? backImageUrl  : (D.back  || null),
+                  logoUrl:       (logoUrl && !logoUrl.startsWith('data:')) ? logoUrl : null,
+                  logoSide, logoSizeRecto, logoSizeVerso,
+                  fieldColors, fieldSides, fieldSizes, fieldFonts, fieldDecorations,
+                  positions: card.positions || {},
+                };
+                try { localStorage.setItem('cartalis_landing_mockup', JSON.stringify(cfg)); } catch(e) {}
+                const clip = 'MOCKUP:' + card.design;
+                try { navigator.clipboard.writeText(clip); } catch(e) {}
+                toast.push('✓ Mockup sauvegardé ! ID: ' + card.design);
               }}>
                 📱 Mockup iPhone
               </button>
