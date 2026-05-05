@@ -268,11 +268,12 @@ const HERO_CARD = {
 function HeroSection({ navigate }) {
   const [heroFlipped, setHeroFlipped] = useStateL(false);
   const [imgsReady, setImgsReady] = useStateL(false);
+  const heroDesign = window.CARTALIS_DATA.cardDesigns.find(d => d.id === "design-fleures-roses") || window.CARTALIS_DATA.cardDesigns[0];
   const [step, setStep] = useStateL(0);
 
   useEffectL(() => {
     let loaded = 0;
-    const srcs = ["assets/card-chinois-recto.png", "assets/card-chinois-verso.png"];
+    const srcs = [heroDesign.front, heroDesign.back];
     const onLoad = () => { loaded++; if (loaded >= srcs.length) setImgsReady(true); };
     srcs.forEach(src => {
       const img = new Image();
@@ -388,7 +389,7 @@ function HeroSection({ navigate }) {
             >
               <Card3D
                 card={null}
-                design="design-fleures-roses"
+                design={heroDesign}
                 width={420}
                 float={true}
                 showQR={false}
