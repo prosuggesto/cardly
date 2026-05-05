@@ -388,12 +388,11 @@ function HeroSection({ navigate }) {
             >
               <Card3D
                 card={null}
+                design="design-fleures-roses"
                 width={420}
                 float={true}
                 showQR={false}
                 flipped={heroFlipped}
-                frontImageUrl="assets/card-chinois-recto.png"
-                backImageUrl="assets/card-chinois-verso.png"
               />
             </div>
             {/* Badges */}
