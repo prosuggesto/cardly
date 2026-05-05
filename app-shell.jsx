@@ -875,7 +875,6 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
               <button className="btn btn-sm" onClick={() => setFlipped(!flipped)}><Icon.Refresh size={13}/> Flip</button>
               <button className="btn btn-sm" style={{ background: "var(--gold)", color: "#fff", gap: 4 }} onClick={() => {
                 const D = window.CARTALIS_DATA.getDesign(card.design);
-                const D = window.CARTALIS_DATA.getDesign(card.design);
                 const cfg = {
                   designId: card.design,
                   frontImageUrl: (frontImageUrl && !frontImageUrl.startsWith('data:')) ? frontImageUrl : (D.front || null),
@@ -893,7 +892,6 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
                 ✨ Carte principale
               </button>
               <button className="btn btn-sm" style={{ background: "#1a2a3a", color: "#fff", gap: 4 }} onClick={() => {
-                const D = window.CARTALIS_DATA.getDesign(card.design);
                 const D = window.CARTALIS_DATA.getDesign(card.design);
                 const cfg = {
                   designId: card.design,
