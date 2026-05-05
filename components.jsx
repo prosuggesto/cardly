@@ -267,15 +267,15 @@ function Card3D({
           position: "absolute", left: `${lp.x}%`, top: `${lp.y}%`,
           transform: "translate(-50%, -50%)",
           width: ls, height: ls,
-          backgroundImage: `url(${logoUrl})`,
-          backgroundSize: "contain", backgroundRepeat: "no-repeat", backgroundPosition: "center",
           cursor: draggable && editable ? (dragging === posKey ? "grabbing" : "grab") : "default",
           outline: draggable && editable ? "1px dashed transparent" : "none",
           transition: "outline-color 150ms",
         }}
         onMouseEnter={(e) => { if (draggable && editable) e.currentTarget.style.outlineColor = "rgba(184,138,62,0.6)"; }}
         onMouseLeave={(e) => { if (draggable && editable) e.currentTarget.style.outlineColor = "transparent"; }}
-      />
+      >
+        <img src={logoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", pointerEvents: "none" }} />
+      </div>
     );
   };
 
