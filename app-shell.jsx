@@ -791,7 +791,7 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
     await new Promise(r => setTimeout(r, 80));
     try {
       const canvas = await window.html2canvas(card3d, {
-        scale: 2, backgroundColor: null, useCORS: true, allowTaint: true,
+        scale: 8, backgroundColor: null, useCORS: true, allowTaint: true,
         logging: false,
       });
       const a = document.createElement('a');
@@ -872,14 +872,22 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
               logoSizeVerso={logoSizeVerso}
             />
             <div className="row gap-2" style={{ flexWrap: "wrap", justifyContent: "center" }}>
-              <button className="btn btn-sm" onClick={() => setFlipped(!flipped)}><Icon.Refresh size={13}/> Tester le flip</button>
-              <button className="btn btn-sm" disabled={downloading} onClick={() => downloadFace('recto')} style={{ gap: 5 }}>
-                <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                {downloading ? "Export…" : "↓ Recto"}
+              <button className="btn btn-sm" onClick={() => setFlipped(!flipped)}><Icon.Refresh size={13}/> Flip</button>
+              <button className="btn btn-sm" style={{ background: "var(--gold)", color: "#fff", gap: 4 }} onClick={() => {
+                const D = window.CARTALIS_DATA.getDesign(card.design);
+                const id = "HERO:" + card.design;
+                try { navigator.clipboard.writeText(id); } catch(e) {}
+                toast.push("✓ ID copié ! Collez à Claude : " + id);
+              }}>
+                ✨ Carte principale
               </button>
-              <button className="btn btn-sm" disabled={downloading} onClick={() => downloadFace('verso')} style={{ gap: 5 }}>
-                <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                {downloading ? "Export…" : "↓ Verso"}
+              <button className="btn btn-sm" style={{ background: "#1a2a3a", color: "#fff", gap: 4 }} onClick={() => {
+                const D = window.CARTALIS_DATA.getDesign(card.design);
+                const id = "MOCKUP:" + card.design;
+                try { navigator.clipboard.writeText(id); } catch(e) {}
+                toast.push("✓ ID copié ! Collez à Claude : " + id);
+              }}>
+                📱 Mockup iPhone
               </button>
             </div>
           </div>
@@ -887,33 +895,6 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
           {/* Panel */}
           <div className="col gap-4">
             {/* Designs */}
-            {/* Landing quick-set */}
-            <div className="card" style={{ padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
-              <div className="row" style={{ alignItems: "center", gap: 8 }}>
-                <Icon.Sparkle size={14} style={{ color: "var(--gold)" }} />
-                <span className="serif" style={{ fontSize: 14, fontWeight: 600 }}>Afficher sur la landing page</span>
-              </div>
-              <div className="row gap-2" style={{ flexWrap: "wrap" }}>
-                <button className="btn btn-sm" style={{ background: "var(--gold)", color: "#fff", gap: 5, flex: 1 }} onClick={() => {
-                  const D = window.CARTALIS_DATA.getDesign(card.design);
-                  const cfg = { frontImageUrl: frontImageUrl || D.front || null, backImageUrl: backImageUrl || D.back || null, designId: card.design, designLabel: D.label };
-                  localStorage.setItem("cartalis_landing_hero", JSON.stringify(cfg));
-                  try { navigator.clipboard.writeText("HERO:" + card.design); } catch(e) {}
-                  toast.push("✓ Carte hero mise à jour ! Copiez à Claude: HERO:" + card.design);
-                }}>
-                  <Icon.Sparkle size={12}/> Carte principale
-                </button>
-                <button className="btn btn-sm" style={{ background: "#1a2a3a", color: "#fff", gap: 5, flex: 1 }} onClick={() => {
-                  const D = window.CARTALIS_DATA.getDesign(card.design);
-                  const cfg = { frontImageUrl: frontImageUrl || D.front || null, backImageUrl: backImageUrl || D.back || null, designId: card.design, designLabel: D.label };
-                  localStorage.setItem("cartalis_landing_mockup", JSON.stringify(cfg));
-                  try { navigator.clipboard.writeText("MOCKUP:" + card.design); } catch(e) {}
-                  toast.push("✓ Mockup mis à jour ! Copiez à Claude: MOCKUP:" + card.design);
-                }}>
-                  <Icon.Card size={12}/> Mockup iPhone
-                </button>
-              </div>
-            </div>
             <div className="card" style={{ padding: 20 }}>
               <div className="row" style={{ justifyContent: "space-between", marginBottom: 14 }}>
                 <div className="serif" style={{ fontSize: 17 }}>Modèle</div>
