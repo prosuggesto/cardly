@@ -810,6 +810,21 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
     }
   };
 
+
+  const saveToLanding = (slot) => {
+    const config = {
+      design: card.design,
+      logoUrl, logoSide, logoSizeRecto, logoSizeVerso,
+      fieldSides, fieldSizes, fieldFonts, fieldColors, fieldDecorations,
+      frontImageUrl, backImageUrl,
+      card: { ...card },
+    };
+    const key = slot === "hero" ? "cardly_landing_hero" : "cardly_landing_mockup";
+    localStorage.setItem(key, JSON.stringify(config));
+    navigator.clipboard.writeText(JSON.stringify(config, null, 2))
+      .then(() => toast.push("✅ Config copiée ! Colle-la à Claude", { icon: <Icon.Check size={14}/> }))
+      .catch(() => toast.push("💾 Sauvegardé dans localStorage"));
+  };
   const designs = window.CARTALIS_DATA.cardDesigns;
   const setField = (k, v) => setCard(c => ({ ...c, [k]: v }));
   const movePos = (key, pos) => setCard(c => ({ ...c, positions: { ...c.positions, [key]: pos } }));
@@ -873,13 +888,11 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
             />
             <div className="row gap-2" style={{ flexWrap: "wrap", justifyContent: "center" }}>
               <button className="btn btn-sm" onClick={() => setFlipped(!flipped)}><Icon.Refresh size={13}/> Tester le flip</button>
-              <button className="btn btn-sm" disabled={downloading} onClick={() => downloadFace('recto')} style={{ gap: 5 }}>
-                <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                {downloading ? "Export…" : "↓ Recto"}
+              <button className="btn btn-sm" onClick={() => saveToLanding("hero")} style={{ gap: 5, background: "linear-gradient(135deg,#b88a3e,#d4a853)", color: "#fff", border: "none", fontWeight: 600 }}>
+                ✨ Carte principale
               </button>
-              <button className="btn btn-sm" disabled={downloading} onClick={() => downloadFace('verso')} style={{ gap: 5 }}>
-                <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                {downloading ? "Export…" : "↓ Verso"}
+              <button className="btn btn-sm" onClick={() => saveToLanding("mockup")} style={{ gap: 5, background: "linear-gradient(135deg,#2a241a,#4a3f2e)", color: "#fff", border: "none", fontWeight: 600 }}>
+                📱 Mockup iPhone
               </button>
             </div>
           </div>
