@@ -994,8 +994,8 @@ function DelayedPhoneAnimation({ scrollRef, scanFlipped, scanDesign }) {
                 float={false}
                 flipped={scanFlipped}
                 showQR={false}
-                frontImageUrl="assets/design-mon-fugi-vangog-front.webp"
-                backImageUrl="assets/design-mon-fugi-vangog-back.webp"
+                frontImageUrl="assets/template-mockup-recto.png"
+                backImageUrl="assets/template-mockup-verso.png"
               />
             </div>
 
