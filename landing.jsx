@@ -238,15 +238,15 @@ const SCAN_LOGO_URL = "data:image/svg+xml," + encodeURIComponent(
 );
 
 const HERO_CARD = {
-  id: "card-chinois-demo",
-  design: "design-blossom",
-  nom_affiche: "Moreau",
-  prenom_affiche: "Élise",
-  entreprise_affiche: "Studio Solange",
-  poste_affiche: "Directrice artistique",
-  telephone_affiche: "06 18 43 72 95",
-  email_affiche: "elise@studiosolange.fr",
-  site_web: "studiosolange.fr",
+  id: "card-001",
+  design: "design-fleures-roses",
+  nom_affiche: "Lamperim",
+  prenom_affiche: "Diego",
+  entreprise_affiche: "Cartalis",
+  poste_affiche: "Directeur commercial",
+  telephone_affiche: "07 67 56 92 24",
+  email_affiche: "contact.cartalis@gmail.com",
+  site_web: "cartalis.fr",
   afficher_nom: true,
   afficher_prenom: true,
   afficher_entreprise: true,
@@ -255,13 +255,12 @@ const HERO_CARD = {
   afficher_email: true,
   afficher_site_web: true,
   positions: {
-    name:       { x: 50, y: 24 },
-    entreprise: { x: 50, y: 40 },
-    poste:      { x: 50, y: 51 },
-    phone:      { x: 50, y: 63 },
-    email:      { x: 50, y: 73 },
-    web:        { x: 50, y: 83 },
-    logoRecto:  { x: 15, y: 80 },
+    name:       { x: 70, y: 26 },
+    entreprise: { x: 70, y: 36 },
+    poste:      { x: 70, y: 46 },
+    phone:      { x: 70, y: 60 },
+    email:      { x: 70, y: 70 },
+    web:        { x: 70, y: 80 },
   },
 };
 
@@ -388,12 +387,14 @@ function HeroSection({ navigate }) {
               }}
             >
               <Card3D
-                card={null}
+                card={HERO_CARD}
                 design={heroDesign}
                 width={420}
                 float={true}
                 showQR={false}
                 flipped={heroFlipped}
+                fieldSides={{ name: "recto", entreprise: "recto", poste: "recto", phone: "recto", email: "recto", web: "recto" }}
+                fieldColors={{ name: "#2a241a", entreprise: "#2a241a", poste: "#2a241a", phone: "#2a241a", email: "#2a241a", web: "#2a241a" }}
               />
             </div>
             {/* Badges */}
