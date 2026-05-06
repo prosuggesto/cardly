@@ -1,24 +1,73 @@
-/* Cardly Pro — App entry: routing, plan/role/trial state, tweaks */
+/* Cardly Pro — App entry: routing, session, auth guard */
 
 const { useState: useStateApp, useEffect: useEffectApp } = React;
 
 function parseHash(hash) {
-  // hash: "/path?key=val&..."
   const [path, query = ""] = hash.split("?");
   const params = new URLSearchParams(query);
   return { path: path || "/", params };
 }
 
+// ---------- Pending membership screen ----------
+function PendingScreen({ entrepriseName, onLogout }) {
+  return (
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 24, padding: 32 }}>
+      <div className="hero-bg" />
+      <Logo size="lg" />
+      <div className="card" style={{ padding: 40, maxWidth: 480, width: "100%", textAlign: "center" }}>
+        <div className="logo-mark" style={{ width: 52, height: 52, fontSize: 22, margin: "0 auto 18px", background: "var(--surface-3)" }}>⏳</div>
+        <h2 className="serif" style={{ fontSize: 28, margin: "0 0 10px", letterSpacing: "-0.01em" }}>En attente de validation</h2>
+        <p className="muted" style={{ margin: "0 0 20px", fontSize: 15 }}>
+          Votre demande pour rejoindre <strong>{entrepriseName || "l'entreprise"}</strong> est en attente.
+          Un administrateur doit valider votre accès.
+        </p>
+        <div className="card" style={{ padding: 14, background: "#fff8eb", borderColor: "#f0d99c", marginBottom: 20, fontSize: 13, color: "#7a5c0a" }}>
+          Vous recevrez un email dès que votre compte sera activé.
+        </div>
+        <button className="btn btn-ghost" onClick={onLogout}><Icon.Logout size={14} /> Se déconnecter</button>
+      </div>
+    </div>
+  );
+}
+
+// ---------- No membership screen ----------
+function NoMembershipScreen({ onLogout }) {
+  return (
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 24, padding: 32 }}>
+      <div className="hero-bg" />
+      <Logo size="lg" />
+      <div className="card" style={{ padding: 40, maxWidth: 480, width: "100%", textAlign: "center" }}>
+        <h2 className="serif" style={{ fontSize: 28, margin: "0 0 10px", letterSpacing: "-0.01em" }}>Aucune entreprise associée</h2>
+        <p className="muted" style={{ margin: "0 0 20px", fontSize: 15 }}>
+          Votre compte n'est lié à aucune entreprise. Créez-en une ou rejoignez-en une via le code secret.
+        </p>
+        <div className="row gap-2" style={{ justifyContent: "center" }}>
+          <button className="btn btn-primary btn-sm" onClick={() => { window.location.hash = "/auth?mode=signup"; }}>Créer mon entreprise</button>
+          <button className="btn btn-ghost btn-sm" onClick={onLogout}><Icon.Logout size={14} /> Se déconnecter</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------- Full-page loading ----------
+function AppLoading() {
+  return (
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", gap: 16, flexDirection: "column" }}>
+      <Spinner size={44} />
+      <div className="dim" style={{ fontSize: 14 }}>Chargement…</div>
+    </div>
+  );
+}
+
+// ---------- Main App ----------
 function App() {
   const [hash, navigate] = useHashRoute();
   const { path, params } = parseHash(hash);
+  const { session, profile, membership, pendingMembership, loading, role, plan, entreprise } = useCardlySession();
 
-  // Tweaks state
-  const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
-    "role": "admin",
-    "plan": "team",
-    "trialExpired": false
-  }/*EDITMODE-END*/;
+  // Tweaks (dev panel — navigation shortcuts + trial toggle)
+  const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{ "trialExpired": false }/*EDITMODE-END*/;
   const [tweaks, setTweaks] = useStateApp(TWEAK_DEFAULTS);
   const setTweak = (k, v) => {
     const next = { ...tweaks, [k]: v };
@@ -42,7 +91,45 @@ function App() {
     return () => window.removeEventListener("message", onMsg);
   }, []);
 
-  // Page selection
+  const handleLogout = async () => {
+    await window.CardlyAPI.signOut();
+    navigate("/");
+  };
+
+  // Redirect unauthenticated users away from /app
+  useEffectApp(() => {
+    if (needsRedirect) navigate("/auth?mode=login");
+  }, [needsRedirect]);
+
+  // Public pages — never need auth
+  const isPublicPath = path === "/" || path === "" || path === "/auth" || path === "/card";
+  const needsRedirect = !isPublicPath && !loading && !session;
+
+  // Show loading spinner only on /app while session resolves
+  if (loading && !isPublicPath) return <ToastProvider><AppLoading /></ToastProvider>;
+
+  // Auth redirect in progress
+  if (needsRedirect) return <ToastProvider><AppLoading /></ToastProvider>;
+
+  // Pending membership (collab waiting for admin approval)
+  if (path === "/app" && session && !membership && pendingMembership) {
+    return (
+      <ToastProvider>
+        <PendingScreen entrepriseName={pendingMembership.entreprises?.nom_entreprise} onLogout={handleLogout} />
+      </ToastProvider>
+    );
+  }
+
+  // Session but no membership at all (edge case: entreprise creation failed?)
+  if (path === "/app" && session && !membership && !pendingMembership && !loading) {
+    return (
+      <ToastProvider>
+        <NoMembershipScreen onLogout={handleLogout} />
+      </ToastProvider>
+    );
+  }
+
+  // Page routing
   let page = null;
   if (path === "/" || path === "") {
     page = <LandingPage navigate={navigate} />;
@@ -55,15 +142,15 @@ function App() {
       <AppLayout
         navigate={navigate}
         tab={tab} setTab={setTab}
-        role={tweaks.role} plan={tweaks.plan}
+        role={role} plan={plan}
         trialExpired={tweaks.trialExpired}
-        onLogout={() => navigate("/")}
+        onLogout={handleLogout}
         onUpgrade={() => setTab("subscription")}
       >
         {tab === "cards" && <MyCardsPage
           onCustomize={(id) => { setTabRaw("customize"); setCustomizeId(id); }}
           onShareCard={(id) => navigate(`/card?id=${id}`)}
-          role={tweaks.role}
+          role={role}
           trialExpired={tweaks.trialExpired}
           onUpgrade={() => setTab("subscription")}
         />}
@@ -71,22 +158,22 @@ function App() {
           customizeId
             ? <CustomizationPage
                 cardId={customizeId}
-                role={tweaks.role}
-                plan={tweaks.plan}
+                role={role}
+                plan={plan}
                 trialExpired={tweaks.trialExpired}
                 onUpgrade={() => setTab("subscription")}
                 onBack={() => setCustomizeId(null)}
               />
             : <CustomizePickerPage
                 onPick={(id) => setCustomizeId(id)}
-                role={tweaks.role}
+                role={role}
                 trialExpired={tweaks.trialExpired}
                 onUpgrade={() => setTab("subscription")}
               />
         )}
-        {tab === "dashboard" && <DashboardPage role={tweaks.role} trialExpired={tweaks.trialExpired} onUpgrade={() => setTab("subscription")} />}
-        {tab === "secret" && <SecretCodePage role={tweaks.role} />}
-        {tab === "subscription" && <SubscriptionPage plan={tweaks.plan} onSetPlan={(p) => setTweak("plan", p)} />}
+        {tab === "dashboard" && <DashboardPage role={role} trialExpired={tweaks.trialExpired} onUpgrade={() => setTab("subscription")} />}
+        {tab === "secret" && <SecretCodePage role={role} />}
+        {tab === "subscription" && <SubscriptionPage plan={plan} onSetPlan={() => {}} />}
       </AppLayout>
     );
   } else {
@@ -113,7 +200,7 @@ function TweaksPanel({ tweaks, setTweak, onClose, navigate, path }) {
   return (
     <div className="card" style={{
       position: "fixed", bottom: 24, right: 24, zIndex: 999,
-      width: 280, padding: 18,
+      width: 260, padding: 18,
       background: "rgba(255,255,255,0.95)",
       backdropFilter: "blur(20px)",
       boxShadow: "var(--shadow-3)",
@@ -123,36 +210,9 @@ function TweaksPanel({ tweaks, setTweak, onClose, navigate, path }) {
         <button className="btn btn-ghost btn-sm" onClick={onClose} style={{ padding: 4 }}><Icon.X size={14} /></button>
       </div>
       <div className="col gap-3">
-        <div className="col gap-1">
-          <div className="dim" style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase" }}>Rôle</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-            {["admin", "collaborator"].map(r => (
-              <button key={r} onClick={() => setTweak("role", r)} className="btn btn-sm" style={{
-                background: tweaks.role === r ? "var(--ink)" : "var(--surface-2)",
-                color: tweaks.role === r ? "white" : "var(--ink)",
-                border: "1px solid var(--line)",
-                justifyContent: "center", height: 32, fontSize: 12,
-              }}>{r === "admin" ? "Admin" : "Collab."}</button>
-            ))}
-          </div>
-        </div>
-        <div className="col gap-1">
-          <div className="dim" style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase" }}>Plan</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
-            {["solo", "team", "enterprise"].map(p => (
-              <button key={p} onClick={() => setTweak("plan", p)} className="btn btn-sm" style={{
-                background: tweaks.plan === p ? "var(--ink)" : "var(--surface-2)",
-                color: tweaks.plan === p ? "white" : "var(--ink)",
-                border: "1px solid var(--line)",
-                justifyContent: "center", height: 32, fontSize: 12, padding: "0 6px",
-                textTransform: "capitalize",
-              }}>{p}</button>
-            ))}
-          </div>
-        </div>
         <button onClick={() => setTweak("trialExpired", !tweaks.trialExpired)} style={{
           display: "flex", justifyContent: "space-between", alignItems: "center",
-          padding: "10px 0", fontSize: 13, borderTop: "1px solid var(--line)",
+          padding: "10px 0", fontSize: 13,
         }}>
           <span>Essai expiré</span>
           <span className={`toggle ${tweaks.trialExpired ? "on" : ""}`}></span>
@@ -164,7 +224,6 @@ function TweaksPanel({ tweaks, setTweak, onClose, navigate, path }) {
             <button className="btn btn-sm" style={{ height: 32, fontSize: 12, justifyContent: "center" }} onClick={() => navigate("/auth?mode=signup")}>Inscription</button>
             <button className="btn btn-sm" style={{ height: 32, fontSize: 12, justifyContent: "center" }} onClick={() => navigate("/auth?mode=login")}>Connexion</button>
             <button className="btn btn-sm" style={{ height: 32, fontSize: 12, justifyContent: "center" }} onClick={() => navigate("/app")}>App</button>
-            <button className="btn btn-sm" style={{ height: 32, fontSize: 12, justifyContent: "center", gridColumn: "1/3" }} onClick={() => navigate("/card?id=card-001")}>Page publique scan</button>
           </div>
         </div>
       </div>
@@ -172,5 +231,10 @@ function TweaksPanel({ tweaks, setTweak, onClose, navigate, path }) {
   );
 }
 
+// ---------- Root render — wrap entire app in CardlySessionProvider ----------
 const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(<App />);
+root.render(
+  <CardlySessionProvider>
+    <App />
+  </CardlySessionProvider>
+);
