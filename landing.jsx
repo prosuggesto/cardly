@@ -239,7 +239,7 @@ const SCAN_LOGO_URL = "data:image/svg+xml," + encodeURIComponent(
 
 const HERO_CARD = {
   id: "card-001",
-  design: "design-fleures-roses",
+  design: "design-style-chinois",
   nom_affiche: "Lamperim",
   prenom_affiche: "Diego",
   entreprise_affiche: "Cartalis",
@@ -255,19 +255,21 @@ const HERO_CARD = {
   afficher_email: true,
   afficher_site_web: true,
   positions: {
-    name:       { x: 70, y: 26 },
-    entreprise: { x: 70, y: 36 },
-    poste:      { x: 70, y: 46 },
-    phone:      { x: 70, y: 60 },
-    email:      { x: 70, y: 70 },
-    web:        { x: 70, y: 80 },
+    name:       { x: 70,    y: 26 },
+    entreprise: { x: 40.75, y: 55.84 },
+    poste:      { x: 70.20, y: 34.54 },
+    phone:      { x: 72.30, y: 60.10 },
+    email:      { x: 70,    y: 70 },
+    web:        { x: 38.46, y: 72.26 },
+    logoVerso:  { x: 35.97, y: 23.90 },
+    logoRecto:  { x: 40.37, y: 29.07 },
   },
 };
 
 function HeroSection({ navigate }) {
   const [heroFlipped, setHeroFlipped] = useStateL(false);
   const [imgsReady, setImgsReady] = useStateL(false);
-  const heroDesign = window.CARTALIS_DATA.cardDesigns.find(d => d.id === "design-fleures-roses") || window.CARTALIS_DATA.cardDesigns[0];
+  const heroDesign = window.CARTALIS_DATA.cardDesigns.find(d => d.id === "design-style-chinois") || window.CARTALIS_DATA.cardDesigns[0];
   const [step, setStep] = useStateL(0);
 
   useEffectL(() => {
@@ -393,8 +395,15 @@ function HeroSection({ navigate }) {
                 float={true}
                 showQR={false}
                 flipped={heroFlipped}
-                fieldSides={{ name: "recto", entreprise: "recto", poste: "recto", phone: "recto", email: "recto", web: "recto" }}
-                fieldColors={{ name: "#2a241a", entreprise: "#2a241a", poste: "#2a241a", phone: "#2a241a", email: "#2a241a", web: "#2a241a" }}
+                logoUrl="assets/hero-logo.png"
+                logoSide="both"
+                logoSizeRecto={1}
+                logoSizeVerso={1}
+                fieldSides={{ name: "verso", entreprise: "recto", poste: "verso", phone: "verso", email: "verso", web: "recto" }}
+                fieldSizes={{ name: 1.5, entreprise: 2.5, poste: 1, phone: 1, email: 1, web: 1 }}
+                fieldFonts={{ name: "playfair", entreprise: "playfair", poste: "raleway", phone: "cinzel", email: "playfair", web: "default" }}
+                fieldColors={{ name: "#ae863d", entreprise: "#ae863d", poste: "#ae863d", phone: "#ae863d", email: "#ae863d", web: "#ae863d" }}
+                fieldDecorations={{ name: {}, entreprise: {}, poste: {}, phone: {}, email: { italic: true }, web: {} }}
               />
             </div>
             {/* Badges */}
