@@ -96,14 +96,14 @@ function App() {
     navigate("/");
   };
 
+  // Public pages — never need auth
+  const isPublicPath = path === "/" || path === "" || path === "/auth" || path === "/card";
+  const needsRedirect = !isPublicPath && !loading && !session;
+
   // Redirect unauthenticated users away from /app
   useEffectApp(() => {
     if (needsRedirect) navigate("/auth?mode=login");
   }, [needsRedirect]);
-
-  // Public pages — never need auth
-  const isPublicPath = path === "/" || path === "" || path === "/auth" || path === "/card";
-  const needsRedirect = !isPublicPath && !loading && !session;
 
   // Show loading spinner only on /app while session resolves
   if (loading && !isPublicPath) return <ToastProvider><AppLoading /></ToastProvider>;
