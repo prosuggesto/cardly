@@ -224,6 +224,10 @@ function AdminForm({ onSubmit, onBack }) {
       await window.CardlyAPI.upsertProfile(userId, {
         nom: form.nom, prenom: form.prenom, email: form.email,
         telephone: form.phone, nom_entreprise: form.entreprise,
+        poste: form.poste || null,
+        site_web: form.web || null,
+        instagram: form.instagram || null,
+        linkedin: form.linkedin || null,
       });
 
       onSubmit(ent.code_secret);
@@ -249,8 +253,9 @@ function AdminForm({ onSubmit, onBack }) {
         <Field label="Email" type="email" placeholder="vous@entreprise.fr" onChange={set("email")} required />
         <Field label="Téléphone" placeholder="07 67 56 92 24" onChange={set("phone")} required />
       </FieldRow>
+      <Field label="Nom de l'entreprise" placeholder="Immo Costa" onChange={set("entreprise")} required />
       <FieldRow>
-        <Field label="Nom de l'entreprise" placeholder="Immo Costa" onChange={set("entreprise")} required />
+        <Field label="Poste / Titre" placeholder="Directeur commercial" onChange={set("poste")} />
         <Field label="Site web" placeholder="immocosta.fr" onChange={set("web")} />
       </FieldRow>
       <FieldRow>
@@ -293,6 +298,8 @@ function CollabForm({ onSubmit, onBack }) {
       await window.CardlyAPI.upsertProfile(userId, {
         nom: form.nom, prenom: form.prenom, email: form.email,
         telephone: form.phone, poste: form.poste, nom_entreprise: ent.nom_entreprise,
+        instagram: form.instagram || null,
+        linkedin: form.linkedin || null,
       });
 
       onSubmit();
