@@ -999,12 +999,21 @@ function DelayedPhoneAnimation({ scrollRef, scanFlipped, scanDesign }) {
             {/* carte 3D avec flip auto */}
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
               <Card3D
-                card={null}
+                card={SCAN_CARD_DATA}
                 design={scanDesign}
                 width={242}
                 float={false}
                 flipped={scanFlipped}
                 showQR={false}
+                logoUrl="assets/hero-logo.png"
+                logoSide="both"
+                logoSizeRecto={1}
+                logoSizeVerso={1}
+                fieldSides={{ name: "verso", entreprise: "recto", poste: "verso", phone: "verso", email: "verso", web: "recto" }}
+                fieldSizes={{ name: 1.75, entreprise: 2.5, poste: 1, phone: 1, email: 1, web: 1 }}
+                fieldFonts={{ name: "serif", entreprise: "playfair", poste: "default", phone: "cinzel", email: "playfair", web: "default" }}
+                fieldColors={{ name: "#f3f0ed", entreprise: "#f3f0ed", poste: "#f3f0ed", phone: "#f3f0ed", email: "#f3f0ed", web: "#f3f0ed" }}
+                fieldDecorations={{ name: {}, entreprise: { underline: false }, poste: {}, phone: {}, email: {}, web: {} }}
               />
             </div>
 
@@ -1065,7 +1074,7 @@ function DelayedPhoneAnimation({ scrollRef, scanFlipped, scanDesign }) {
 // ---------- ScanPreviewSection — ce que le prospect voit après le scan ----------
 const SCAN_CARD_DATA = {
   id: "scan-demo",
-  design: "design-mon-fugi-vangog",
+  design: "design-immoblier-bleu",
   nom_affiche: "Bernard",
   prenom_affiche: "Sophie",
   entreprise_affiche: "Agence Lumière",
@@ -1076,20 +1085,21 @@ const SCAN_CARD_DATA = {
   afficher_nom: true, afficher_prenom: true, afficher_entreprise: true,
   afficher_poste: true, afficher_telephone: true, afficher_email: true, afficher_site_web: true,
   positions: {
-    name:       { x: 50, y: 26 },
-    entreprise: { x: 50, y: 41 },
-    poste:      { x: 50, y: 52 },
-    phone:      { x: 50, y: 65 },
-    email:      { x: 50, y: 75 },
-    web:        { x: 50, y: 85 },
-    logoVerso:  { x: 50, y: 13 },
+    name:       { x: 57.77, y: 19.33 },
+    entreprise: { x: 47.06, y: 50.76 },
+    poste:      { x: 57.20, y: 31.20 },
+    phone:      { x: 70,    y: 60    },
+    email:      { x: 70,    y: 70    },
+    web:        { x: 44.58, y: 64.75 },
+    logoRecto:  { x: 46.11, y: 29.37 },
+    logoVerso:  { x: 23.16, y: 21.46 },
   },
 };
 
 function ScanPreviewSection() {
   const [scanFlipped, setScanFlipped] = useStateL(false);
   const scrollRef = React.useRef(null);
-  const scanDesign = window.CARTALIS_DATA.cardDesigns.find(d => d.id === "design-mon-fugi-vangog")
+  const scanDesign = window.CARTALIS_DATA.cardDesigns.find(d => d.id === "design-immoblier-bleu")
     || window.CARTALIS_DATA.cardDesigns[0];
 
   // Auto-flip la carte toutes les 3 s
