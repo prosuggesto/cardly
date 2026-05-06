@@ -823,13 +823,41 @@ function LangPicker({ value, onChange }) {
 // ---------- Feedback page ----------
 function FeedbackPage() {
   const me = window.CARTALIS_DATA.profileMe;
-  const INIT = [
-    { from: "cardly", text: "👋 Bonjour " + me.prenom + " ! Une idée pour améliorer Cartalis ? Une fonctionnalité manquante, un bug, ou juste un avis ? Partagez ici — on lit tout." },
-  ];
-  const [messages, setMessages] = useStateD(INIT);
+
+  // step: "choose" | "confirm" | "chat"
+  const [step, setStep] = useStateD("choose");
+  const [category, setCategory] = useStateD(null); // "problem" | "idea"
+
+  // Contact editable (not saved to profile)
+  const [contactEmail, setContactEmail] = useStateD(me.email || "");
+  const [contactPhone, setContactPhone] = useStateD(me.telephone || "");
+
+  // Chat
+  const [messages, setMessages] = useStateD([]);
   const [input, setInput] = useStateD("");
   const [sent, setSent] = useStateD(false);
   const bottomRef = React.useRef(null);
+  const inputRef = React.useRef(null);
+
+  const openChat = (cat) => {
+    const intro = cat === "problem"
+      ? "🐛 Bonjour " + me.prenom + " ! Décrivez le problème que vous avez rencontré — nous vous recontacterons dans les 48h sur " + contactEmail + "."
+      : "💡 Bonjour " + me.prenom + " ! Quelle idée souhaitez-vous partager ? On lit tout.";
+    setMessages([{ from: "cardly", text: intro }]);
+    setStep("chat");
+    setTimeout(() => { if (inputRef.current) inputRef.current.focus(); }, 150);
+  };
+
+  const chooseCategory = (cat) => {
+    setCategory(cat);
+    if (cat === "problem") {
+      setStep("confirm");
+    } else {
+      openChat("idea");
+    }
+  };
+
+  const confirmContact = () => { openChat("problem"); };
 
   const send = () => {
     const txt = input.trim();
@@ -846,18 +874,33 @@ function FeedbackPage() {
     if (bottomRef.current) bottomRef.current.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  /* shared card avatar */
+  const CardAvatar = () => (
+    <div style={{
+      width: 36, height: 36, borderRadius: "50%",
+      background: "linear-gradient(135deg, var(--gold-2), var(--gold))",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontSize: 14, fontWeight: 700, color: "white", flexShrink: 0,
+    }}>C</div>
+  );
+
+  const BubbleAvatar = ({ side }) => side === "cardly" ? (
+    <div style={{ width: 28, height: 28, borderRadius: "50%", flexShrink: 0, background: "linear-gradient(135deg, var(--gold-2), var(--gold))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "white" }}>C</div>
+  ) : (
+    <div style={{ width: 28, height: 28, borderRadius: "50%", flexShrink: 0, background: "var(--surface-3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, color: "var(--ink)" }}>{me.prenom[0]}{me.nom[0]}</div>
+  );
+
   return (
     <div style={{ minHeight: "60vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 16px" }}>
-      {/* Hero bg like auth */}
       <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none" }}>
         <div className="hero-bg" />
       </div>
 
       <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 520 }}>
-        {/* Header text */}
+        {/* Header */}
         <div className="col gap-2" style={{ alignItems: "center", textAlign: "center", marginBottom: 32 }}>
           <div className="chip" style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
-            <Icon.Sparkle size={12} /> Vos idées · Cartalis
+            <Icon.Sparkle size={12} /> Idée ou problème · Cartalis
           </div>
           <h1 className="serif" style={{ fontSize: "clamp(32px, 5vw, 46px)", margin: 0, letterSpacing: "-0.02em", lineHeight: 1.1 }}>
             Aidez-nous à<br/>construire mieux.
@@ -867,33 +910,14 @@ function FeedbackPage() {
           </p>
         </div>
 
-        {/* Chat card */}
-        <div
-          className="card"
-          style={{
-            borderRadius: 22,
-            overflow: "hidden",
-            padding: 0,
-            background: "linear-gradient(135deg, #fdfbf3 0%, #f5edd9 100%)",
-            position: "relative",
-            boxShadow: "0 8px 40px rgba(0,0,0,0.10)",
-          }}
-        >
-          {/* Subtle bg image like auth */}
-          <img src="assets/card-back.png" alt="" style={{
-            position: "absolute", inset: 0, width: "100%", height: "100%",
-            objectFit: "cover", opacity: 0.12, pointerEvents: "none",
-          }} />
+        {/* Card */}
+        <div className="card" style={{ borderRadius: 22, overflow: "hidden", padding: 0, background: "linear-gradient(135deg, #fdfbf3 0%, #f5edd9 100%)", position: "relative", boxShadow: "0 8px 40px rgba(0,0,0,0.10)" }}>
+          <img src="assets/card-back.png" alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0.12, pointerEvents: "none" }} />
 
           <div style={{ position: "relative" }}>
-            {/* Card header */}
+            {/* Card header bar */}
             <div className="row gap-3" style={{ padding: "20px 24px", borderBottom: "1px solid rgba(0,0,0,0.07)", alignItems: "center" }}>
-              <div style={{
-                width: 36, height: 36, borderRadius: "50%",
-                background: "linear-gradient(135deg, var(--gold-2), var(--gold))",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 14, fontWeight: 700, color: "white", flexShrink: 0,
-              }}>C</div>
+              <CardAvatar />
               <div className="col" style={{ lineHeight: 1.3 }}>
                 <div style={{ fontWeight: 600, fontSize: 14 }}>Cartalis</div>
                 <div className="dim" style={{ fontSize: 12 }}>Équipe produit · répond sous 48h</div>
@@ -904,60 +928,138 @@ function FeedbackPage() {
               </div>
             </div>
 
-            {/* Messages */}
-            <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 12, minHeight: 200, maxHeight: 340, overflowY: "auto" }}>
-              {messages.map((m, i) => (
-                <div key={i} style={{ display: "flex", justifyContent: m.from === "user" ? "flex-end" : "flex-start", alignItems: "flex-end", gap: 8 }}>
-                  {m.from === "cardly" && (
-                    <div style={{
-                      width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
-                      background: "linear-gradient(135deg, var(--gold-2), var(--gold))",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 11, fontWeight: 700, color: "white",
-                    }}>C</div>
-                  )}
-                  <div style={{
-                    maxWidth: "78%", padding: "10px 14px",
-                    borderRadius: m.from === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
-                    background: m.from === "user" ? "var(--ink)" : "white",
-                    color: m.from === "user" ? "white" : "var(--ink)",
-                    fontSize: 13.5, lineHeight: 1.55,
-                    boxShadow: m.from === "cardly" ? "0 1px 6px rgba(0,0,0,0.07)" : "none",
-                  }}>{m.text}</div>
-                  {m.from === "user" && (
-                    <div style={{
-                      width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
-                      background: "var(--surface-3)",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 11, fontWeight: 600, color: "var(--ink)",
-                    }}>{me.prenom[0]}{me.nom[0]}</div>
-                  )}
-                </div>
-              ))}
-              <div ref={bottomRef} />
-            </div>
+            {/* ── STEP 1 : Choix de catégorie ── */}
+            {step === "choose" && (
+              <div style={{ padding: "28px 24px 32px", display: "flex", flexDirection: "column", gap: 14 }}>
+                <p style={{ margin: "0 0 6px", fontSize: 13.5, color: "var(--ink-2)", textAlign: "center" }}>
+                  De quoi souhaitez-vous nous parler ?
+                </p>
+                {[
+                  {
+                    cat: "problem",
+                    emoji: "🐛",
+                    title: "Problème rencontré",
+                    sub: "Un bug, un dysfonctionnement ou une erreur — on vous recontacte.",
+                  },
+                  {
+                    cat: "idea",
+                    emoji: "💡",
+                    title: "Une idée pour améliorer Cartalis",
+                    sub: "Une fonctionnalité manquante, une suggestion — on lit tout.",
+                  },
+                ].map(({ cat, emoji, title, sub }) => (
+                  <button
+                    key={cat}
+                    onClick={() => chooseCategory(cat)}
+                    style={{
+                      padding: "16px 20px", borderRadius: 14,
+                      border: "1.5px solid var(--line)", background: "white",
+                      cursor: "pointer", textAlign: "left",
+                      display: "flex", flexDirection: "column", gap: 5,
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                      transition: "border-color 0.15s, box-shadow 0.15s",
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = "#ae863d"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(174,134,61,0.13)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--line)"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.05)"; }}
+                  >
+                    <span style={{ fontSize: 15, fontWeight: 600 }}>{emoji} {title}</span>
+                    <span style={{ fontSize: 12.5, color: "var(--ink-3)", lineHeight: 1.45 }}>{sub}</span>
+                  </button>
+                ))}
+              </div>
+            )}
 
-            {/* Input bar */}
-            <div style={{ padding: "14px 20px", borderTop: "1px solid rgba(0,0,0,0.07)", display: "flex", gap: 10, alignItems: "center", background: "rgba(255,255,255,0.6)", backdropFilter: "blur(8px)" }}>
-              <input
-                className="input"
-                style={{ flex: 1, fontSize: 13.5, borderRadius: 22, padding: "10px 16px", background: "white", border: "1px solid var(--line)" }}
-                placeholder={sent ? "Envoyer un autre message…" : "Tapez votre idée ou suggestion…"}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") send(); }}
-              />
-              <button
-                className="btn btn-primary"
-                style={{ borderRadius: "50%", width: 40, height: 40, padding: 0, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
-                onClick={send}
-                disabled={!input.trim()}
-              >
-                <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/>
-                </svg>
-              </button>
-            </div>
+            {/* ── STEP 2 : Confirmation coordonnées (problème seulement) ── */}
+            {step === "confirm" && (
+              <div style={{ padding: "28px 24px 32px", display: "flex", flexDirection: "column", gap: 22 }}>
+                <div>
+                  <p style={{ margin: "0 0 6px", fontSize: 14, fontWeight: 600 }}>🐛 Problème rencontré</p>
+                  <p style={{ margin: 0, fontSize: 13, color: "var(--ink-3)", lineHeight: 1.5 }}>
+                    Vérifiez vos coordonnées — on vous recontactera directement dessus.
+                  </p>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  <div>
+                    <label style={{ fontSize: 12, color: "var(--ink-3)", display: "block", marginBottom: 5, fontWeight: 500 }}>Email</label>
+                    <input
+                      className="input"
+                      style={{ width: "100%", fontSize: 13.5, borderRadius: 10, padding: "9px 13px", background: "white", border: "1px solid var(--line)", boxSizing: "border-box" }}
+                      value={contactEmail}
+                      onChange={e => setContactEmail(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, color: "var(--ink-3)", display: "block", marginBottom: 5, fontWeight: 500 }}>Téléphone</label>
+                    <input
+                      className="input"
+                      style={{ width: "100%", fontSize: 13.5, borderRadius: 10, padding: "9px 13px", background: "white", border: "1px solid var(--line)", boxSizing: "border-box" }}
+                      value={contactPhone}
+                      onChange={e => setContactPhone(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <p style={{ margin: 0, fontSize: 11.5, color: "var(--ink-4)", fontStyle: "italic" }}>
+                  Ces informations ne mettent pas à jour votre profil.
+                </p>
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button className="btn" style={{ flex: 1, fontSize: 13.5 }} onClick={() => setStep("choose")}>
+                    ← Retour
+                  </button>
+                  <button
+                    className="btn btn-primary"
+                    style={{ flex: 2, fontSize: 13.5 }}
+                    onClick={confirmContact}
+                    disabled={!contactEmail.trim()}
+                  >
+                    Valider — décrire le problème
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ── STEP 3 : Chat ── */}
+            {step === "chat" && (
+              <>
+                <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 12, minHeight: 200, maxHeight: 340, overflowY: "auto" }}>
+                  {messages.map((m, i) => (
+                    <div key={i} style={{ display: "flex", justifyContent: m.from === "user" ? "flex-end" : "flex-start", alignItems: "flex-end", gap: 8 }}>
+                      {m.from === "cardly" && <BubbleAvatar side="cardly" />}
+                      <div style={{
+                        maxWidth: "78%", padding: "10px 14px",
+                        borderRadius: m.from === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
+                        background: m.from === "user" ? "var(--ink)" : "white",
+                        color: m.from === "user" ? "white" : "var(--ink)",
+                        fontSize: 13.5, lineHeight: 1.55,
+                        boxShadow: m.from === "cardly" ? "0 1px 6px rgba(0,0,0,0.07)" : "none",
+                      }}>{m.text}</div>
+                      {m.from === "user" && <BubbleAvatar side="user" />}
+                    </div>
+                  ))}
+                  <div ref={bottomRef} />
+                </div>
+                <div style={{ padding: "14px 20px", borderTop: "1px solid rgba(0,0,0,0.07)", display: "flex", gap: 10, alignItems: "center", background: "rgba(255,255,255,0.6)", backdropFilter: "blur(8px)" }}>
+                  <input
+                    ref={inputRef}
+                    className="input"
+                    style={{ flex: 1, fontSize: 13.5, borderRadius: 22, padding: "10px 16px", background: "white", border: "1px solid var(--line)" }}
+                    placeholder={sent ? "Envoyer un autre message…" : category === "problem" ? "Décrivez votre problème…" : "Tapez votre idée ou suggestion…"}
+                    value={input}
+                    onChange={e => setInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") send(); }}
+                  />
+                  <button
+                    className="btn btn-primary"
+                    style={{ borderRadius: "50%", width: 40, height: 40, padding: 0, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+                    onClick={send}
+                    disabled={!input.trim()}
+                  >
+                    <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/>
+                    </svg>
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
 

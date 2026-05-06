@@ -11,7 +11,7 @@ function AppLayout({ navigate, params, children, tab, setTab, role, plan, trialE
     { id: "dashboard", label: "Dashboard", icon: <Icon.Chart size={16} /> },
     { id: "crm", label: "CRM", icon: <Icon.Database size={16} /> },
     { id: "secret", label: "Mon compte", icon: <Icon.User size={16} /> },
-    { id: "feedback", label: "Vos idées", icon: <Icon.Sparkle size={16} /> },
+    { id: "feedback", label: "Idée ou problème", icon: <Icon.Sparkle size={16} /> },
     { id: "nfc", label: "Support NFC", icon: <Icon.Nfc size={16} /> },
     { id: "subscription", label: "Abonnement", icon: <Icon.Crown size={16} /> },
   ];
