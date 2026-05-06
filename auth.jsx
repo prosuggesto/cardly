@@ -202,9 +202,38 @@ function Field({ label, ...rest }) {
 
 function AdminForm({ onSubmit, onBack }) {
   const [form, setForm] = useStateA({});
-  const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+  const [loading, setLoading] = useStateA(false);
+  const [error, setError] = useStateA(null);
+  const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!window.CardlyAPI) { setError("Service indisponible."); return; }
+    setError(null); setLoading(true);
+    try {
+      // 1. Créer le compte auth
+      const { data: authData, error: authErr } = await window.CardlyAPI.signUp(form.email, form.pwd);
+      if (authErr) throw authErr;
+      const userId = authData.user.id;
+
+      // 2. Créer l'entreprise (le trigger SQL crée aussi entreprise_members owner+active)
+      const { data: ent, error: entErr } = await window.CardlyAPI.createEntreprise(userId, form.entreprise, form.web);
+      if (entErr) throw entErr;
+
+      // 3. Mettre à jour le profil
+      await window.CardlyAPI.upsertProfile(userId, {
+        nom: form.nom, prenom: form.prenom, email: form.email,
+        telephone: form.phone, nom_entreprise: form.entreprise,
+      });
+
+      onSubmit(ent.code_secret);
+    } catch (err) {
+      setError(err.message || "Une erreur est survenue.");
+    } finally { setLoading(false); }
+  };
+
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSubmit("CARDLY-8K4P"); }} className="col gap-3">
+    <form onSubmit={handleSubmit} className="col gap-3">
       <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
         <div className="col">
           <div className="serif" style={{ fontSize: 22, letterSpacing: "-0.01em" }}>Créer mon entreprise</div>
@@ -229,16 +258,51 @@ function AdminForm({ onSubmit, onBack }) {
         <Field label="LinkedIn" placeholder="https://linkedin.com/in/votre-profil" onChange={set("linkedin")} />
       </FieldRow>
       <Field label="Mot de passe" type="password" placeholder="••••••••" onChange={set("pwd")} required />
-      <button type="submit" className="btn btn-primary" style={{ marginTop: 6, justifyContent: "center" }}>
-        Créer mon entreprise <Icon.ArrowRight size={14} />
+      {error && <div style={{ padding: "10px 14px", borderRadius: 10, fontSize: 13, background: "#f6e2dd", border: "1px solid #e3b5aa", color: "#8b2e20" }}>{error}</div>}
+      <button type="submit" disabled={loading} className="btn btn-primary" style={{ marginTop: 6, justifyContent: "center" }}>
+        {loading ? "Création en cours…" : <><span>Créer mon entreprise</span> <Icon.ArrowRight size={14} /></>}
       </button>
     </form>
   );
 }
 
 function CollabForm({ onSubmit, onBack }) {
+  const [form, setForm] = useStateA({});
+  const [loading, setLoading] = useStateA(false);
+  const [error, setError] = useStateA(null);
+  const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!window.CardlyAPI) { setError("Service indisponible."); return; }
+    setError(null); setLoading(true);
+    try {
+      // 1. Créer le compte auth
+      const { data: authData, error: authErr } = await window.CardlyAPI.signUp(form.email, form.pwd);
+      if (authErr) throw authErr;
+      const userId = authData.user.id;
+
+      // 2. Trouver l'entreprise par code secret
+      const { data: ent, error: entErr } = await window.CardlyAPI.getEntrepriseByCode(form.code);
+      if (entErr || !ent) throw new Error("Code secret introuvable. Vérifiez auprès de votre administrateur.");
+
+      // 3. Rejoindre l'entreprise (statut pending, en attente de validation admin)
+      await window.CardlyAPI.joinEntreprise(ent.id, userId);
+
+      // 4. Mettre à jour le profil
+      await window.CardlyAPI.upsertProfile(userId, {
+        nom: form.nom, prenom: form.prenom, email: form.email,
+        telephone: form.phone, poste: form.poste, nom_entreprise: ent.nom_entreprise,
+      });
+
+      onSubmit();
+    } catch (err) {
+      setError(err.message || "Une erreur est survenue.");
+    } finally { setLoading(false); }
+  };
+
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }} className="col gap-3">
+    <form onSubmit={handleSubmit} className="col gap-3">
       <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
         <div className="col">
           <div className="serif" style={{ fontSize: 22, letterSpacing: "-0.01em" }}>Rejoindre mon entreprise</div>
@@ -247,32 +311,117 @@ function CollabForm({ onSubmit, onBack }) {
         <button type="button" className="btn btn-ghost btn-sm" onClick={onBack}>← Retour</button>
       </div>
       <FieldRow>
-        <Field label="Prénom" placeholder="Emma" required />
-        <Field label="Nom" placeholder="Laurent" required />
+        <Field label="Prénom" placeholder="Emma" onChange={set("prenom")} required />
+        <Field label="Nom" placeholder="Laurent" onChange={set("nom")} required />
       </FieldRow>
       <FieldRow>
-        <Field label="Email" type="email" placeholder="emma@entreprise.fr" required />
-        <Field label="Téléphone" placeholder="06 ..." required />
+        <Field label="Email" type="email" placeholder="emma@entreprise.fr" onChange={set("email")} required />
+        <Field label="Téléphone" placeholder="06 ..." onChange={set("phone")} required />
       </FieldRow>
       <FieldRow>
-        <Field label="Poste" placeholder="Conseillère commerciale" required />
-        <Field label="Code secret entreprise" placeholder="CARDLY-XXXX" required />
+        <Field label="Poste" placeholder="Conseillère commerciale" onChange={set("poste")} required />
+        <Field label="Code secret entreprise" placeholder="CARDLY-XXXX" onChange={set("code")} required />
       </FieldRow>
       <FieldRow>
-        <Field label="Instagram" placeholder="https://instagram.com/votre-compte" />
-        <Field label="LinkedIn" placeholder="https://linkedin.com/in/votre-profil" />
+        <Field label="Instagram" placeholder="https://instagram.com/votre-compte" onChange={set("instagram")} />
+        <Field label="LinkedIn" placeholder="https://linkedin.com/in/votre-profil" onChange={set("linkedin")} />
       </FieldRow>
-      <Field label="Mot de passe" type="password" placeholder="••••••••" required />
-      <button type="submit" className="btn btn-primary" style={{ marginTop: 6, justifyContent: "center" }}>
-        Rejoindre mon entreprise <Icon.ArrowRight size={14} />
+      <Field label="Mot de passe" type="password" placeholder="••••••••" onChange={set("pwd")} required />
+      {error && <div style={{ padding: "10px 14px", borderRadius: 10, fontSize: 13, background: "#f6e2dd", border: "1px solid #e3b5aa", color: "#8b2e20" }}>{error}</div>}
+      <button type="submit" disabled={loading} className="btn btn-primary" style={{ marginTop: 6, justifyContent: "center" }}>
+        {loading ? "Envoi…" : <><span>Rejoindre mon entreprise</span> <Icon.ArrowRight size={14} /></>}
       </button>
     </form>
   );
 }
 
 function LoginForm({ onSubmit }) {
+  const [email, setEmail] = useStateA("");
+  const [pwd, setPwd] = useStateA("");
+  const [loading, setLoading] = useStateA(false);
+  const [error, setError] = useStateA(null);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!window.CardlyAPI) { setError("Service indisponible."); return; }
+    setError(null); setLoading(true);
+    try {
+      // 1. Connexion
+      const { data: authData, error: authErr } = await window.CardlyAPI.signIn(email, pwd);
+      if (authErr) throw authErr;
+      const userId = authData.user.id;
+
+      // 2. Charger le profil
+      const { data: profile } = await window.CardlyAPI.getProfile(userId);
+
+      // 3. Charger le membership + entreprise
+      const { data: membership } = await window.CardlyAPI.getMyMembership(userId);
+
+      // 4. Mettre à jour CARTALIS_DATA avec les vraies données
+      if (profile) {
+        Object.assign(window.CARTALIS_DATA.profileMe, {
+          id: userId,
+          nom: profile.nom || '',
+          prenom: profile.prenom || '',
+          email: profile.email || '',
+          telephone: profile.telephone || '',
+          poste: profile.poste || '',
+          site_web: profile.site_web || '',
+          instagram: profile.instagram || '',
+          linkedin: profile.linkedin || '',
+        });
+      }
+      if (membership?.entreprises) {
+        Object.assign(window.CARTALIS_DATA.entreprise, {
+          id: membership.entreprise_id,
+          nom_entreprise: membership.entreprises.nom_entreprise,
+          code_secret: membership.entreprises.code_secret,
+          plan: membership.entreprises.plan || 'free',
+        });
+        const isAdmin = membership.role === 'owner' || membership.role === 'admin';
+        window.CARTALIS_DATA.profileMe.role = isAdmin ? 'admin' : 'collaborator';
+      }
+
+      // 5. Charger les cartes
+      if (membership?.entreprise_id) {
+        const { data: cartesDB } = await window.CardlyAPI.getMyCartes(userId, membership.entreprise_id);
+        if (cartesDB && cartesDB.length > 0) {
+          window.CARTALIS_DATA.cards = cartesDB.map(c => ({
+            id: c.carte_uuid,
+            type: c.type_card,
+            nom_carte: c.card_name,
+            design: 'design-style-chinois',
+            nom_affiche: profile?.nom || '',
+            prenom_affiche: profile?.prenom || '',
+            entreprise_affiche: profile?.nom_entreprise || membership?.entreprises?.nom_entreprise || '',
+            poste_affiche: profile?.poste || '',
+            telephone_affiche: profile?.telephone || '',
+            email_affiche: profile?.email || '',
+            site_web: profile?.site_web || '',
+            afficher_nom: c.afficher_nom, afficher_prenom: c.afficher_prenom,
+            afficher_entreprise: c.afficher_nom_entreprise, afficher_poste: c.afficher_poste,
+            afficher_telephone: c.afficher_telephone, afficher_email: c.afficher_email,
+            afficher_site_web: c.afficher_site_web,
+            positions: {
+              name:  { x: +(c.prenom_x||70),    y: +(c.prenom_y||30) },
+              poste: { x: +(c.poste_x||70),      y: +(c.poste_y||42) },
+              phone: { x: +(c.telephone_x||70),  y: +(c.telephone_y||58) },
+              email: { x: +(c.email_x||70),      y: +(c.email_y||68) },
+              web:   { x: +(c.site_web_x||70),   y: +(c.site_web_y||78) },
+            },
+            statut: c.statut,
+          }));
+        }
+      }
+
+      onSubmit();
+    } catch (err) {
+      setError(err.message || "Email ou mot de passe incorrect.");
+    } finally { setLoading(false); }
+  };
+
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }} className="col gap-3" style={{ maxWidth: 380, margin: "0 auto" }}>
+    <form onSubmit={handleSubmit} className="col gap-3" style={{ maxWidth: 380, margin: "0 auto" }}>
       <div className="col" style={{ marginBottom: 6 }}>
         <div className="serif" style={{ fontSize: 26, letterSpacing: "-0.01em" }}>Se connecter</div>
         <div className="dim" style={{ fontSize: 13 }}>Accédez à votre espace Cartalis.</div>
@@ -302,14 +451,12 @@ function LoginForm({ onSubmit }) {
         <div style={{ flex: 1, height: 1, background: "var(--line)" }} />
       </div>
 
-      <Field label="Email" type="email" placeholder="vous@entreprise.fr" defaultValue="contact.cardly@gmail.com" required />
-      <Field label="Mot de passe" type="password" placeholder="••••••••" defaultValue="demo1234" required />
-      <button type="submit" className="btn btn-primary" style={{ marginTop: 6, justifyContent: "center" }}>
-        Se connecter <Icon.ArrowRight size={14} />
+      <Field label="Email" type="email" placeholder="vous@entreprise.fr" value={email} onChange={e => setEmail(e.target.value)} required />
+      <Field label="Mot de passe" type="password" placeholder="••••••••" value={pwd} onChange={e => setPwd(e.target.value)} required />
+      {error && <div style={{ padding: "10px 14px", borderRadius: 10, fontSize: 13, background: "#f6e2dd", border: "1px solid #e3b5aa", color: "#8b2e20" }}>{error}</div>}
+      <button type="submit" disabled={loading} className="btn btn-primary" style={{ marginTop: 6, justifyContent: "center" }}>
+        {loading ? "Connexion…" : <><span>Se connecter</span> <Icon.ArrowRight size={14} /></>}
       </button>
-      <div className="dim" style={{ fontSize: 12, textAlign: "center", marginTop: 4 }}>
-        Astuce : utilisez les valeurs pré-remplies pour la démo.
-      </div>
     </form>
   );
 }

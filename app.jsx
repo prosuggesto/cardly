@@ -26,6 +26,10 @@ function App() {
     window.parent.postMessage({ type: "__edit_mode_set_keys", edits: { [k]: v } }, "*");
   };
 
+  // Rôle et plan réels depuis les données DB (renseignés par LoginForm), sinon tweaks démo
+  const role = (path === '/app' && window.CARTALIS_DATA?.profileMe?.role) || tweaks.role;
+  const plan = (path === '/app' && window.CARTALIS_DATA?.entreprise?.plan) || tweaks.plan;
+
   const [tab, setTabRaw] = useStateApp("cards");
   const [customizeId, setCustomizeId] = useStateApp(null);
   const [scanCardId, setScanCardId] = useStateApp(null);
@@ -43,6 +47,14 @@ function App() {
     return () => window.removeEventListener("message", onMsg);
   }, []);
 
+  // Garde de session : redirige vers login si /app sans session active
+  useEffectApp(() => {
+    if (path !== '/app' || !window.sb) return;
+    window.sb.auth.getSession().then(({ data: { session } }) => {
+      if (!session) navigate('/auth?mode=login');
+    });
+  }, [path]);
+
   // Page selection
   let page = null;
   if (path === "/" || path === "") {
@@ -56,15 +68,15 @@ function App() {
       <AppLayout
         navigate={navigate}
         tab={tab} setTab={setTab}
-        role={tweaks.role} plan={tweaks.plan}
+        role={role} plan={plan}
         trialExpired={tweaks.trialExpired}
-        onLogout={() => navigate("/")}
+        onLogout={async () => { if (window.CardlyAPI) await window.CardlyAPI.signOut(); navigate("/"); }}
         onUpgrade={() => setTab("subscription")}
       >
         {tab === "cards" && <MyCardsPage
           onCustomize={(id) => { setTabRaw("customize"); setCustomizeId(id); }}
           onShareCard={(id) => navigate(`/card?id=${id}`)}
-          role={tweaks.role}
+          role={role}
           trialExpired={tweaks.trialExpired}
           onUpgrade={() => setTab("subscription")}
         />}
@@ -72,8 +84,8 @@ function App() {
           customizeId
             ? <CustomizationPage
                 cardId={customizeId}
-                role={tweaks.role}
-                plan={tweaks.plan}
+                role={role}
+                plan={plan}
                 trialExpired={tweaks.trialExpired}
                 onUpgrade={() => setTab("subscription")}
                 onBack={() => setCustomizeId(null)}
@@ -81,25 +93,25 @@ function App() {
               />
             : <CustomizePickerPage
                 onPick={(id) => setCustomizeId(id)}
-                role={tweaks.role}
+                role={role}
                 trialExpired={tweaks.trialExpired}
                 onUpgrade={() => setTab("subscription")}
               />
         )}
         {tab === "scan" && <ScanCustomizationPage
           cardId={scanCardId}
-          role={tweaks.role}
-          plan={tweaks.plan}
+          role={role}
+          plan={plan}
           trialExpired={tweaks.trialExpired}
           onUpgrade={() => setTab("subscription")}
           onBack={() => { setTabRaw("customize"); setCustomizeId(scanCardId); }}
         />}
-        {tab === "dashboard" && <DashboardPage role={tweaks.role} trialExpired={tweaks.trialExpired} onUpgrade={() => setTab("subscription")} />}
-        {tab === "crm" && <CrmPage role={tweaks.role} />}
-        {tab === "secret" && <SecretCodePage role={tweaks.role} plan={tweaks.plan} onUpgrade={() => setTab("subscription")} />}
+        {tab === "dashboard" && <DashboardPage role={role} trialExpired={tweaks.trialExpired} onUpgrade={() => setTab("subscription")} />}
+        {tab === "crm" && <CrmPage role={role} />}
+        {tab === "secret" && <SecretCodePage role={role} plan={plan} onUpgrade={() => setTab("subscription")} />}
         {tab === "feedback" && <FeedbackPage />}
         {tab === "nfc" && <NFCSupportPage />}
-        {tab === "subscription" && <SubscriptionPage plan={tweaks.plan} onSetPlan={(p) => setTweak("plan", p)} />}
+        {tab === "subscription" && <SubscriptionPage plan={plan} onSetPlan={(p) => setTweak("plan", p)} />}
       </AppLayout>
     );
   } else {
