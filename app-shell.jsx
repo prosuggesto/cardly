@@ -198,8 +198,10 @@ function MyCardsPage({ onCustomize, onShareCard, role, trialExpired, onUpgrade }
       setCards(next);
       window.CARTALIS_DATA.cards = next;
       setShowAdd(false);
-      setNewName(""); setNewType("personal"); setSelectedTagId(null); setNewTagInput("");
+      setNewName(""); setNewType("personnel"); setSelectedTagId(null); setNewTagInput("");
       toast.push("Carte créée ✓");
+      // Redirection immédiate vers la personnalisation
+      onCustomize && onCustomize(mapped.id);
     } catch (err) {
       toast.push("Erreur : " + (err.message || "impossible de créer la carte"));
     } finally { setCreating(false); }
@@ -219,12 +221,6 @@ function MyCardsPage({ onCustomize, onShareCard, role, trialExpired, onUpgrade }
         {trialExpired && <LockedOverlay onUpgrade={onUpgrade} />}
         {loadingCards ? (
           <div style={{ textAlign: "center", padding: "60px 0", color: "var(--ink-4)", fontSize: 14 }}>Chargement…</div>
-        ) : cards.length === 0 ? (
-          <div style={{ display: "flex", justifyContent: "center", padding: "40px 0" }}>
-            <div style={{ width: 300 }}>
-              <AddCardTile onClick={() => setShowAdd(true)} compact />
-            </div>
-          </div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: 24 }}>
             {cards.map(c => <CardListItem key={c.id} card={c} onCustomize={onCustomize} onShare={onShareCard} role={role} />)}
@@ -603,25 +599,23 @@ function FakeQR({ seed = "x", size = 180 }) {
   );
 }
 
-function AddCardTile({ onClick, compact }) {
+function AddCardTile({ onClick }) {
   return (
     <button onClick={onClick} className="card" style={{
-      padding: compact ? 32 : 24,
-      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-      gap: 12, minHeight: compact ? 180 : 460,
-      border: "1.5px dashed var(--line-2)",
+      padding: 24, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+      gap: 14, minHeight: 460, border: "1.5px dashed var(--line-2)",
       background: "transparent", cursor: "pointer", transition: "all 200ms",
     }}
     onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--gold)"; e.currentTarget.style.background = "var(--surface-2)"; }}
     onMouseLeave={(e) => { e.currentTarget.style.borderColor = ""; e.currentTarget.style.background = "transparent"; }}
     >
       <div style={{
-        width: compact ? 44 : 52, height: compact ? 44 : 52, borderRadius: 14,
+        width: 52, height: 52, borderRadius: 14,
         background: "var(--surface-2)", border: "1px solid var(--line)",
         display: "flex", alignItems: "center", justifyContent: "center",
-      }}><Icon.Plus size={compact ? 18 : 22} /></div>
-      <div className="serif" style={{ fontSize: compact ? 16 : 18 }}>Ajouter une carte</div>
-      {!compact && <div className="dim" style={{ fontSize: 13, textAlign: "center", maxWidth: 220 }}>Créez une carte personnelle pour un événement ou un projet précis.</div>}
+      }}><Icon.Plus size={22} /></div>
+      <div className="serif" style={{ fontSize: 18 }}>Ajouter une carte</div>
+      <div className="dim" style={{ fontSize: 13, textAlign: "center", maxWidth: 220 }}>Créez une carte personnelle pour un événement ou un projet précis.</div>
     </button>
   );
 }

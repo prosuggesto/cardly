@@ -274,8 +274,8 @@
                        : (c.afficher_logo_verso ?? false) ? 'verso' : 'recto',
           logoSizeRecto: (+(c.logo_recto_size || 100)) / 100,
           logoSizeVerso: (+(c.logo_verso_size || 100)) / 100,
-          frontImageUrl: c.image_verso  || null,
-          backImageUrl:  c.image_recto  || null,
+          frontImageUrl: c.image_verso  || (window.CARTALIS_DATA?.cardDesigns?.[0]?.front ?? null),
+          backImageUrl:  c.image_recto  || (window.CARTALIS_DATA?.cardDesigns?.[0]?.back  ?? null),
           scanButtons: {
             contact:   c.btn_contact   ?? true,
             whatsapp:  c.btn_whatsapp  ?? true,
