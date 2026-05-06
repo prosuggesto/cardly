@@ -140,7 +140,7 @@ function MyCardsPage({ onCustomize, onShareCard, role, trialExpired, onUpgrade }
   const [showAdd, setShowAdd] = useStateP(false);
   const [creating, setCreating] = useStateP(false);
   const [newName, setNewName] = useStateP("");
-  const [newType, setNewType] = useStateP("personal"); // 'personal' | 'enterprise'
+  const [newType, setNewType] = useStateP("personnel"); // 'personnel' | 'entreprise'
   const [tags, setTags] = useStateP([]);
   const [selectedTagId, setSelectedTagId] = useStateP(null);
   const [newTagInput, setNewTagInput] = useStateP("");
@@ -219,8 +219,14 @@ function MyCardsPage({ onCustomize, onShareCard, role, trialExpired, onUpgrade }
         {trialExpired && <LockedOverlay onUpgrade={onUpgrade} />}
         {loadingCards ? (
           <div style={{ textAlign: "center", padding: "60px 0", color: "var(--ink-4)", fontSize: 14 }}>Chargement…</div>
+        ) : cards.length === 0 ? (
+          <div style={{ display: "flex", justifyContent: "center", padding: "40px 0" }}>
+            <div style={{ width: 300 }}>
+              <AddCardTile onClick={() => setShowAdd(true)} compact />
+            </div>
+          </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: 24 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: 24 }}>
             {cards.map(c => <CardListItem key={c.id} card={c} onCustomize={onCustomize} onShare={onShareCard} role={role} />)}
             <AddCardTile onClick={() => setShowAdd(true)} />
           </div>
@@ -240,8 +246,8 @@ function MyCardsPage({ onCustomize, onShareCard, role, trialExpired, onUpgrade }
             <div style={{ fontSize: 12, color: "var(--ink-3)", fontWeight: 500, letterSpacing: "0.02em" }}>Type de carte</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               {[
-                { id: "enterprise", title: "Entreprise", desc: "Design partagé pour toute l'équipe.", icon: <Icon.Crown size={14} /> },
-                { id: "personal", title: "Personnelle", desc: "Pour un événement ou un projet.", icon: <Icon.User size={14} /> },
+                { id: "entreprise", title: "Entreprise", desc: "Design partagé pour toute l'équipe.", icon: <Icon.Crown size={14} /> },
+                { id: "personnel", title: "Personnelle", desc: "Pour un événement ou un projet.", icon: <Icon.User size={14} /> },
               ].map(opt => {
                 const sel = newType === opt.id;
                 return (
@@ -307,7 +313,7 @@ function MyCardsPage({ onCustomize, onShareCard, role, trialExpired, onUpgrade }
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); createTag(); } }}
               style={{ flex: 1 }}
             />
-            <button type="button" className="btn btn-sm" onClick={createTag} disabled={!newTagInput.trim()}>
+            <button type="button" className="btn btn-sm" onClick={createTag}>
               <Icon.Plus size={12} /> Ajouter
             </button>
           </div>
@@ -335,17 +341,17 @@ function CardListItem({ card, onCustomize, onShare, role }) {
   const toast = useToast();
   const [presenting, setPresenting] = useStateP(false);
   const [showStats, setShowStats] = useStateP(false);
-  const isLocked = role === "collaborator" && card.type === "enterprise";
+  const isLocked = role === "collaborator" && card.type === "entreprise";
   return (
     <div className="card fade-up" style={{ padding: 24, display: "flex", flexDirection: "column", gap: 18 }}>
       <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
         <div className="col gap-1">
           <div className="row gap-2" style={{ alignItems: "center", flexWrap: "wrap" }}>
             <div className="serif" style={{ fontSize: 20, letterSpacing: "-0.01em" }}>{card.nom_carte}</div>
-            {card.type === "enterprise" && <span className="chip chip-gold">Entreprise</span>}
+            {card.type === "entreprise" && <span className="chip chip-gold">Entreprise</span>}
             {card.event && <span className="chip" style={{ background: "var(--surface-2)", color: "var(--ink-2)" }}>{card.event}</span>}
           </div>
-          <div className="dim" style={{ fontSize: 12 }}>{card.type === "enterprise" ? "Carte entreprise" : "Carte personnelle"}</div>
+          <div className="dim" style={{ fontSize: 12 }}>{card.type === "entreprise" ? "Carte entreprise" : "Carte personnelle"}</div>
         </div>
         <div className="row gap-1">
           <button className="btn btn-ghost btn-sm" onClick={() => onCustomize(card.id)} title="Personnaliser"><Icon.Brush size={14} /></button>
@@ -597,23 +603,25 @@ function FakeQR({ seed = "x", size = 180 }) {
   );
 }
 
-function AddCardTile({ onClick }) {
+function AddCardTile({ onClick, compact }) {
   return (
     <button onClick={onClick} className="card" style={{
-      padding: 24, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-      gap: 14, minHeight: 460, border: "1.5px dashed var(--line-2)",
+      padding: compact ? 32 : 24,
+      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+      gap: 12, minHeight: compact ? 180 : 460,
+      border: "1.5px dashed var(--line-2)",
       background: "transparent", cursor: "pointer", transition: "all 200ms",
     }}
     onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--gold)"; e.currentTarget.style.background = "var(--surface-2)"; }}
     onMouseLeave={(e) => { e.currentTarget.style.borderColor = ""; e.currentTarget.style.background = "transparent"; }}
     >
       <div style={{
-        width: 52, height: 52, borderRadius: 14,
+        width: compact ? 44 : 52, height: compact ? 44 : 52, borderRadius: 14,
         background: "var(--surface-2)", border: "1px solid var(--line)",
         display: "flex", alignItems: "center", justifyContent: "center",
-      }}><Icon.Plus size={22} /></div>
-      <div className="serif" style={{ fontSize: 18 }}>Ajouter une carte</div>
-      <div className="dim" style={{ fontSize: 13, textAlign: "center", maxWidth: 220 }}>Créez une carte personnelle pour un événement ou un projet précis.</div>
+      }}><Icon.Plus size={compact ? 18 : 22} /></div>
+      <div className="serif" style={{ fontSize: compact ? 16 : 18 }}>Ajouter une carte</div>
+      {!compact && <div className="dim" style={{ fontSize: 13, textAlign: "center", maxWidth: 220 }}>Créez une carte personnelle pour un événement ou un projet précis.</div>}
     </button>
   );
 }
@@ -632,7 +640,7 @@ function CustomizePickerPage({ onPick, role, trialExpired, onUpgrade }) {
         {trialExpired && <LockedOverlay onUpgrade={onUpgrade} />}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 22 }}>
           {cards.map(c => {
-            const locked = role === "collaborator" && c.type === "enterprise";
+            const locked = role === "collaborator" && c.type === "entreprise";
             return (
               <button
                 key={c.id}
@@ -651,11 +659,11 @@ function CustomizePickerPage({ onPick, role, trialExpired, onUpgrade }) {
                   <div className="col gap-1" style={{ flex: 1 }}>
                     <div className="serif" style={{ fontSize: 18, letterSpacing: "-0.01em" }}>{c.nom_carte}</div>
                     <div className="dim" style={{ fontSize: 12 }}>
-                      {c.type === "enterprise" ? "Carte entreprise" : "Carte personnelle"}
+                      {c.type === "entreprise" ? "Carte entreprise" : "Carte personnelle"}
                     </div>
                   </div>
                   <div className="col gap-1" style={{ alignItems: "flex-end" }}>
-                    {c.type === "enterprise" && <span className="chip chip-gold">Entreprise</span>}
+                    {c.type === "entreprise" && <span className="chip chip-gold">Entreprise</span>}
                     {c.event && <span className="chip" style={{ background: "var(--surface-2)", color: "var(--ink-2)", fontSize: 11 }}>{c.event}</span>}
                   </div>
                 </div>
@@ -805,7 +813,7 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
     { value: "script",     label: "Script" },
   ];
   const toast = useToast();
-  const isAdminOnEnterprise = card.type === "enterprise" && role === "collaborator";
+  const isAdminOnEnterprise = card.type === "entreprise" && role === "collaborator";
   const editable = !isAdminOnEnterprise;
 
   const cardPreviewRef = useRefP(null);
