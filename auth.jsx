@@ -363,6 +363,17 @@ function LoginForm({ onSubmit }) {
 
       // 3. Charger le membership + entreprise
       const { data: membership } = await window.CardlyAPI.getMyMembership(userId);
+      const entrepriseId = membership?.entreprise_id;
+
+      // Fallback : si le join entreprises(*) a échoué (FK manquante ou RLS), on fetch séparément
+      let entrepriseData = membership?.entreprises || null;
+      if (!entrepriseData && entrepriseId) {
+        const { data: entFallback } = await window.sb.from('entreprises')
+          .select('id, nom_entreprise, code_secret, plan')
+          .eq('id', entrepriseId)
+          .single();
+        entrepriseData = entFallback;
+      }
 
       // 4. Mettre à jour CARTALIS_DATA avec les vraies données
       if (profile) {
@@ -378,20 +389,25 @@ function LoginForm({ onSubmit }) {
           linkedin: profile.linkedin || '',
         });
       }
-      if (membership?.entreprises) {
-        Object.assign(window.CARTALIS_DATA.entreprise, {
-          id: membership.entreprise_id,
-          nom_entreprise: membership.entreprises.nom_entreprise,
-          code_secret: membership.entreprises.code_secret,
-          plan: membership.entreprises.plan || 'free',
-        });
+
+      // Rôle toujours déduit du membership, même si le join entreprise a raté
+      if (membership) {
         const isAdmin = membership.role === 'owner' || membership.role === 'admin';
         window.CARTALIS_DATA.profileMe.role = isAdmin ? 'admin' : 'collaborator';
       }
 
+      if (entrepriseData && entrepriseId) {
+        Object.assign(window.CARTALIS_DATA.entreprise, {
+          id: entrepriseId,
+          nom_entreprise: entrepriseData.nom_entreprise,
+          code_secret: entrepriseData.code_secret,
+          plan: entrepriseData.plan || 'free',
+        });
+      }
+
       // 5. Charger les cartes
-      if (membership?.entreprise_id) {
-        const { data: cartesDB } = await window.CardlyAPI.getMyCartes(userId, membership.entreprise_id);
+      if (entrepriseId) {
+        const { data: cartesDB } = await window.CardlyAPI.getMyCartes(userId, entrepriseId);
         if (cartesDB && cartesDB.length > 0) {
           window.CARTALIS_DATA.cards = cartesDB.map(c => ({
             id: c.carte_uuid,
@@ -400,7 +416,7 @@ function LoginForm({ onSubmit }) {
             design: 'design-style-chinois',
             nom_affiche: profile?.nom || '',
             prenom_affiche: profile?.prenom || '',
-            entreprise_affiche: profile?.nom_entreprise || membership?.entreprises?.nom_entreprise || '',
+            entreprise_affiche: profile?.nom_entreprise || entrepriseData?.nom_entreprise || '',
             poste_affiche: profile?.poste || '',
             telephone_affiche: profile?.telephone || '',
             email_affiche: profile?.email || '',
