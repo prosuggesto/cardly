@@ -200,33 +200,115 @@ window.CrmPage = CrmPage;
 
 // ---------- Dashboard ----------
 function DashboardPage({ role, trialExpired, onUpgrade }) {
-  const [collabs, setCollabs] = useStateD(window.CARTALIS_DATA.collaborators);
+  const [collabs, setCollabs] = useStateD([]);
+  const [loading, setLoading] = useStateD(true);
+  const [totalLeads, setTotalLeads] = useStateD(0);
   const [statsCollab, setStatsCollab] = useStateD(null);
   const toast = useToast();
   const canManage = role === "admin" || role === "manager";
+  const entrepriseId = window.CARTALIS_DATA?.entreprise?.id;
 
   const MONTHS = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
   const monthOpts = MONTHS.map((m, i) => ({ value: String(i+1).padStart(2,"0"), label: m }));
   const yearOpts = [{ value: "2025", label: "2025" }, { value: "2026", label: "2026" }];
-  const [mDebut, setMDebut] = useStateD("01");
-  const [yDebut, setYDebut] = useStateD("2026");
-  const [mFin, setMFin] = useStateD("04");
-  const [yFin, setYFin] = useStateD("2026");
+  const now = new Date();
+  const [mDebut, setMDebut] = useStateD(String(now.getMonth() + 1).padStart(2, "0"));
+  const [yDebut, setYDebut] = useStateD(String(now.getFullYear()));
+  const [mFin, setMFin] = useStateD(String(now.getMonth() + 1).padStart(2, "0"));
+  const [yFin, setYFin] = useStateD(String(now.getFullYear()));
   const [fMembre, setFMembre] = useStateD("all");
-  const [fEvent, setFEvent] = useStateD("all");
-  const active = collabs.filter(c => c.statut === "actif").sort((a,b) => b.leads - a.leads);
-  const tableMembers = collabs.filter(c => c.statut !== "en_attente");
-  const pending = collabs.filter(c => c.statut === "en_attente");
 
-  const accept = (id) => { setCollabs(c => c.map(x => x.id === id ? { ...x, statut: "actif" } : x)); toast.push("Membre accepté"); };
-  const refuse = (id) => { setCollabs(c => c.filter(x => x.id !== id)); toast.push("Demande refusée"); };
-  const remove = (id) => { setCollabs(c => c.map(x => x.id === id ? { ...x, statut: "inactif", leads: 0 } : x)); toast.push("Accès supprimé"); };
-  const toggleRole = (id) => { setCollabs(c => c.map(x => x.id === id ? { ...x, role_membre: x.role_membre === "responsable" ? "collaborateur" : "responsable" } : x)); toast.push("Rôle mis à jour"); };
+  const loadData = async (mois, annee) => {
+    if (!window.CardlyAPI || !entrepriseId) { setLoading(false); return; }
+    setLoading(true);
+    try {
+      const [{ data: members }, { data: logs }] = await Promise.all([
+        window.CardlyAPI.getMembers(entrepriseId),
+        window.CardlyAPI.getLogsLeads(entrepriseId, { mois, annee }),
+      ]);
+      // Agrège les leads par user
+      const lMap = {};
+      (logs || []).forEach(l => {
+        if (!lMap[l.user_id]) lMap[l.user_id] = {
+          total_leads: 0, total_scan: 0, total_clic_mail: 0,
+          total_clic_instagram: 0, total_clic_linkedin: 0, total_clic_site_web: 0,
+          total_clic_whatsapp: 0, total_clic_add_contact: 0, total_clic_crm: 0,
+        };
+        const s = lMap[l.user_id];
+        s.total_leads            += l.total_leads            || 0;
+        s.total_scan             += l.total_scan             || 0;
+        s.total_clic_mail        += l.total_clic_mail        || 0;
+        s.total_clic_instagram   += l.total_clic_instagram   || 0;
+        s.total_clic_linkedin    += l.total_clic_linkedin    || 0;
+        s.total_clic_site_web    += l.total_clic_site_web    || 0;
+        s.total_clic_whatsapp    += l.total_clic_whatsapp    || 0;
+        s.total_clic_add_contact += l.total_clic_add_contact || 0;
+        s.total_clic_crm         += l.total_clic_crm         || 0;
+      });
+      setTotalLeads(Object.values(lMap).reduce((s, v) => s + v.total_leads, 0));
+      setCollabs((members || []).map(m => ({
+        id: m.user_id,
+        memberId: m.id,
+        prenom: m.profiles?.prenom || '—',
+        nom: m.profiles?.nom || '',
+        email: m.profiles?.email || '',
+        poste: m.profiles?.poste || '',
+        leads: lMap[m.user_id]?.total_leads || 0,
+        stats: lMap[m.user_id] || null,
+        statut: m.statut === 'active' ? 'actif' : 'en_attente',
+        role_membre: (m.role === 'owner' || m.role === 'admin') ? 'responsable' : 'collaborateur',
+        last_click: '—',
+      })));
+    } catch (err) {
+      console.error('[Dashboard]', err);
+      toast.push("Erreur de chargement");
+    }
+    setLoading(false);
+  };
+
+  React.useEffect(() => { loadData(mDebut, yDebut); }, []);
+
+  const active = collabs.filter(c => c.statut === 'actif').sort((a, b) => b.leads - a.leads);
+  const tableMembers = collabs.filter(c => c.statut !== 'en_attente');
+  const pending = collabs.filter(c => c.statut === 'en_attente');
+
+  const accept = async (id) => {
+    const m = collabs.find(c => c.id === id);
+    if (!m) return;
+    const { error } = await window.CardlyAPI.acceptMember(m.memberId);
+    if (error) { toast.push("Erreur : " + error.message); return; }
+    setCollabs(prev => prev.map(x => x.id === id ? { ...x, statut: 'actif' } : x));
+    toast.push("Membre accepté ✓");
+  };
+  const refuse = async (id) => {
+    const m = collabs.find(c => c.id === id);
+    if (!m) return;
+    await window.CardlyAPI.removeMember(m.memberId);
+    setCollabs(prev => prev.filter(x => x.id !== id));
+    toast.push("Demande refusée");
+  };
+  const remove = async (id) => {
+    const m = collabs.find(c => c.id === id);
+    if (!m) return;
+    await window.CardlyAPI.removeMember(m.memberId);
+    setCollabs(prev => prev.filter(x => x.id !== id));
+    toast.push("Accès supprimé");
+  };
+  const toggleRole = async (id) => {
+    const m = collabs.find(c => c.id === id);
+    if (!m) return;
+    const newDbRole = m.role_membre === 'responsable' ? 'member' : 'admin';
+    await window.CardlyAPI.updateMemberRole(m.memberId, newDbRole);
+    setCollabs(prev => prev.map(x => x.id === id ? { ...x, role_membre: newDbRole === 'admin' ? 'responsable' : 'collaborateur' } : x));
+    toast.push("Rôle mis à jour");
+  };
+
+  const monthLabel = MONTHS[parseInt(mDebut, 10) - 1];
 
   return (
     <div className="col gap-6">
       <div className="col gap-2">
-        <div className="eyebrow">Dashboard · Avril 2026</div>
+        <div className="eyebrow">Dashboard · {monthLabel} {yDebut}</div>
         <h1 className="serif" style={{ fontSize: "clamp(28px, 4vw, 40px)", margin: 0, letterSpacing: "-0.02em" }}>Performance des membres</h1>
         <p className="muted" style={{ margin: 0, fontSize: 15 }}>Chaque clic sur « Enregistrer dans mes contacts » est comptabilisé comme un lead généré.</p>
       </div>
@@ -239,171 +321,198 @@ function DashboardPage({ role, trialExpired, onUpgrade }) {
           <span className="dim" style={{ alignSelf: "center" }}>→</span>
           <FilterSelect value={mFin} onChange={setMFin} options={monthOpts} btnStyle={{ minWidth: 110 }} />
           <FilterSelect value={yFin} onChange={setYFin} options={yearOpts} btnStyle={{ minWidth: 80 }} />
-          <FilterSelect
-            value={fMembre}
-            onChange={setFMembre}
-            options={[{ value: "all", label: "Tous les membres" }, ...active.map(c => ({ value: c.id, label: `${c.prenom} ${c.nom}` }))]}
-          />
-          <FilterSelect
-            value={fEvent}
-            onChange={setFEvent}
-            options={[
-              { value: "all", label: "Tous les événements" },
-              { value: "Salon Immobilier 2026", label: "Salon Immobilier 2026" },
-              { value: "Réseau MEDEF", label: "Réseau MEDEF" },
-              { value: "Portes ouvertes", label: "Portes ouvertes" },
-              { value: "Sans étiquette", label: "Sans étiquette" },
-            ]}
-          />
-          <button className="btn btn-primary btn-sm">Filtrer</button>
+          {active.length > 0 && (
+            <FilterSelect
+              value={fMembre}
+              onChange={setFMembre}
+              options={[{ value: "all", label: "Tous les membres" }, ...active.map(c => ({ value: c.id, label: `${c.prenom} ${c.nom}` }))]}
+            />
+          )}
+          <button className="btn btn-primary btn-sm" onClick={() => loadData(mDebut, yDebut)}>
+            {loading ? "…" : "Filtrer"}
+          </button>
         </div>
       </div>
 
-      {/* Metrics */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
-        <Metric label="Total leads ce mois" value="142" delta="+24 vs mois dernier" trend="up" />
-        <Metric label="Meilleur membre" value={active[0] ? `${active[0].prenom} ${active[0].nom[0]}.` : "—"} delta={active[0] ? `${active[0].leads} leads` : ""} trend="neutral" />
-        <Metric label="Membres actifs" value={`${active.length}`} delta={`sur ${collabs.length}`} trend="neutral" />
-      </div>
-
-      {/* Top 3 podium */}
-      <div className="card" style={{ padding: 24 }}>
-        <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <div className="serif" style={{ fontSize: 18 }}>Top 3 du mois</div>
-          <div className="dim" style={{ fontSize: 12 }}>Classement des interactions générées</div>
+      {loading ? (
+        <div className="col" style={{ alignItems: "center", padding: "60px 0" }}>
+          <div className="dim" style={{ fontSize: 14 }}>Chargement des données…</div>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
-          {active.slice(0, 3).map((c, i) => (
-            <div key={c.id} className="col gap-3" style={{
-              padding: 20,
-              background: i === 0 ? "linear-gradient(180deg, #fffaf0, #f5edd9)" : "var(--surface-2)",
-              border: i === 0 ? "1px solid #ecd5a8" : "1px solid var(--line)",
-              borderRadius: 14, alignItems: "center", textAlign: "center",
-            }}>
-              <div style={{
-                width: 44, height: 44, borderRadius: "50%",
-                background: i === 0 ? "linear-gradient(135deg, var(--gold-2), var(--gold))" : i === 1 ? "var(--ink-4)" : "var(--surface-3)",
-                color: i < 2 ? "white" : "var(--ink-3)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 14, fontWeight: 600,
-              }}>{i === 0 ? <Icon.Crown size={18} /> : `#${i+1}`}</div>
-              <div className="serif" style={{ fontSize: 18 }}>{c.prenom} {c.nom}</div>
-              <div className="dim" style={{ fontSize: 12 }}>{c.poste}</div>
-              <div className="serif" style={{ fontSize: 32, lineHeight: 1, color: i === 0 ? "var(--gold)" : "var(--ink)" }}>{c.leads}</div>
-              <div className="dim" style={{ fontSize: 11 }}>leads ce mois</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Pending requests — admin & responsable */}
-      {canManage && pending.length > 0 && (
-        <div className="card" style={{ padding: 24 }}>
-          <div className="row" style={{ justifyContent: "space-between", marginBottom: 16 }}>
-            <div className="serif" style={{ fontSize: 18 }}>Demandes membres</div>
-            <span className="chip">{pending.length} en attente</span>
+      ) : (
+        <>
+          {/* Metrics */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+            <Metric
+              label="Total leads ce mois"
+              value={String(totalLeads)}
+              delta={totalLeads === 0 ? "Aucune donnée pour ce mois" : `${monthLabel} ${yDebut}`}
+              trend={totalLeads > 0 ? "up" : "neutral"}
+            />
+            <Metric
+              label="Meilleur membre"
+              value={active[0] ? `${active[0].prenom} ${active[0].nom[0]}.` : "—"}
+              delta={active[0] && active[0].leads > 0 ? `${active[0].leads} leads` : "Aucun lead ce mois"}
+              trend="neutral"
+            />
+            <Metric
+              label="Membres actifs"
+              value={String(active.length)}
+              delta={`sur ${collabs.length} membre${collabs.length > 1 ? "s" : ""}`}
+              trend="neutral"
+            />
           </div>
-          <div className="col gap-2">
-            {pending.map(c => (
-              <div key={c.id} className="row" style={{ justifyContent: "space-between", padding: "12px 14px", background: "var(--surface-2)", borderRadius: 10, flexWrap: "wrap", gap: 12 }}>
-                <div className="row gap-3">
-                  <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--surface-3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600 }}>
-                    {c.prenom[0]}{c.nom[0]}
-                  </div>
-                  <div className="col">
-                    <div style={{ fontWeight: 500, fontSize: 14 }}>{c.prenom} {c.nom}</div>
-                    <div className="dim" style={{ fontSize: 12 }}>{c.poste} · {c.email}</div>
-                  </div>
-                </div>
-                <div className="row gap-2">
-                  <button className="btn btn-sm" onClick={() => refuse(c.id)}><Icon.X size={13} /> Refuser</button>
-                  <button className="btn btn-primary btn-sm" onClick={() => accept(c.id)}><Icon.Check size={13} /> Accepter</button>
-                </div>
+
+          {/* Demandes en attente */}
+          {canManage && pending.length > 0 && (
+            <div className="card" style={{ padding: 24, border: "1px solid #ecd5a8", background: "linear-gradient(135deg, #fffdf7, #fdf5e4)" }}>
+              <div className="row" style={{ justifyContent: "space-between", marginBottom: 16 }}>
+                <div className="serif" style={{ fontSize: 18 }}>Demandes membres</div>
+                <span className="chip">{pending.length} en attente</span>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Full table */}
-      <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-        <div className="row" style={{ justifyContent: "space-between", padding: "20px 24px", borderBottom: "1px solid var(--line)" }}>
-          <div className="serif" style={{ fontSize: 18 }}>Membres</div>
-          <span className="dim" style={{ fontSize: 12 }}>{tableMembers.length} membres</span>
-        </div>
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
-            <thead>
-              <tr style={{ background: "var(--surface-2)" }}>
-                {["Membre", "Poste", "Rôle", "Leads", "Action contact", "Dernier clic", canManage ? "Actions" : ""].filter(Boolean).map(h => (
-                  <th key={h} style={{ textAlign: "left", padding: "12px 20px", fontWeight: 500, color: "var(--ink-3)", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {tableMembers.map(c => {
-                const isResp = c.role_membre === "responsable";
-                return (
-                <tr key={c.id} style={{ borderTop: "1px solid var(--line)" }}>
-                  <td style={{ padding: "14px 20px" }}>
+              <div className="col gap-2">
+                {pending.map(c => (
+                  <div key={c.id} className="row" style={{ justifyContent: "space-between", padding: "12px 14px", background: "rgba(255,255,255,0.7)", borderRadius: 10, flexWrap: "wrap", gap: 12 }}>
                     <div className="row gap-3">
-                      <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--surface-3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600 }}>
-                        {c.prenom[0]}{c.nom[0]}
+                      <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--surface-3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600 }}>
+                        {(c.prenom[0] || '?')}{(c.nom[0] || '?')}
                       </div>
-                      <div className="col" style={{ lineHeight: 1.3 }}>
-                        <div style={{ fontWeight: 500 }}>{c.prenom} {c.nom}</div>
-                        <div className="dim" style={{ fontSize: 12 }}>{c.email}</div>
+                      <div className="col">
+                        <div style={{ fontWeight: 500, fontSize: 14 }}>{c.prenom} {c.nom}</div>
+                        <div className="dim" style={{ fontSize: 12 }}>{c.poste ? `${c.poste} · ` : ""}{c.email}</div>
                       </div>
                     </div>
-                  </td>
-                  <td style={{ padding: "14px 20px", color: "var(--ink-3)" }}>{c.poste}</td>
-                  <td style={{ padding: "14px 20px" }}>
-                    <span className={`pill ${isResp ? "pill-good" : "pill-mute"}`}>
-                      {isResp ? <Icon.Crown size={11} /> : <Icon.User size={11} />}
-                      {isResp ? "Responsable" : "Collaborateur"}
-                    </span>
-                  </td>
-                  <td style={{ padding: "14px 20px" }}><span className="serif" style={{ fontSize: 18 }}>{c.leads}</span></td>
-                  <td style={{ padding: "14px 20px" }}>
-                    <button
-                      type="button"
-                      onClick={() => setStatsCollab(c)}
-                      title="Voir le détail par canal"
-                      style={{
-                        background: "transparent", border: 0, padding: 0, cursor: "pointer",
-                        display: "inline-flex", alignItems: "center", gap: 6,
-                        color: "var(--ink)", borderBottom: "1px dashed var(--ink-4)",
-                      }}
-                    >
-                      <span className="serif" style={{ fontSize: 18 }}>{Math.round(c.leads * 1.4)}</span>
-                      <Icon.ChevronRight size={12} />
-                    </button>
-                  </td>
-                  <td style={{ padding: "14px 20px", color: "var(--ink-3)", fontSize: 12 }}>{c.last_click}</td>
-                  {canManage && (
-                    <td style={{ padding: "14px 20px" }}>
-                      {c.statut === "actif" && (
-                        <div className="row gap-1">
-                          <button
-                            className="btn btn-ghost btn-sm"
-                            onClick={() => toggleRole(c.id)}
-                            title={isResp ? "Rétrograder en collaborateur" : "Promouvoir responsable"}
-                          >
-                            {isResp ? <Icon.User size={13} /> : <Icon.Crown size={13} />}
-                          </button>
-                          <button className="btn btn-ghost btn-sm" onClick={() => remove(c.id)} title="Supprimer l'accès">
-                            <Icon.Trash size={13} />
-                          </button>
-                        </div>
-                      )}
-                    </td>
-                  )}
-                </tr>
-              );})}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                    <div className="row gap-2">
+                      <button className="btn btn-sm" onClick={() => refuse(c.id)}><Icon.X size={13} /> Refuser</button>
+                      <button className="btn btn-primary btn-sm" onClick={() => accept(c.id)}><Icon.Check size={13} /> Accepter</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Top 3 — uniquement si au moins un lead */}
+          {active.filter(c => c.leads > 0).length > 0 ? (
+            <div className="card" style={{ padding: 24 }}>
+              <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <div className="serif" style={{ fontSize: 18 }}>Top 3 du mois</div>
+                <div className="dim" style={{ fontSize: 12 }}>Classement des leads générés</div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
+                {active.filter(c => c.leads > 0).slice(0, 3).map((c, i) => (
+                  <div key={c.id} className="col gap-3" style={{
+                    padding: 20,
+                    background: i === 0 ? "linear-gradient(180deg, #fffaf0, #f5edd9)" : "var(--surface-2)",
+                    border: i === 0 ? "1px solid #ecd5a8" : "1px solid var(--line)",
+                    borderRadius: 14, alignItems: "center", textAlign: "center",
+                  }}>
+                    <div style={{
+                      width: 44, height: 44, borderRadius: "50%",
+                      background: i === 0 ? "linear-gradient(135deg, var(--gold-2), var(--gold))" : i === 1 ? "var(--ink-4)" : "var(--surface-3)",
+                      color: i < 2 ? "white" : "var(--ink-3)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 14, fontWeight: 600,
+                    }}>{i === 0 ? <Icon.Crown size={18} /> : `#${i+1}`}</div>
+                    <div className="serif" style={{ fontSize: 18 }}>{c.prenom} {c.nom}</div>
+                    <div className="dim" style={{ fontSize: 12 }}>{c.poste}</div>
+                    <div className="serif" style={{ fontSize: 32, lineHeight: 1, color: i === 0 ? "var(--gold)" : "var(--ink)" }}>{c.leads}</div>
+                    <div className="dim" style={{ fontSize: 11 }}>leads ce mois</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : collabs.length > 0 && (
+            <div className="card" style={{ padding: 32, textAlign: "center" }}>
+              <div className="dim" style={{ fontSize: 14 }}>Aucun lead enregistré pour cette période. Le podium apparaîtra dès que des cartes auront été scannées.</div>
+            </div>
+          )}
+
+          {/* Tableau membres */}
+          <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+            <div className="row" style={{ justifyContent: "space-between", padding: "20px 24px", borderBottom: "1px solid var(--line)" }}>
+              <div className="serif" style={{ fontSize: 18 }}>Membres</div>
+              <span className="dim" style={{ fontSize: 12 }}>{tableMembers.length} membre{tableMembers.length > 1 ? "s" : ""}</span>
+            </div>
+            {tableMembers.length === 0 ? (
+              <div className="col" style={{ alignItems: "center", padding: "48px 24px", gap: 10 }}>
+                <div className="dim" style={{ fontSize: 14, textAlign: "center" }}>
+                  {collabs.length === 0
+                    ? "Aucun membre dans votre équipe pour l'instant."
+                    : "Tous les membres sont en attente de validation."}
+                </div>
+                {collabs.length === 0 && (
+                  <div className="dim" style={{ fontSize: 12, textAlign: "center", maxWidth: 360 }}>
+                    Partagez votre code secret à vos collaborateurs pour qu'ils puissent rejoindre votre espace.
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+                  <thead>
+                    <tr style={{ background: "var(--surface-2)" }}>
+                      {["Membre", "Poste", "Rôle", "Leads", "Clics canaux", canManage ? "Gestion" : ""].filter(Boolean).map(h => (
+                        <th key={h} style={{ textAlign: "left", padding: "12px 20px", fontWeight: 500, color: "var(--ink-3)", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tableMembers.map(c => {
+                      const isResp = c.role_membre === "responsable";
+                      const s = c.stats || {};
+                      const totalClics = (s.total_clic_mail || 0) + (s.total_clic_instagram || 0) + (s.total_clic_linkedin || 0) + (s.total_clic_site_web || 0) + (s.total_clic_whatsapp || 0) + (s.total_clic_crm || 0);
+                      return (
+                        <tr key={c.id} style={{ borderTop: "1px solid var(--line)" }}>
+                          <td style={{ padding: "14px 20px" }}>
+                            <div className="row gap-3">
+                              <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--surface-3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600 }}>
+                                {(c.prenom[0] || '?')}{(c.nom[0] || '?')}
+                              </div>
+                              <div className="col" style={{ lineHeight: 1.3 }}>
+                                <div style={{ fontWeight: 500 }}>{c.prenom} {c.nom}</div>
+                                <div className="dim" style={{ fontSize: 12 }}>{c.email}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td style={{ padding: "14px 20px", color: "var(--ink-3)" }}>{c.poste || <span className="dim">—</span>}</td>
+                          <td style={{ padding: "14px 20px" }}>
+                            <span className={`pill ${isResp ? "pill-good" : "pill-mute"}`}>
+                              {isResp ? <Icon.Crown size={11} /> : <Icon.User size={11} />}
+                              {isResp ? "Responsable" : "Collaborateur"}
+                            </span>
+                          </td>
+                          <td style={{ padding: "14px 20px" }}>
+                            <span className="serif" style={{ fontSize: 18 }}>{c.leads}</span>
+                          </td>
+                          <td style={{ padding: "14px 20px" }}>
+                            <button type="button" onClick={() => setStatsCollab(c)} title="Voir le détail par canal"
+                              style={{ background: "transparent", border: 0, padding: 0, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, color: "var(--ink)", borderBottom: "1px dashed var(--ink-4)" }}>
+                              <span className="serif" style={{ fontSize: 18 }}>{totalClics}</span>
+                              <Icon.ChevronRight size={12} />
+                            </button>
+                          </td>
+                          {canManage && (
+                            <td style={{ padding: "14px 20px" }}>
+                              <div className="row gap-1">
+                                <button className="btn btn-ghost btn-sm" onClick={() => toggleRole(c.id)} title={isResp ? "Rétrograder" : "Promouvoir"}>
+                                  {isResp ? <Icon.User size={13} /> : <Icon.Crown size={13} />}
+                                </button>
+                                <button className="btn btn-ghost btn-sm" onClick={() => remove(c.id)} title="Supprimer l'accès">
+                                  <Icon.Trash size={13} />
+                                </button>
+                              </div>
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       <CollabStatsModal collab={statsCollab} onClose={() => setStatsCollab(null)} />
     </div>
@@ -413,36 +522,33 @@ window.DashboardPage = DashboardPage;
 
 function CollabStatsModal({ collab, onClose }) {
   if (!collab) return null;
-  const seed = (collab.id || "x").split("").reduce((a, ch) => a + ch.charCodeAt(0), 0);
-  const rng = (n, mod) => ((seed * 9301 + n * 49297) % mod);
-  const totalActions = Math.round(collab.leads * 1.4);
-  const scans = Math.round(collab.leads * 1.5);
+  const s = collab.stats || {};
+  const totalLeads = s.total_leads || 0;
+  const totalAddContact = s.total_clic_add_contact || 0;
+  const scans = s.total_scan || 0;
   const channels = [
-    { key: "scans", label: "Scans", icon: <Icon.QR size={14} />, color: "#6b5b4f", clicks: scans, isScans: true },
-    { key: "mail", label: "Mail", icon: <Icon.Mail size={14} />, color: "#8a6d3b", weight: 28 + rng(1, 12) },
-    { key: "whatsapp", label: "WhatsApp", icon: <Icon.WhatsApp size={14} />, color: "#25d366", weight: 24 + rng(2, 14) },
-    { key: "instagram", label: "Instagram", icon: <Icon.Instagram size={14} />, color: "#c13584", weight: 14 + rng(3, 12) },
-    { key: "linkedin", label: "LinkedIn", icon: <Icon.Linkedin size={14} />, color: "#0a66c2", weight: 10 + rng(4, 10) },
-    { key: "website", label: "Site web", icon: <Icon.Globe size={14} />, color: "#1a1815", weight: 6 + rng(5, 10) },
-    { key: "crm", label: "CRM", icon: <Icon.User size={14} />, color: "#b8843e", weight: 8 + rng(6, 10) },
+    { key: "scans",     label: "Scans",     icon: <Icon.QR size={14} />,       color: "#6b5b4f", clicks: scans,                    isScans: true },
+    { key: "mail",      label: "Mail",      icon: <Icon.Mail size={14} />,      color: "#8a6d3b", clicks: s.total_clic_mail      || 0 },
+    { key: "whatsapp",  label: "WhatsApp",  icon: <Icon.WhatsApp size={14} />,  color: "#25d366", clicks: s.total_clic_whatsapp  || 0 },
+    { key: "instagram", label: "Instagram", icon: <Icon.Instagram size={14} />, color: "#c13584", clicks: s.total_clic_instagram || 0 },
+    { key: "linkedin",  label: "LinkedIn",  icon: <Icon.Linkedin size={14} />,  color: "#0a66c2", clicks: s.total_clic_linkedin  || 0 },
+    { key: "website",   label: "Site web",  icon: <Icon.Globe size={14} />,     color: "#1a1815", clicks: s.total_clic_site_web  || 0 },
+    { key: "crm",       label: "CRM",       icon: <Icon.User size={14} />,      color: "#b8843e", clicks: s.total_clic_crm       || 0 },
   ];
-  const totalW = channels.filter(c => !c.isScans).reduce((s, c) => s + c.weight, 0);
-  const withClicks = channels.map(c => c.isScans ? c : { ...c, clicks: Math.max(1, Math.round(totalActions * (c.weight / totalW) * 1.6)) });
-  const totalClicks = withClicks.reduce((s, c) => s + c.clicks, 0);
-  const max = Math.max(...withClicks.map(c => c.clicks));
+  const totalClicks = channels.filter(c => !c.isScans).reduce((sum, c) => sum + c.clicks, 0);
+  const max = Math.max(...channels.map(c => c.clicks), 1);
 
   return (
     <Modal open={!!collab} onClose={onClose} title={`Détail — ${collab.prenom} ${collab.nom}`}>
-      <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>{collab.poste} · 30 derniers jours</p>
-
+      <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>{collab.poste || "Collaborateur"} · Période sélectionnée</p>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginTop: 8 }}>
         <div className="card" style={{ padding: 14 }}>
           <div className="eyebrow" style={{ marginBottom: 4 }}>Leads</div>
-          <div className="serif" style={{ fontSize: 26, lineHeight: 1, letterSpacing: "-0.02em" }}>{collab.leads}</div>
+          <div className="serif" style={{ fontSize: 26, lineHeight: 1, letterSpacing: "-0.02em" }}>{totalLeads}</div>
         </div>
         <div className="card" style={{ padding: 14, background: "linear-gradient(135deg, #fdf3df, #f1deb6)", borderColor: "var(--gold)" }}>
-          <div className="eyebrow" style={{ marginBottom: 4 }}>Action add contact</div>
-          <div className="serif" style={{ fontSize: 26, lineHeight: 1, letterSpacing: "-0.02em" }}>{totalActions}</div>
+          <div className="eyebrow" style={{ marginBottom: 4 }}>Add contact</div>
+          <div className="serif" style={{ fontSize: 26, lineHeight: 1, letterSpacing: "-0.02em" }}>{totalAddContact}</div>
           <div className="dim" style={{ fontSize: 11, marginTop: 4 }}>clics sur le bouton</div>
         </div>
         <div className="card" style={{ padding: 14 }}>
@@ -450,11 +556,10 @@ function CollabStatsModal({ collab, onClose }) {
           <div className="serif" style={{ fontSize: 26, lineHeight: 1, letterSpacing: "-0.02em" }}>{totalClicks}</div>
         </div>
       </div>
-
       <div className="col gap-2" style={{ marginTop: 18 }}>
         <div className="eyebrow">Détail par canal</div>
         <div className="col gap-3" style={{ marginTop: 4 }}>
-          {withClicks.map(ch => (
+          {channels.map(ch => (
             <div key={ch.key} className="col gap-1">
               <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
                 <div className="row gap-2" style={{ alignItems: "center" }}>
@@ -462,7 +567,7 @@ function CollabStatsModal({ collab, onClose }) {
                   <div style={{ fontSize: 13, fontWeight: 500 }}>{ch.label}</div>
                 </div>
                 <div className="row gap-2" style={{ alignItems: "baseline" }}>
-                  {!ch.isScans && <span className="dim" style={{ fontSize: 11 }}>{Math.round((ch.clicks / totalClicks) * 100)}%</span>}
+                  {!ch.isScans && totalClicks > 0 && <span className="dim" style={{ fontSize: 11 }}>{Math.round((ch.clicks / totalClicks) * 100)}%</span>}
                   <span className="serif" style={{ fontSize: 18 }}>{ch.clicks}</span>
                 </div>
               </div>
