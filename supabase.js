@@ -206,7 +206,6 @@
           id: c.carte_uuid,
           type: c.type_card,
           nom_carte: c.card_name,
-          design: c.design || 'design-style-chinois',
           tag: c.evenement_name || null,
           evenement_uuid: c.evenement_uuid || null,
           nom_affiche:        profile?.nom            || '',
@@ -271,7 +270,8 @@
             web:        { bold: !!c.site_web_gras,       italic: !!c.site_web_italique,       underline: !!c.site_web_souligne },
           },
           logoUrl:       c.image_logo   || null,
-          logoSide:      c.logo_side    || 'recto',
+          logoSide:      ((c.afficher_logo_recto ?? true) && (c.afficher_logo_verso ?? false)) ? 'both'
+                       : (c.afficher_logo_verso ?? false) ? 'verso' : 'recto',
           logoSizeRecto: (+(c.logo_recto_size || 100)) / 100,
           logoSizeVerso: (+(c.logo_verso_size || 100)) / 100,
           frontImageUrl: c.image_verso  || null,
@@ -303,7 +303,6 @@
         const fc = fieldColors, fs = fieldSides, fz = fieldSizes, ff = fieldFonts, fd = fieldDecorations;
         const font = (k) => ff[k] === 'default' || !ff[k] ? 'Inter' : ff[k];
         return {
-          design:                  card.design || 'design-style-chinois',
           afficher_prenom:         card.afficher_prenom   ?? true,
           afficher_nom:            card.afficher_nom       ?? true,
           afficher_nom_entreprise: card.afficher_entreprise ?? true,
@@ -352,8 +351,9 @@
           telephone_gras:          !!fd.phone?.bold,      telephone_italique:          !!fd.phone?.italic,      telephone_souligne:          !!fd.phone?.underline,
           email_gras:              !!fd.email?.bold,      email_italique:              !!fd.email?.italic,      email_souligne:              !!fd.email?.underline,
           site_web_gras:           !!fd.web?.bold,        site_web_italique:           !!fd.web?.italic,        site_web_souligne:           !!fd.web?.underline,
-          image_logo:      logoUrl       ?? null,
-          logo_side:       logoSide      || 'recto',
+          image_logo:           logoUrl ?? null,
+          afficher_logo_recto:  logoSide === 'recto' || logoSide === 'both',
+          afficher_logo_verso:  logoSide === 'verso' || logoSide === 'both',
           logo_recto_size: Math.round((logoSizeRecto || 1) * 100),
           logo_verso_size: Math.round((logoSizeVerso || 1) * 100),
           image_recto:     backImageUrl  ?? null,

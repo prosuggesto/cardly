@@ -345,7 +345,7 @@ function CardListItem({ card, onCustomize, onShare, role }) {
             {card.type === "enterprise" && <span className="chip chip-gold">Entreprise</span>}
             {card.event && <span className="chip" style={{ background: "var(--surface-2)", color: "var(--ink-2)" }}>{card.event}</span>}
           </div>
-          <div className="dim" style={{ fontSize: 12 }}>{card.type === "enterprise" ? "Carte entreprise" : "Carte personnelle"} · {window.CARTALIS_DATA.getDesign(card.design).label}</div>
+          <div className="dim" style={{ fontSize: 12 }}>{card.type === "enterprise" ? "Carte entreprise" : "Carte personnelle"}</div>
         </div>
         <div className="row gap-1">
           <button className="btn btn-ghost btn-sm" onClick={() => onCustomize(card.id)} title="Personnaliser"><Icon.Brush size={14} /></button>
@@ -447,7 +447,8 @@ function CardStatsModal({ open, onClose, card }) {
 
 function PresentCardModal({ card, onClose }) {
   const toast = useToast();
-  const design = window.CARTALIS_DATA.getDesign(card.design);
+  const design = window.CARTALIS_DATA.cardDesigns.find(d => d.front === card.frontImageUrl)
+    || { front: card.frontImageUrl || null, back: card.backImageUrl || null };
   const [flipped, setFlipped] = useStateP(false);
 
   const shareLink = () => {
@@ -650,7 +651,7 @@ function CustomizePickerPage({ onPick, role, trialExpired, onUpgrade }) {
                   <div className="col gap-1" style={{ flex: 1 }}>
                     <div className="serif" style={{ fontSize: 18, letterSpacing: "-0.01em" }}>{c.nom_carte}</div>
                     <div className="dim" style={{ fontSize: 12 }}>
-                      {c.type === "enterprise" ? "Carte entreprise" : "Carte personnelle"} · {window.CARTALIS_DATA.getDesign(c.design).label}
+                      {c.type === "enterprise" ? "Carte entreprise" : "Carte personnelle"}
                     </div>
                   </div>
                   <div className="col gap-1" style={{ alignItems: "flex-end" }}>
@@ -779,6 +780,12 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
   const [logoSide, setLogoSide] = useStateP(original?.logoSide || "both"); // "recto" | "verso" | "both"
   const [logoSizeRecto, setLogoSizeRecto] = useStateP(original?.logoSizeRecto || 1);
   const [logoSizeVerso, setLogoSizeVerso] = useStateP(original?.logoSizeVerso || 1);
+  // selectedDesignId: dérivé des images stockées — permet de surligner la vignette active
+  const [selectedDesignId, setSelectedDesignId] = useStateP(() => {
+    const initFront = original?.frontImageUrl || null;
+    if (!initFront) return null;
+    return (window.CARTALIS_DATA.cardDesigns || []).find(d => d.front === initFront)?.id || null;
+  });
   const [saving, setSaving] = useStateP(false);
   const [sizeDrafts, setSizeDrafts] = useStateP({});
   const [logoSizeRectoDraft, setLogoSizeRectoDraft] = useStateP(undefined);
@@ -845,7 +852,6 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
 
   const saveToLanding = (slot) => {
     const config = {
-      design: card.design,
       logoUrl, logoSide, logoSizeRecto, logoSizeVerso,
       fieldSides, fieldSizes, fieldFonts, fieldColors, fieldDecorations,
       frontImageUrl, backImageUrl,
@@ -935,16 +941,24 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
             <div className="card" style={{ padding: 20 }}>
               <div className="row" style={{ justifyContent: "space-between", marginBottom: 14 }}>
                 <div className="serif" style={{ fontSize: 17 }}>Modèle</div>
-                <span className="chip">{window.CARTALIS_DATA.getDesign(card.design).label}</span>
+                <span className="chip">
+                  {designs.find(d => d.id === selectedDesignId)?.label || 'Personnalisé'}
+                </span>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, maxHeight: 280, overflowY: "auto", paddingRight: 4 }}>
                 {designs.map(d => (
                   <DesignThumb
                     key={d.id}
                     design={d}
-                    selected={card.design === d.id}
+                    selected={selectedDesignId === d.id}
                     editable={editable}
-                    onSelect={(id) => setField("design", id)}
+                    onSelect={(id) => {
+                      const picked = designs.find(x => x.id === id);
+                      if (!picked) return;
+                      setSelectedDesignId(id);
+                      setFrontImageUrl(picked.front || null);
+                      setBackImageUrl(picked.back || null);
+                    }}
                   />
                 ))}
               </div>
