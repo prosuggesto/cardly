@@ -135,72 +135,96 @@ window.AppLayout = AppLayout;
 
 // ---------- Mes cartes ----------
 function MyCardsPage({ onCustomize, onShareCard, role, trialExpired, onUpgrade }) {
-  const [cards, setCards] = useStateP(window.CARTALIS_DATA.cards);
+  const [cards, setCards] = useStateP([]);
+  const [loadingCards, setLoadingCards] = useStateP(true);
   const [showAdd, setShowAdd] = useStateP(false);
+  const [creating, setCreating] = useStateP(false);
   const [newName, setNewName] = useStateP("");
   const [newType, setNewType] = useStateP("personal"); // 'personal' | 'enterprise'
-  const [tags, setTags] = useStateP([
-    { id: "tg-1", label: "Salon Immobilier 2026" },
-    { id: "tg-2", label: "Réseau MEDEF" },
-    { id: "tg-3", label: "Portes ouvertes" },
-  ]);
+  const [tags, setTags] = useStateP([]);
   const [selectedTagId, setSelectedTagId] = useStateP(null);
   const [newTagInput, setNewTagInput] = useStateP("");
   const toast = useToast();
 
   const isAdmin = role === "admin" || role === "manager";
 
+  // Chargement réel depuis Supabase à chaque montage
+  useEffectP(() => {
+    const userId = window.CARTALIS_DATA?.profileMe?.id;
+    const entrepriseId = window.CARTALIS_DATA?.entreprise?.id;
+    if (!window.CardlyAPI || !userId || !entrepriseId) { setLoadingCards(false); return; }
+    window.CardlyAPI.getMyCartes(userId, entrepriseId)
+      .then(({ data }) => {
+        const profile = window.CARTALIS_DATA?.profileMe;
+        const entreprise = window.CARTALIS_DATA?.entreprise;
+        const mapped = (data || []).map(c => window.CardlyAPI.mapCarteFromDB(c, profile, entreprise));
+        setCards(mapped);
+        window.CARTALIS_DATA.cards = mapped;
+      })
+      .catch(() => {})
+      .finally(() => setLoadingCards(false));
+  }, []);
+
   const createTag = () => {
     const v = newTagInput.trim();
     if (!v) return;
     const t = { id: "tg-" + Math.random().toString(36).slice(2, 6), label: v };
-    setTags([...tags, t]);
+    setTags(prev => [...prev, t]);
     setSelectedTagId(t.id);
     setNewTagInput("");
   };
 
-  const addCard = () => {
+  const addCard = async () => {
     if (!newName.trim()) return;
-    const designs = window.CARTALIS_DATA.cardDesigns;
-    const designId = designs[(cards.length) % designs.length].id;
+    const userId = window.CARTALIS_DATA?.profileMe?.id;
+    const entrepriseId = window.CARTALIS_DATA?.entreprise?.id;
+    if (!window.CardlyAPI || !userId || !entrepriseId) { toast.push("Connexion requise"); return; }
     const tag = tags.find(t => t.id === selectedTagId);
-    const next = {
-      ...window.CARTALIS_DATA.cards[1],
-      id: "card-" + Math.random().toString(36).slice(2, 6),
-      type: newType,
-      nom_carte: newName.trim(),
-      design: designId,
-      is_default: false,
-      tag: tag ? tag.label : null,
-    };
-    setCards([...cards, next]);
-    setShowAdd(false);
-    setNewName("");
-    setNewType("personal");
-    setSelectedTagId(null);
-    setNewTagInput("");
-    toast.push("Carte créée");
+    setCreating(true);
+    try {
+      const { data: newCarte, error } = await window.CardlyAPI.createCarte({
+        collaborateur_id: userId,
+        entreprise_id: entrepriseId,
+        type_card: newType,
+        card_name: newName.trim(),
+        evenement_name: tag ? tag.label : null,
+        statut: 'active',
+      });
+      if (error) throw error;
+      const profile = window.CARTALIS_DATA?.profileMe;
+      const entreprise = window.CARTALIS_DATA?.entreprise;
+      const mapped = window.CardlyAPI.mapCarteFromDB(newCarte, profile, entreprise);
+      const next = [...cards, mapped];
+      setCards(next);
+      window.CARTALIS_DATA.cards = next;
+      setShowAdd(false);
+      setNewName(""); setNewType("personal"); setSelectedTagId(null); setNewTagInput("");
+      toast.push("Carte créée ✓");
+    } catch (err) {
+      toast.push("Erreur : " + (err.message || "impossible de créer la carte"));
+    } finally { setCreating(false); }
   };
 
   return (
     <div className="col gap-6" style={{ position: "relative" }}>
       <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 16 }}>
         <div className="col gap-2">
-          <div className="eyebrow">Espace · {window.CARTALIS_DATA.entreprise.nom_entreprise}</div>
+          <div className="eyebrow">Espace · {window.CARTALIS_DATA?.entreprise?.nom_entreprise || '—'}</div>
           <h1 className="serif" style={{ fontSize: "clamp(28px, 4vw, 40px)", margin: 0, letterSpacing: "-0.02em" }}>Mes cartes</h1>
           <p className="muted" style={{ margin: 0, fontSize: 15 }}>Retrouvez vos cartes digitales et partagez-les en un scan.</p>
-        </div>
-        <div className="row gap-2">
-          <div className="chip chip-gold"><Icon.Sparkle size={11} /> 7 jours d'essai · 4 jours restants</div>
         </div>
       </div>
 
       <div style={{ position: "relative" }}>
         {trialExpired && <LockedOverlay onUpgrade={onUpgrade} />}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: 24 }}>
-          {cards.map(c => <CardListItem key={c.id} card={c} onCustomize={onCustomize} onShare={onShareCard} role={role} />)}
-          <AddCardTile onClick={() => setShowAdd(true)} />
-        </div>
+        {loadingCards ? (
+          <div style={{ textAlign: "center", padding: "60px 0", color: "var(--ink-4)", fontSize: 14 }}>Chargement…</div>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: 24 }}>
+            {cards.map(c => <CardListItem key={c.id} card={c} onCustomize={onCustomize} onShare={onShareCard} role={role} />)}
+            <AddCardTile onClick={() => setShowAdd(true)} />
+          </div>
+        )}
       </div>
 
       <Modal open={showAdd} onClose={() => setShowAdd(false)} title={isAdmin ? "Nouvelle carte" : "Nouvelle carte personnelle"}>
@@ -290,8 +314,10 @@ function MyCardsPage({ onCustomize, onShareCard, role, trialExpired, onUpgrade }
         </div>
 
         <div className="row gap-3" style={{ justifyContent: "flex-end", marginTop: 20 }}>
-          <button className="btn btn-sm" onClick={() => setShowAdd(false)}>Annuler</button>
-          <button className="btn btn-primary btn-sm" onClick={addCard}>Créer la carte</button>
+          <button className="btn btn-sm" onClick={() => setShowAdd(false)} disabled={creating}>Annuler</button>
+          <button className="btn btn-primary btn-sm" onClick={addCard} disabled={creating || !newName.trim()}>
+            {creating ? "Création…" : "Créer la carte"}
+          </button>
         </div>
       </Modal>
     </div>
@@ -731,23 +757,29 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
   const [aiBlocked, setAIBlocked] = useStateP(false);
   const [aiLoading, setAILoading] = useStateP(false);
   const [aiPrompt, setAIPrompt] = useStateP("");
-  const [logoUrl, setLogoUrl] = useStateP(null);
-  const [frontImageUrl, setFrontImageUrl] = useStateP(null);
-  const [backImageUrl, setBackImageUrl] = useStateP(null);
-  const [fieldColors, setFieldColors] = useStateP({ name: "#2a241a", entreprise: "#2a241a", poste: "#2a241a", phone: "#2a241a", email: "#2a241a", web: "#2a241a" });
-  const [applyAllColor, setApplyAllColor] = useStateP("#2a241a");
+  const DEF_COLORS = { name: "#2a241a", entreprise: "#2a241a", poste: "#2a241a", phone: "#2a241a", email: "#2a241a", web: "#2a241a" };
+  const DEF_SIDES  = { name: "recto",   entreprise: "recto",   poste: "recto",   phone: "recto",   email: "recto",   web: "recto" };
+  const DEF_SIZES  = { name: 1,         entreprise: 1,         poste: 0.9,       phone: 0.8,       email: 0.8,       web: 0.8 };
+  const DEF_FONTS  = { name: "default", entreprise: "default", poste: "default", phone: "default", email: "default", web: "default" };
+  const DEF_DECOS  = { name: {},        entreprise: {},        poste: {},        phone: {},        email: {},        web: {} };
+  const [logoUrl, setLogoUrl] = useStateP(original?.logoUrl || null);
+  const [frontImageUrl, setFrontImageUrl] = useStateP(original?.frontImageUrl || null);
+  const [backImageUrl, setBackImageUrl] = useStateP(original?.backImageUrl || null);
+  const [fieldColors, setFieldColors] = useStateP(original?.fieldColors || DEF_COLORS);
+  const [applyAllColor, setApplyAllColor] = useStateP((original?.fieldColors?.name) || "#2a241a");
   const setFieldColor = (key, color) => setFieldColors(fc => ({ ...fc, [key]: color }));
-  const [fieldSides, setFieldSides] = useStateP({ name: "recto", entreprise: "recto", poste: "recto", phone: "recto", email: "recto", web: "recto" });
+  const [fieldSides, setFieldSides] = useStateP(original?.fieldSides || DEF_SIDES);
   const setFieldSide = (key, side) => setFieldSides(fs => ({ ...fs, [key]: side }));
-  const [fieldSizes, setFieldSizes] = useStateP({ name: 1, entreprise: 1, poste: 1, phone: 1, email: 1, web: 1 });
+  const [fieldSizes, setFieldSizes] = useStateP(original?.fieldSizes || DEF_SIZES);
   const bumpFieldSize = (key, delta) => setFieldSizes(fs => ({ ...fs, [key]: Math.max(0.5, Math.min(3, Math.round(((fs[key] || 1) + delta) * 10) / 10)) }));
-  const [fieldFonts, setFieldFonts] = useStateP({ name: "default", entreprise: "default", poste: "default", phone: "default", email: "default", web: "default" });
+  const [fieldFonts, setFieldFonts] = useStateP(original?.fieldFonts || DEF_FONTS);
   const setFieldFont = (key, font) => setFieldFonts(ff => ({ ...ff, [key]: font }));
-  const [fieldDecorations, setFieldDecorations] = useStateP({ name: {}, entreprise: {}, poste: {}, phone: {}, email: {}, web: {} });
+  const [fieldDecorations, setFieldDecorations] = useStateP(original?.fieldDecorations || DEF_DECOS);
   const toggleFieldDecoration = (key, prop) => setFieldDecorations(d => ({ ...d, [key]: { ...d[key], [prop]: !d[key]?.[prop] } }));
-  const [logoSide, setLogoSide] = useStateP("both"); // "recto" | "verso" | "both"
-  const [logoSizeRecto, setLogoSizeRecto] = useStateP(1);
-  const [logoSizeVerso, setLogoSizeVerso] = useStateP(1);
+  const [logoSide, setLogoSide] = useStateP(original?.logoSide || "both"); // "recto" | "verso" | "both"
+  const [logoSizeRecto, setLogoSizeRecto] = useStateP(original?.logoSizeRecto || 1);
+  const [logoSizeVerso, setLogoSizeVerso] = useStateP(original?.logoSizeVerso || 1);
+  const [saving, setSaving] = useStateP(false);
   const [sizeDrafts, setSizeDrafts] = useStateP({});
   const [logoSizeRectoDraft, setLogoSizeRectoDraft] = useStateP(undefined);
   const [logoSizeVersoDraft, setLogoSizeVersoDraft] = useStateP(undefined);
@@ -1228,8 +1260,20 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
                   <Icon.Sparkle size={14} /> Générer une image IA
                   {plan !== "team" && <span className="chip chip-gold" style={{ marginLeft: "auto", fontSize: 10 }}>Team</span>}
                 </button>
-                <button className="btn btn-primary" disabled={!editable} onClick={() => { toast.push("Modifications sauvegardées"); onValidate && onValidate(cardId); }}>
-                  <Icon.Check size={14} /> Valider <Icon.ArrowRight size={13} />
+                <button className="btn btn-primary" disabled={!editable || saving} onClick={async () => {
+                  if (!window.CardlyAPI || !cardId) return;
+                  setSaving(true);
+                  try {
+                    const dbData = window.CardlyAPI.carteToDBUpdate(card, { fieldColors, fieldSides, fieldSizes, fieldFonts, fieldDecorations, logoUrl, logoSide, logoSizeRecto, logoSizeVerso, frontImageUrl, backImageUrl });
+                    const { error } = await window.CardlyAPI.updateCarte(cardId, dbData);
+                    if (error) { toast.push("Erreur : " + error.message); return; }
+                    const updatedCard = { ...card, fieldColors, fieldSides, fieldSizes, fieldFonts, fieldDecorations, logoUrl, logoSide, logoSizeRecto, logoSizeVerso, frontImageUrl, backImageUrl };
+                    window.CARTALIS_DATA.cards = (window.CARTALIS_DATA.cards || []).map(c => c.id === cardId ? updatedCard : c);
+                    toast.push("Modifications sauvegardées ✓");
+                    onValidate && onValidate(cardId);
+                  } finally { setSaving(false); }
+                }}>
+                  {saving ? "Sauvegarde…" : <><Icon.Check size={14} /> Valider <Icon.ArrowRight size={13} /></>}
                 </button>
               </div>
             </div>
@@ -1442,27 +1486,31 @@ function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, on
   const card = (cardId && cards.find(c => c.id === cardId)) || cards[0];
   const ent = window.CARTALIS_DATA.entreprise;
   const toast = useToast();
-  const [scanButtons, setScanButtons] = useStateP({
-    contact: true,
-    whatsapp: true,
-    mail: true,
-    instagram: true,
-    linkedin: true,
-    crm: true,
-    rdv: false,
+  const [scanButtons, setScanButtons] = useStateP(card?.scanButtons || {
+    contact: true, whatsapp: true, mail: true, instagram: true, linkedin: true, crm: true, rdv: false,
   });
-  const [rdvUrl, setRdvUrl] = useStateP("");
-  const [crmFields, setCrmFields] = useStateP({
-    nom: true,
-    prenom: true,
-    societe: true,
-    mail: true,
-    tel: true,
+  const [rdvUrl, setRdvUrl] = useStateP(card?.rdvUrl || "");
+  const [crmFields, setCrmFields] = useStateP(card?.crmFields || {
+    nom: true, prenom: true, societe: true, mail: true, tel: true,
   });
   const [flipped, setFlipped] = useStateP(false);
   const [crmModalOpen, setCrmModalOpen] = useStateP(false);
+  const [saving, setSaving] = useStateP(false);
   const toggleBtn = (k) => setScanButtons(s => ({ ...s, [k]: !s[k] }));
   const toggleCrm = (k) => setCrmFields(f => ({ ...f, [k]: !f[k] }));
+
+  const handleSaveScan = async () => {
+    if (!window.CardlyAPI || !card?.id) return;
+    setSaving(true);
+    try {
+      const dbData = window.CardlyAPI.scanConfigToDBUpdate(scanButtons, rdvUrl, crmFields);
+      const { error } = await window.CardlyAPI.updateCarte(card.id, dbData);
+      if (error) { toast.push("Erreur : " + error.message); return; }
+      const updatedCard = { ...card, scanButtons: { ...scanButtons }, rdvUrl, crmFields: { ...crmFields } };
+      window.CARTALIS_DATA.cards = (window.CARTALIS_DATA.cards || []).map(c => c.id === card.id ? updatedCard : c);
+      toast.push("Personnalisation enregistrée ✓");
+    } finally { setSaving(false); }
+  };
 
   return (
     <div className="col gap-6" style={{ position: "relative" }}>
@@ -1652,8 +1700,8 @@ function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, on
               )}
             </div>
 
-            <button className="btn btn-primary" onClick={() => toast.push("Personnalisation enregistrée")}>
-              <Icon.Check size={14} /> Sauvegarder
+            <button className="btn btn-primary" disabled={saving} onClick={handleSaveScan}>
+              {saving ? "Sauvegarde…" : <><Icon.Check size={14} /> Sauvegarder</>}
             </button>
           </div>
         </div>

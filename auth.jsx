@@ -230,6 +230,25 @@ function AdminForm({ onSubmit, onBack }) {
         linkedin: form.linkedin || null,
       });
 
+      // 4. Pré-remplir CARTALIS_DATA pour que l'app fonctionne immédiatement
+      if (window.CARTALIS_DATA) {
+        window.CARTALIS_DATA.profileMe.id        = userId;
+        window.CARTALIS_DATA.profileMe.role      = 'admin';
+        window.CARTALIS_DATA.profileMe.nom       = form.nom       || '';
+        window.CARTALIS_DATA.profileMe.prenom    = form.prenom    || '';
+        window.CARTALIS_DATA.profileMe.email     = form.email     || '';
+        window.CARTALIS_DATA.profileMe.telephone = form.phone     || '';
+        window.CARTALIS_DATA.profileMe.poste     = form.poste     || '';
+        window.CARTALIS_DATA.profileMe.site_web  = form.web       || '';
+        window.CARTALIS_DATA.profileMe.instagram = form.instagram || '';
+        window.CARTALIS_DATA.profileMe.linkedin  = form.linkedin  || '';
+        window.CARTALIS_DATA.entreprise.id             = ent.id;
+        window.CARTALIS_DATA.entreprise.nom_entreprise = ent.nom_entreprise || form.entreprise;
+        window.CARTALIS_DATA.entreprise.code_secret    = ent.code_secret;
+        window.CARTALIS_DATA.entreprise.plan           = ent.plan || 'free';
+        window.CARTALIS_DATA.cards = [];
+      }
+
       onSubmit(ent.code_secret);
     } catch (err) {
       setError(err.message || "Une erreur est survenue.");
@@ -301,6 +320,23 @@ function CollabForm({ onSubmit, onBack }) {
         instagram: form.instagram || null,
         linkedin: form.linkedin || null,
       });
+
+      // 5. Pré-remplir CARTALIS_DATA
+      if (window.CARTALIS_DATA) {
+        window.CARTALIS_DATA.profileMe.id        = userId;
+        window.CARTALIS_DATA.profileMe.role      = 'collaborator';
+        window.CARTALIS_DATA.profileMe.nom       = form.nom    || '';
+        window.CARTALIS_DATA.profileMe.prenom    = form.prenom || '';
+        window.CARTALIS_DATA.profileMe.email     = form.email  || '';
+        window.CARTALIS_DATA.profileMe.telephone = form.phone  || '';
+        window.CARTALIS_DATA.profileMe.poste     = form.poste  || '';
+        window.CARTALIS_DATA.profileMe.instagram = form.instagram || '';
+        window.CARTALIS_DATA.profileMe.linkedin  = form.linkedin  || '';
+        window.CARTALIS_DATA.entreprise.id             = ent.id;
+        window.CARTALIS_DATA.entreprise.nom_entreprise = ent.nom_entreprise;
+        window.CARTALIS_DATA.entreprise.plan           = ent.plan || 'free';
+        window.CARTALIS_DATA.cards = [];
+      }
 
       onSubmit();
     } catch (err) {
@@ -405,36 +441,12 @@ function LoginForm({ onSubmit }) {
         });
       }
 
-      // 5. Charger les cartes
+      // 5. Charger les cartes (via le mapper centralisé)
       if (entrepriseId) {
         const { data: cartesDB } = await window.CardlyAPI.getMyCartes(userId, entrepriseId);
-        if (cartesDB && cartesDB.length > 0) {
-          window.CARTALIS_DATA.cards = cartesDB.map(c => ({
-            id: c.carte_uuid,
-            type: c.type_card,
-            nom_carte: c.card_name,
-            design: 'design-style-chinois',
-            nom_affiche: profile?.nom || '',
-            prenom_affiche: profile?.prenom || '',
-            entreprise_affiche: profile?.nom_entreprise || entrepriseData?.nom_entreprise || '',
-            poste_affiche: profile?.poste || '',
-            telephone_affiche: profile?.telephone || '',
-            email_affiche: profile?.email || '',
-            site_web: profile?.site_web || '',
-            afficher_nom: c.afficher_nom, afficher_prenom: c.afficher_prenom,
-            afficher_entreprise: c.afficher_nom_entreprise, afficher_poste: c.afficher_poste,
-            afficher_telephone: c.afficher_telephone, afficher_email: c.afficher_email,
-            afficher_site_web: c.afficher_site_web,
-            positions: {
-              name:  { x: +(c.prenom_x||70),    y: +(c.prenom_y||30) },
-              poste: { x: +(c.poste_x||70),      y: +(c.poste_y||42) },
-              phone: { x: +(c.telephone_x||70),  y: +(c.telephone_y||58) },
-              email: { x: +(c.email_x||70),      y: +(c.email_y||68) },
-              web:   { x: +(c.site_web_x||70),   y: +(c.site_web_y||78) },
-            },
-            statut: c.statut,
-          }));
-        }
+        window.CARTALIS_DATA.cards = (cartesDB || []).map(c =>
+          window.CardlyAPI.mapCarteFromDB(c, profile, entrepriseData)
+        );
       }
 
       onSubmit();
