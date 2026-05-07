@@ -274,8 +274,8 @@
                        : (c.afficher_logo_verso ?? false) ? 'verso' : 'recto',
           logoSizeRecto: (+(c.logo_recto_size || 100)) / 100,
           logoSizeVerso: (+(c.logo_verso_size || 100)) / 100,
-          frontImageUrl: c.image_verso  || (window.CARTALIS_DATA?.cardDesigns?.[0]?.front ?? null),
-          backImageUrl:  c.image_recto  || (window.CARTALIS_DATA?.cardDesigns?.[0]?.back  ?? null),
+          frontImageUrl: c.image_verso  || (() => { const d = (window.CARTALIS_DATA?.cardDesigns || []).find(x => x.id === 'design-immoblier-bleu') || window.CARTALIS_DATA?.cardDesigns?.[0]; return d?.front ?? null; })(),
+          backImageUrl:  c.image_recto  || (() => { const d = (window.CARTALIS_DATA?.cardDesigns || []).find(x => x.id === 'design-immoblier-bleu') || window.CARTALIS_DATA?.cardDesigns?.[0]; return d?.back  ?? null; })(),
           scanButtons: {
             contact:   c.btn_contact   ?? true,
             whatsapp:  c.btn_whatsapp  ?? true,
