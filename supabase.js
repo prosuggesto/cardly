@@ -122,6 +122,16 @@
           .eq('entreprise_id', entrepriseId)
           .order('created_at', { ascending: false });
       },
+      async createEvenement(entrepriseId, name) {
+        const uuid = (typeof crypto !== 'undefined' && crypto.randomUUID)
+          ? crypto.randomUUID()
+          : Math.random().toString(36).slice(2) + '-' + Date.now().toString(36);
+        return window.sb.from('evenements').insert({
+          entreprise_id: entrepriseId,
+          evenement_name: name,
+          evenement_uuid: uuid,
+        }).select().single();
+      },
 
       // ── Logs Leads ───────────────────────────────────────────────────────
       // Retourne les lignes agrégées (1 par user/mois/event)
@@ -223,19 +233,19 @@
           afficher_email:      c.afficher_email          ?? true,
           afficher_site_web:   c.afficher_site_web       ?? true,
           positions: {
-            name:  { x: +(c.prenom_x    || 50), y: +(c.prenom_y    || 30) },
-            poste: { x: +(c.poste_x     || 50), y: +(c.poste_y     || 42) },
-            phone: { x: +(c.telephone_x || 50), y: +(c.telephone_y || 60) },
-            email: { x: +(c.email_x     || 50), y: +(c.email_y     || 68) },
-            web:   { x: +(c.site_web_x  || 50), y: +(c.site_web_y  || 76) },
+            name:  { x: +(c.prenom_x    || 57.7706770270831),   y: +(c.prenom_y    || 19.33460308118465)  },
+            poste: { x: +(c.poste_x     || 57.197057416883915), y: +(c.poste_y     || 31.197713989721958) },
+            phone: { x: +(c.telephone_x || 70),                 y: +(c.telephone_y || 60)                 },
+            email: { x: +(c.email_x     || 70),                 y: +(c.email_y     || 70)                 },
+            web:   { x: +(c.site_web_x  || 44.57755728227542),  y: +(c.site_web_y  || 64.7528528713908)  },
           },
           fieldColors: {
-            name:       c.prenom_couleur         || '#2a241a',
-            entreprise: c.nom_entreprise_couleur || '#2a241a',
-            poste:      c.poste_couleur          || '#2a241a',
-            phone:      c.telephone_couleur      || '#2a241a',
-            email:      c.email_couleur          || '#2a241a',
-            web:        c.site_web_couleur       || '#2a241a',
+            name:       c.prenom_couleur         || '#ffffff',
+            entreprise: c.nom_entreprise_couleur || '#ffffff',
+            poste:      c.poste_couleur          || '#ffffff',
+            phone:      c.telephone_couleur      || '#ffffff',
+            email:      c.email_couleur          || '#ffffff',
+            web:        c.site_web_couleur       || '#ffffff',
           },
           fieldSides: {
             name:       c.prenom_side         || 'recto',

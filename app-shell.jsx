@@ -165,13 +165,39 @@ function MyCardsPage({ onCustomize, onShareCard, role, trialExpired, onUpgrade }
       .finally(() => setLoadingCards(false));
   }, []);
 
-  const createTag = () => {
+  // Chargement des événements depuis Supabase
+  useEffectP(() => {
+    const entrepriseId = window.CARTALIS_DATA?.entreprise?.id;
+    if (!window.CardlyAPI || !entrepriseId) return;
+    window.CardlyAPI.getEvenements(entrepriseId).then(({ data }) => {
+      if (!data) return;
+      setTags(data.map(ev => ({ id: ev.evenement_uuid, label: ev.evenement_name, evenement_uuid: ev.evenement_uuid })));
+    }).catch(() => {});
+  }, []);
+
+  const createTag = async () => {
     const v = newTagInput.trim();
     if (!v) return;
-    const t = { id: "tg-" + Math.random().toString(36).slice(2, 6), label: v };
-    setTags(prev => [...prev, t]);
-    setSelectedTagId(t.id);
+    const entrepriseId = window.CARTALIS_DATA?.entreprise?.id;
+    // Optimiste : ajouter immédiatement avec un ID temporaire
+    const tempId = "tg-" + Math.random().toString(36).slice(2, 6);
+    const tempTag = { id: tempId, label: v, evenement_uuid: null };
+    setTags(prev => [...prev, tempTag]);
+    setSelectedTagId(tempId);
     setNewTagInput("");
+    // Persistance en base
+    if (window.CardlyAPI && entrepriseId) {
+      try {
+        const { data: ev, error } = await window.CardlyAPI.createEvenement(entrepriseId, v);
+        if (!error && ev) {
+          setTags(prev => prev.map(t => t.id === tempId
+            ? { id: ev.evenement_uuid, label: ev.evenement_name, evenement_uuid: ev.evenement_uuid }
+            : t
+          ));
+          setSelectedTagId(ev.evenement_uuid);
+        }
+      } catch (_) {}
+    }
   };
 
   const addCard = async () => {
@@ -188,6 +214,7 @@ function MyCardsPage({ onCustomize, onShareCard, role, trialExpired, onUpgrade }
         type_card: newType,
         card_name: newName.trim(),
         evenement_name: tag ? tag.label : null,
+        evenement_uuid: tag?.evenement_uuid || null,
         statut: 'active',
       });
       if (error) throw error;
@@ -207,6 +234,19 @@ function MyCardsPage({ onCustomize, onShareCard, role, trialExpired, onUpgrade }
     } finally { setCreating(false); }
   };
 
+  const deleteCard = async (cardId) => {
+    try {
+      const { error } = await window.CardlyAPI.deleteCarte(cardId);
+      if (error) throw error;
+      const next = cards.filter(c => c.id !== cardId);
+      setCards(next);
+      window.CARTALIS_DATA.cards = next;
+      toast.push("Carte supprimée");
+    } catch (err) {
+      toast.push("Erreur : " + (err.message || "suppression impossible"));
+    }
+  };
+
   return (
     <div className="col gap-6" style={{ position: "relative" }}>
       <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 16 }}>
@@ -223,7 +263,7 @@ function MyCardsPage({ onCustomize, onShareCard, role, trialExpired, onUpgrade }
           <div style={{ textAlign: "center", padding: "60px 0", color: "var(--ink-4)", fontSize: 14 }}>Chargement…</div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: 24 }}>
-            {cards.map(c => <CardListItem key={c.id} card={c} onCustomize={onCustomize} onShare={onShareCard} role={role} />)}
+            {cards.map(c => <CardListItem key={c.id} card={c} onCustomize={onCustomize} onShare={onShareCard} onDelete={deleteCard} role={role} />)}
             <AddCardTile onClick={() => setShowAdd(true)} />
           </div>
         )}
@@ -333,11 +373,20 @@ function Field({ label, ...rest }) {
   );
 }
 
-function CardListItem({ card, onCustomize, onShare, role }) {
+function CardListItem({ card, onCustomize, onShare, onDelete, role }) {
   const toast = useToast();
   const [presenting, setPresenting] = useStateP(false);
   const [showStats, setShowStats] = useStateP(false);
+  const [confirmDel, setConfirmDel] = useStateP(false);
+  const [deleting, setDeleting] = useStateP(false);
   const isLocked = role === "collaborator" && card.type === "entreprise";
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try { await onDelete(card.id); }
+    finally { setDeleting(false); setConfirmDel(false); }
+  };
+
   return (
     <div className="card fade-up" style={{ padding: 24, display: "flex", flexDirection: "column", gap: 18 }}>
       <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -352,8 +401,20 @@ function CardListItem({ card, onCustomize, onShare, role }) {
         <div className="row gap-1">
           <button className="btn btn-ghost btn-sm" onClick={() => onCustomize(card.id)} title="Personnaliser"><Icon.Brush size={14} /></button>
           <button className="btn btn-ghost btn-sm" onClick={() => onShare(card.id)} title="Aperçu public"><Icon.QR size={14} /></button>
+          <button className="btn btn-ghost btn-sm" onClick={() => setConfirmDel(true)} title="Supprimer" style={{ color: "#c0392b" }}><Icon.X size={14} /></button>
         </div>
       </div>
+      {confirmDel && (
+        <div className="card" style={{ padding: "12px 16px", background: "#fff5f5", borderColor: "#f5c6c6", display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ fontSize: 13, fontWeight: 500 }}>Supprimer <em>{card.nom_carte}</em> ? Cette action est irréversible.</div>
+          <div className="row gap-2">
+            <button className="btn btn-sm" style={{ flex: 1, justifyContent: "center" }} onClick={() => setConfirmDel(false)} disabled={deleting}>Annuler</button>
+            <button className="btn btn-sm" style={{ flex: 1, justifyContent: "center", background: "#c0392b", color: "white", border: "none" }} onClick={handleDelete} disabled={deleting}>
+              {deleting ? "Suppression…" : "Oui, supprimer"}
+            </button>
+          </div>
+        </div>
+      )}
 
       <button
         onClick={() => setPresenting(true)}
