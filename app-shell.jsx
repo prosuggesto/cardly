@@ -208,6 +208,10 @@ function MyCardsPage({ onCustomize, onShareCard, role, trialExpired, onUpgrade }
     const tag = tags.find(t => t.id === selectedTagId);
     setCreating(true);
     try {
+      // Récupère le design immoblier-bleu pour l'écrire directement en DB
+      const defaultDesign = (window.CARTALIS_DATA?.cardDesigns || []).find(d => d.id === 'design-immoblier-bleu')
+        || window.CARTALIS_DATA?.cardDesigns?.[0] || {};
+
       const { data: newCarte, error } = await window.CardlyAPI.createCarte({
         collaborateur_id: userId,
         entreprise_id: entrepriseId,
@@ -216,6 +220,24 @@ function MyCardsPage({ onCustomize, onShareCard, role, trialExpired, onUpgrade }
         evenement_name: tag ? tag.label : null,
         evenement_uuid: tag?.evenement_uuid || null,
         statut: 'active',
+        // Positions du mockup landing (SCAN_CARD_DATA)
+        prenom_x: 57.7706770270831,    prenom_y: 19.33460308118465,
+        nom_x:    57.7706770270831,    nom_y:    19.33460308118465,
+        poste_x:  57.197057416883915,  poste_y:  31.197713989721958,
+        telephone_x: 70,               telephone_y: 60,
+        email_x:     70,               email_y:    70,
+        site_web_x: 44.57755728227542, site_web_y: 64.7528528713908,
+        // Couleurs blanches (fond sombre design-immoblier-bleu)
+        prenom_couleur:         '#ffffff',
+        nom_couleur:            '#ffffff',
+        nom_entreprise_couleur: '#ffffff',
+        poste_couleur:          '#ffffff',
+        telephone_couleur:      '#ffffff',
+        email_couleur:          '#ffffff',
+        site_web_couleur:       '#ffffff',
+        // Design par défaut
+        image_verso: defaultDesign.front || null,
+        image_recto: defaultDesign.back  || null,
       });
       if (error) throw error;
       const profile = window.CARTALIS_DATA?.profileMe;
@@ -821,7 +843,7 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
   const [aiBlocked, setAIBlocked] = useStateP(false);
   const [aiLoading, setAILoading] = useStateP(false);
   const [aiPrompt, setAIPrompt] = useStateP("");
-  const DEF_COLORS = { name: "#2a241a", entreprise: "#2a241a", poste: "#2a241a", phone: "#2a241a", email: "#2a241a", web: "#2a241a" };
+  const DEF_COLORS = { name: "#ffffff", entreprise: "#ffffff", poste: "#ffffff", phone: "#ffffff", email: "#ffffff", web: "#ffffff" };
   const DEF_SIDES  = { name: "recto",   entreprise: "recto",   poste: "recto",   phone: "recto",   email: "recto",   web: "recto" };
   const DEF_SIZES  = { name: 1,         entreprise: 1,         poste: 0.9,       phone: 0.8,       email: 0.8,       web: 0.8 };
   const DEF_FONTS  = { name: "default", entreprise: "default", poste: "default", phone: "default", email: "default", web: "default" };
@@ -830,7 +852,7 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
   const [frontImageUrl, setFrontImageUrl] = useStateP(original?.frontImageUrl || null);
   const [backImageUrl, setBackImageUrl] = useStateP(original?.backImageUrl || null);
   const [fieldColors, setFieldColors] = useStateP(original?.fieldColors || DEF_COLORS);
-  const [applyAllColor, setApplyAllColor] = useStateP((original?.fieldColors?.name) || "#2a241a");
+  const [applyAllColor, setApplyAllColor] = useStateP((original?.fieldColors?.name) || "#ffffff");
   const setFieldColor = (key, color) => setFieldColors(fc => ({ ...fc, [key]: color }));
   const [fieldSides, setFieldSides] = useStateP(original?.fieldSides || DEF_SIDES);
   const setFieldSide = (key, side) => setFieldSides(fs => ({ ...fs, [key]: side }));
