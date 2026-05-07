@@ -35,6 +35,8 @@ function App() {
   const [scanCardId, setScanCardId] = useStateApp(null);
   const setTab = (t) => { setTabRaw(t); if (t !== "customize") setCustomizeId(null); };
   const [tweaksOpen, setTweaksOpen] = useStateApp(false);
+  // sessionReady : true une fois que CARTALIS_DATA est hydraté depuis Supabase
+  const [sessionReady, setSessionReady] = useStateApp(false);
 
   useEffectApp(() => {
     const onMsg = (e) => {
@@ -47,12 +49,77 @@ function App() {
     return () => window.removeEventListener("message", onMsg);
   }, []);
 
-  // Garde de session : redirige vers login si /app sans session active
+  // Garde de session + restauration CARTALIS_DATA après refresh
   useEffectApp(() => {
-    if (path !== '/app' || !window.sb) return;
-    window.sb.auth.getSession().then(({ data: { session } }) => {
-      if (!session) navigate('/auth?mode=login');
-    });
+    if (path !== '/app' || !window.sb || !window.CardlyAPI) return;
+    setSessionReady(false);
+
+    (async () => {
+      try {
+        const { data: { session } } = await window.sb.auth.getSession();
+        if (!session) { navigate('/auth?mode=login'); return; }
+
+        const userId = session.user.id;
+
+        // Si les données sont déjà celles du bon user (ex : juste après login), on n'recharge pas
+        if (window.CARTALIS_DATA.profileMe.id === userId) { setSessionReady(true); return; }
+
+        // --- Restauration complète depuis Supabase ---
+        const { data: profile } = await window.CardlyAPI.getProfile(userId);
+
+        const { data: membership } = await window.CardlyAPI.getMyMembership(userId);
+        const entrepriseId = membership?.entreprise_id;
+
+        let entrepriseData = membership?.entreprises || null;
+        if (!entrepriseData && entrepriseId) {
+          const { data: entFallback } = await window.sb
+            .from('entreprises').select('id, nom_entreprise, code_secret, plan')
+            .eq('id', entrepriseId).single();
+          entrepriseData = entFallback;
+        }
+
+        // Profil
+        Object.assign(window.CARTALIS_DATA.profileMe, {
+          id: userId,
+          nom:       profile?.nom       || '',
+          prenom:    profile?.prenom    || '',
+          email:     profile?.email     || '',
+          telephone: profile?.telephone || '',
+          poste:     profile?.poste     || '',
+          site_web:  profile?.site_web  || '',
+          instagram: profile?.instagram || '',
+          linkedin:  profile?.linkedin  || '',
+        });
+
+        // Rôle
+        if (membership) {
+          const isAdmin = membership.role === 'owner' || membership.role === 'admin';
+          window.CARTALIS_DATA.profileMe.role = isAdmin ? 'admin' : 'collaborator';
+        }
+
+        // Entreprise
+        if (entrepriseData && entrepriseId) {
+          Object.assign(window.CARTALIS_DATA.entreprise, {
+            id:             entrepriseId,
+            nom_entreprise: entrepriseData.nom_entreprise,
+            code_secret:    entrepriseData.code_secret,
+            plan:           entrepriseData.plan || 'free',
+          });
+        }
+
+        // Cartes
+        if (entrepriseId) {
+          const { data: cartesDB } = await window.CardlyAPI.getMyCartes(userId, entrepriseId);
+          window.CARTALIS_DATA.cards = (cartesDB || []).map(c =>
+            window.CardlyAPI.mapCarteFromDB(c, profile, entrepriseData)
+          );
+        }
+      } catch (err) {
+        console.error('[Cartalis] Session restore failed:', err);
+      } finally {
+        setSessionReady(true);
+      }
+    })();
   }, [path]);
 
   // Page selection
@@ -64,7 +131,22 @@ function App() {
   } else if (path === "/card") {
     page = <PublicCardPage navigate={navigate} params={params} />;
   } else if (path === "/app") {
-    page = (
+    if (!sessionReady) {
+      page = (
+        <div style={{
+          minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
+          background: "var(--bg)", flexDirection: "column", gap: 16,
+        }}>
+          <div style={{
+            width: 44, height: 44, borderRadius: 14,
+            background: "linear-gradient(135deg, var(--gold-2), var(--gold))",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            color: "white", fontSize: 20, fontWeight: 700,
+          }}>C</div>
+          <div className="dim" style={{ fontSize: 14 }}>Chargement de votre espace…</div>
+        </div>
+      );
+    } else page = (
       <AppLayout
         navigate={navigate}
         tab={tab} setTab={setTab}
