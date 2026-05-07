@@ -220,21 +220,49 @@ function MyCardsPage({ onCustomize, onShareCard, role, trialExpired, onUpgrade }
         evenement_name: tag ? tag.label : null,
         evenement_uuid: tag?.evenement_uuid || null,
         statut: 'active',
-        // Positions du mockup landing (SCAN_CARD_DATA)
+        // ── Config identique au mockup iPhone de la landing page ──
+        // Positions (SCAN_CARD_DATA)
         prenom_x: 57.7706770270831,    prenom_y: 19.33460308118465,
         nom_x:    57.7706770270831,    nom_y:    19.33460308118465,
         poste_x:  57.197057416883915,  poste_y:  31.197713989721958,
         telephone_x: 70,               telephone_y: 60,
         email_x:     70,               email_y:    70,
         site_web_x: 44.57755728227542, site_web_y: 64.7528528713908,
-        // Couleurs blanches (fond sombre design-immoblier-bleu)
-        prenom_couleur:         '#ffffff',
-        nom_couleur:            '#ffffff',
-        nom_entreprise_couleur: '#ffffff',
-        poste_couleur:          '#ffffff',
-        telephone_couleur:      '#ffffff',
-        email_couleur:          '#ffffff',
-        site_web_couleur:       '#ffffff',
+        // Côtés : nom/poste/tel/email sur verso, entreprise/web sur recto
+        prenom_side:         'verso',
+        nom_side:            'verso',
+        nom_entreprise_side: 'recto',
+        poste_side:          'verso',
+        telephone_side:      'verso',
+        email_side:          'verso',
+        site_web_side:       'recto',
+        // Tailles (name 1.75×, entreprise 2.5×)
+        prenom_size:         175,
+        nom_size:            175,
+        nom_entreprise_size: 250,
+        poste_size:          100,
+        telephone_size:      100,
+        email_size:          100,
+        site_web_size:       100,
+        // Polices (mockup landing)
+        prenom_police:         'serif',
+        nom_police:            'serif',
+        nom_entreprise_police: 'playfair',
+        poste_police:          'Inter',
+        telephone_police:      'cinzel',
+        email_police:          'playfair',
+        site_web_police:       'Inter',
+        // Couleurs crème (#f3f0ed, même que le mockup)
+        prenom_couleur:         '#f3f0ed',
+        nom_couleur:            '#f3f0ed',
+        nom_entreprise_couleur: '#f3f0ed',
+        poste_couleur:          '#f3f0ed',
+        telephone_couleur:      '#f3f0ed',
+        email_couleur:          '#f3f0ed',
+        site_web_couleur:       '#f3f0ed',
+        // Logo sur les deux faces
+        afficher_logo_recto: true,
+        afficher_logo_verso: true,
         // Design par défaut
         image_verso: defaultDesign.front || null,
         image_recto: defaultDesign.back  || null,
@@ -843,7 +871,7 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
   const [aiBlocked, setAIBlocked] = useStateP(false);
   const [aiLoading, setAILoading] = useStateP(false);
   const [aiPrompt, setAIPrompt] = useStateP("");
-  const DEF_COLORS = { name: "#ffffff", entreprise: "#ffffff", poste: "#ffffff", phone: "#ffffff", email: "#ffffff", web: "#ffffff" };
+  const DEF_COLORS = { name: "#f3f0ed", entreprise: "#f3f0ed", poste: "#f3f0ed", phone: "#f3f0ed", email: "#f3f0ed", web: "#f3f0ed" };
   const DEF_SIDES  = { name: "recto",   entreprise: "recto",   poste: "recto",   phone: "recto",   email: "recto",   web: "recto" };
   const DEF_SIZES  = { name: 1,         entreprise: 1,         poste: 0.9,       phone: 0.8,       email: 0.8,       web: 0.8 };
   const DEF_FONTS  = { name: "default", entreprise: "default", poste: "default", phone: "default", email: "default", web: "default" };
@@ -852,7 +880,7 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
   const [frontImageUrl, setFrontImageUrl] = useStateP(original?.frontImageUrl || null);
   const [backImageUrl, setBackImageUrl] = useStateP(original?.backImageUrl || null);
   const [fieldColors, setFieldColors] = useStateP(original?.fieldColors || DEF_COLORS);
-  const [applyAllColor, setApplyAllColor] = useStateP((original?.fieldColors?.name) || "#ffffff");
+  const [applyAllColor, setApplyAllColor] = useStateP((original?.fieldColors?.name) || "#f3f0ed");
   const setFieldColor = (key, color) => setFieldColors(fc => ({ ...fc, [key]: color }));
   const [fieldSides, setFieldSides] = useStateP(original?.fieldSides || DEF_SIDES);
   const setFieldSide = (key, side) => setFieldSides(fs => ({ ...fs, [key]: side }));
