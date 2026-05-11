@@ -258,7 +258,8 @@ a { color: inherit; text-decoration: none; }
   overflow: hidden;
   background: #fdfbf3;
   box-shadow: var(--shadow-card);
-  border: 1px solid rgba(255,255,255,0.6);
+  /* pas de border : sur les designs sombres ça créait une bande blanche
+     autour de l'image. Le box-shadow suffit à détacher la carte du fond. */
 }
 .card-face-back { transform: rotateY(180deg); }
 .card-face img {
