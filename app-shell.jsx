@@ -263,6 +263,14 @@ function MyCardsPage({ onCustomize, onShareCard, role, trialExpired, onUpgrade }
         telephone_couleur:      '#f3f0ed',
         email_couleur:          '#f3f0ed',
         site_web_couleur:       '#f3f0ed',
+        // Tous les champs texte désactivés par défaut — l'utilisateur les active manuellement
+        afficher_prenom:         false,
+        afficher_nom:            false,
+        afficher_nom_entreprise: false,
+        afficher_poste:          false,
+        afficher_telephone:      false,
+        afficher_email:          false,
+        afficher_site_web:       false,
         // Logo sur les deux faces
         afficher_logo_recto: true,
         afficher_logo_verso: true,
