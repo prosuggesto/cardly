@@ -1392,10 +1392,10 @@ function DelayedPhoneAnimation({ scrollRef, scanFlipped, scanDesign }) {
                 { ic: Icon.Globe,    t: "Site web" },
               ].map(({ ic: Ic, t }, i) => (
                 <button key={i} className="btn btn-sm" style={{
-                  justifyContent: "center", fontSize: 11,
-                  whiteSpace: "nowrap", padding: "0 10px",
+                  justifyContent: "center", fontSize: 10,
+                  whiteSpace: "nowrap", padding: "0 6px", gap: 5,
                 }}>
-                  {Ic && <Ic size={16} />} {t}
+                  {Ic && <Ic size={14} />} {t}
                 </button>
               ))}
             </div>
