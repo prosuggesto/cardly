@@ -448,6 +448,13 @@ img, video, svg { max-width: 100%; height: auto; }
   min-width: 0;
   /* pas d'overflow:hidden — ça cliperait les icônes SVG */
 }
+/* Le bouton "Partager mes infos" n'a pas d'icône — on lui met la même taille
+   que les autres sur desktop, mais on réduit encore sur mobile pour qu'il
+   tienne dans sa bulle (le texte est long sans icône pour compenser). */
+.scan-share-btn { font-size: 10px; }
+@media (max-width: 700px) {
+  .scan-share-btn { font-size: 8.5px !important; }
+}
 
 /* Grille 2-col compacte pour ConversionTimeline sur mobile */
 .conversion-grid {

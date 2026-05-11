@@ -1391,8 +1391,9 @@ function DelayedPhoneAnimation({ scrollRef, scanFlipped, scanDesign }) {
                 { ic: null,          t: "Partager mes infos" },
                 { ic: Icon.Globe,    t: "Site web" },
               ].map(({ ic: Ic, t }, i) => (
-                <button key={i} className="btn btn-sm" style={{
-                  justifyContent: "center", fontSize: 10,
+                <button key={i} className={`btn btn-sm${!Ic ? " scan-share-btn" : ""}`} style={{
+                  justifyContent: "center",
+                  ...(Ic ? { fontSize: 10 } : {}),
                   whiteSpace: "nowrap", padding: "0 6px", gap: 5,
                 }}>
                   {Ic && <Ic size={14} />} {t}
