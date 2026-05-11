@@ -440,15 +440,19 @@ img, video, svg { max-width: 100%; height: auto; }
    qui force le passage en 1 colonne sur mobile. */
 .scan-action-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 6px;
+}
+.scan-action-grid .btn {
+  min-width: 0;
+  overflow: hidden;
 }
 
 /* ── Auto-scroll fluide du mockup téléphone (section "Expérience prospect") ── */
 /* On scroll juste assez pour révéler les icônes Insta/LinkedIn, pas plus. */
 @keyframes phone-mock-scroll {
   0%, 10%    { transform: translateY(0); }
-  50%, 60%   { transform: translateY(-180px); }
+  50%, 60%   { transform: translateY(-70px); }
   100%       { transform: translateY(0); }
 }
 .phone-mock-scroll {
