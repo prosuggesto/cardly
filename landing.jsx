@@ -792,9 +792,8 @@ function DashboardPreview() {
                   <tbody>
                     {collabs.map(c => {
                       const isResp = c.role_membre === "responsable" || c.role === "admin" || c.role === "manager";
-                      const totalClics = (c.total_clic_mail || 0) + (c.total_clic_instagram || 0) +
-                        (c.total_clic_linkedin || 0) + (c.total_clic_site_web || 0) +
-                        (c.total_clic_whatsapp || 0) + (c.total_clic_crm || 0);
+                      // Données dérivées des leads (cohérent avec les multiplicateurs du slide Détail par canal)
+                      const totalClics = Math.round((c.leads || 0) * 2.27);
                       return (
                         <tr key={c.id} style={{ borderTop: "1px solid var(--line)" }}>
                           <td style={{ padding: "12px 14px", whiteSpace: "nowrap" }}>
