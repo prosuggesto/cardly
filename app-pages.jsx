@@ -1234,10 +1234,9 @@ function PublicCardPage({ navigate, params }) {
   const { useEffect: useEffectPub } = React;
   useEffectPub(() => {
     if (!cardId || !window.CardlyAPI || !window.sb) return;
-    // Si la carte est déjà dans le cache (chargée via session), on l'utilise
-    const cached = window.CARTALIS_DATA.cards.find(c => c.id === cardId);
-    if (cached) { setCard(cached); return; }
-    // Sinon : fetch frais depuis la table cartes
+    // Toujours faire un fetch frais : c'est une page publique, on veut
+    // les dernières infos (notamment entreprise.website qui peut avoir
+    // été oublié dans le cache du LoginForm).
     (async () => {
       try {
         const { data: raw } = await window.CardlyAPI.getCarteByUuid(cardId);

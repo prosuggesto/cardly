@@ -474,9 +474,13 @@ function CardListItem({ card, onCustomize, onShare, onDelete, role }) {
           <div className="dim" style={{ fontSize: 12 }}>{card.type === "entreprise" ? "Carte entreprise" : "Carte personnelle"}</div>
         </div>
         <div className="row gap-1">
-          <button className="btn btn-ghost btn-sm" onClick={() => onCustomize(card.id)} title="Personnaliser"><Icon.Brush size={14} /></button>
+          {!isLocked && (
+            <button className="btn btn-ghost btn-sm" onClick={() => onCustomize(card.id)} title="Personnaliser"><Icon.Brush size={14} /></button>
+          )}
           <button className="btn btn-ghost btn-sm" onClick={() => onShare(card.id)} title="Aperçu public"><Icon.QR size={14} /></button>
-          <button className="btn btn-ghost btn-sm" onClick={() => setConfirmDel(true)} title="Supprimer" style={{ color: "#c0392b" }}><Icon.X size={14} /></button>
+          {!isLocked && (
+            <button className="btn btn-ghost btn-sm" onClick={() => setConfirmDel(true)} title="Supprimer" style={{ color: "#c0392b" }}><Icon.X size={14} /></button>
+          )}
         </div>
       </div>
       {confirmDel && (

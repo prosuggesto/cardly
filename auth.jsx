@@ -246,6 +246,7 @@ function AdminForm({ onSubmit, onBack }) {
         window.CARTALIS_DATA.entreprise.nom_entreprise = ent.nom_entreprise || form.entreprise;
         window.CARTALIS_DATA.entreprise.code_secret    = ent.code_secret;
         window.CARTALIS_DATA.entreprise.plan           = ent.plan || 'free';
+        window.CARTALIS_DATA.entreprise.website        = ent.website || form.web || '';
         window.CARTALIS_DATA.cards = [];
       }
 
@@ -335,6 +336,7 @@ function CollabForm({ onSubmit, onBack }) {
         window.CARTALIS_DATA.entreprise.id             = ent.id;
         window.CARTALIS_DATA.entreprise.nom_entreprise = ent.nom_entreprise;
         window.CARTALIS_DATA.entreprise.plan           = ent.plan || 'free';
+        window.CARTALIS_DATA.entreprise.website        = ent.website || '';
         window.CARTALIS_DATA.cards = [];
       }
 
@@ -405,7 +407,7 @@ function LoginForm({ onSubmit }) {
       let entrepriseData = membership?.entreprises || null;
       if (!entrepriseData && entrepriseId) {
         const { data: entFallback } = await window.sb.from('entreprises')
-          .select('id, nom_entreprise, code_secret, plan')
+          .select('id, nom_entreprise, code_secret, plan, website')
           .eq('id', entrepriseId)
           .single();
         entrepriseData = entFallback;
@@ -438,6 +440,7 @@ function LoginForm({ onSubmit }) {
           nom_entreprise: entrepriseData.nom_entreprise,
           code_secret: entrepriseData.code_secret,
           plan: entrepriseData.plan || 'free',
+          website: entrepriseData.website || '',
         });
       }
 

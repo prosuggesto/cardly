@@ -38,7 +38,7 @@
       },
       async getEntrepriseByCode(code) {
         return window.sb.from('entreprises')
-          .select('id, nom_entreprise, plan, statut, code_secret')
+          .select('id, nom_entreprise, plan, statut, code_secret, website')
           .eq('code_secret', code.toUpperCase().trim())
           .single();
       },
