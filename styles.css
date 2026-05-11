@@ -424,41 +424,30 @@ img, video, svg { max-width: 100%; height: auto; }
     gap: 4px !important;
   }
   .floating-badge svg { width: 10px !important; height: 10px !important; }
+  /* Forcer toutes les positions left/right négatives à 0 pour rester dans le viewport */
+  .floating-badge[style*="left: -"] { left: 0 !important; }
+  .floating-badge[style*="right: -"] { right: 0 !important; }
+}
+@media (max-width: 420px) {
+  .floating-badge {
+    font-size: 9px !important;
+    padding: 4px 7px !important;
+  }
 }
 
 /* ── Mockups landing : rétrécir l'ensemble (contenu + frame) sur mobile ── */
-/* On utilise transform: scale() + transform-origin: top center + une marge
-   négative pour compenser l'espace résiduel (scale ne réduit pas la box). */
+/* On utilise `zoom` qui (contrairement à transform: scale) réduit aussi
+   la box layout — donc pas de chevauchement avec la section suivante. */
 @media (max-width: 900px) {
-  .browser-mockup-wrap {
-    transform: scale(0.75);
-    transform-origin: top center;
-    margin-bottom: -180px;
-  }
+  .browser-mockup-wrap { zoom: 0.7; }
 }
 @media (max-width: 600px) {
-  /* iPhone mockup : 290px de large + bordures ≈ 310px. À 60% ça tient. */
-  .phone-mockup-wrap {
-    transform: scale(0.7);
-    transform-origin: top center;
-    margin-bottom: -200px;
-  }
-  /* Browser mockup : on descend à 0.5 */
-  .browser-mockup-wrap {
-    transform: scale(0.5);
-    transform-origin: top center;
-    margin-bottom: -280px;
-  }
+  .phone-mockup-wrap   { zoom: 0.75; }
+  .browser-mockup-wrap { zoom: 0.5; }
 }
 @media (max-width: 420px) {
-  .phone-mockup-wrap {
-    transform: scale(0.6);
-    margin-bottom: -240px;
-  }
-  .browser-mockup-wrap {
-    transform: scale(0.42);
-    margin-bottom: -320px;
-  }
+  .phone-mockup-wrap   { zoom: 0.6; }
+  .browser-mockup-wrap { zoom: 0.4; }
 }
 
 /* ── Helpers d'affichage (déjà utilisés dans le JSX) ───────────────────── */
@@ -516,8 +505,9 @@ img, video, svg { max-width: 100%; height: auto; }
     grid-template-columns: 1fr 1fr !important;
   }
 
-  /* Rows pleins → wrap autorisé */
-  .row { flex-wrap: wrap; }
+  /* Permet aux .col à l'intérieur d'un .row de shrinker proprement
+     (sans ça, le contenu pousse la colonne au-delà du parent et tout passe à la ligne) */
+  .col { min-width: 0; }
 
   /* Headings serif géants */
   h1.serif, h2.serif { letter-spacing: -0.015em; }
