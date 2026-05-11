@@ -1364,7 +1364,7 @@ function DelayedPhoneAnimation({ scrollRef, scanFlipped, scanDesign }) {
             </button>
 
             {/* boutons secondaires */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+            <div className="scan-action-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
               {[
                 { ic: Icon.WhatsApp, t: "WhatsApp" },
                 { ic: Icon.Mail,     t: "Email" },

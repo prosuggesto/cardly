@@ -649,8 +649,8 @@ img, video, svg { max-width: 100%; height: auto; }
   .h-scroll { gap: 14px; }
   [class*="grid"] { gap: 16px; }
 
-  /* 2 cols larges → 1 col sur mobile */
-  [style*="grid-template-columns: 1fr 1fr"]:not([style*="1fr 1fr 1fr"]) {
+  /* 2 cols larges → 1 col sur mobile (sauf grids internes de mockup) */
+  [style*="grid-template-columns: 1fr 1fr"]:not([style*="1fr 1fr 1fr"]):not(.scan-action-grid) {
     grid-template-columns: 1fr !important;
   }
   /* 3 cols inline (boutons larges) → 1 col sur mobile */
