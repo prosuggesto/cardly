@@ -221,13 +221,16 @@ function MyCardsPage({ onCustomize, onShareCard, role, trialExpired, onUpgrade }
         evenement_uuid: tag?.evenement_uuid || null,
         statut: 'active',
         // ── Config identique au mockup iPhone de la landing page ──
-        // Positions (SCAN_CARD_DATA)
-        prenom_x: 57.7706770270831,    prenom_y: 19.33460308118465,
-        nom_x:    57.7706770270831,    nom_y:    19.33460308118465,
-        poste_x:  57.197057416883915,  poste_y:  31.197713989721958,
-        telephone_x: 70,               telephone_y: 60,
-        email_x:     70,               email_y:    70,
-        site_web_x: 44.57755728227542, site_web_y: 64.7528528713908,
+        // Positions exactes (SCAN_CARD_DATA)
+        prenom_x:         57.7706770270831,   prenom_y:         19.33460308118465,
+        nom_x:            57.7706770270831,   nom_y:            19.33460308118465,
+        nom_entreprise_x: 47.063215515592084, nom_entreprise_y: 50.7604620755852,
+        poste_x:          57.197057416883915, poste_y:          31.197713989721958,
+        telephone_x:      70,                 telephone_y:      60,
+        email_x:          70,                 email_y:          70,
+        site_web_x:       44.57755728227542,  site_web_y:       64.7528528713908,
+        logo_recto_x:     46.10719255709519,  logo_recto_y:     29.372629375965424,
+        logo_verso_x:     23.162641553169696, logo_verso_y:     21.463871364811073,
         // Côtés : nom/poste/tel/email sur verso, entreprise/web sur recto
         prenom_side:         'verso',
         nom_side:            'verso',
