@@ -1114,19 +1114,27 @@ function ScanPreviewSection() {
     return () => clearInterval(t);
   }, []);
 
-  // Auto-scroll fluide haut ↔ bas pour révéler les icônes sociales
+  // Auto-scroll fluide haut ↔ bas pour révéler les icônes sociales.
+  // IMPORTANT : sur mobile, scrollTop est arrondi à l'entier, donc on accumule
+  // la position fractionnaire dans une variable séparée puis on assigne floor.
   useEffectL(() => {
     let dir = 1;
     let raf;
     let last = 0;
+    let acc = 0;            // position fractionnaire accumulée
+    const SPEED = 0.8;      // px par frame logique
     const step = (ts) => {
       if (ts - last > 20) { // ~50 fps max
         last = ts;
         if (scrollRef.current) {
           const el = scrollRef.current;
-          el.scrollTop += dir * 0.8;
-          if (el.scrollTop >= el.scrollHeight - el.clientHeight - 2) dir = -1;
-          else if (el.scrollTop <= 0) dir = 1;
+          const max = el.scrollHeight - el.clientHeight;
+          if (max > 0) {
+            acc += dir * SPEED;
+            if (acc >= max - 2) { acc = max; dir = -1; }
+            else if (acc <= 0) { acc = 0; dir = 1; }
+            el.scrollTop = Math.round(acc);
+          }
         }
       }
       raf = requestAnimationFrame(step);
