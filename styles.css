@@ -448,6 +448,13 @@ img, video, svg { max-width: 100%; height: auto; }
   min-width: 0;
   /* pas d'overflow:hidden — ça cliperait les icônes SVG */
 }
+/* Sur mobile : colonne gauche élargie pour faire tenir "Partager mes infos"
+   tranquillement, tout en gardant "Site web" complet à droite. */
+@media (max-width: 700px) {
+  .scan-action-grid {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  }
+}
 
 /* Grille 2-col compacte pour ConversionTimeline sur mobile */
 .conversion-grid {
