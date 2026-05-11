@@ -1004,17 +1004,35 @@ function FeedbackPage() {
     setSent(true);
     setSending(true);
     // Persister le message utilisateur en DB (RLS : sender='user' obligatoire)
-    if (me.id && window.CardlyAPI) {
-      try {
-        await window.CardlyAPI.sendMessage(me.id, {
-          message: txt,
-          categorie: category || 'idea',
-          mail: contactEmail,
-          telephone: contactPhone,
-        });
-      } catch (err) {
-        console.error('[Cardly] sendMessage failed:', err);
+    // On récupère l'auth.uid() en direct plutôt que de se fier au cache profileMe,
+    // au cas où la session aurait été restaurée mais pas le cache local.
+    try {
+      let uid = me.id;
+      if (window.sb) {
+        const { data: { user } } = await window.sb.auth.getUser();
+        if (user?.id) uid = user.id;
       }
+      if (!uid) throw new Error('Utilisateur non authentifié.');
+      if (!window.CardlyAPI) throw new Error('Service indisponible.');
+
+      const { data, error } = await window.CardlyAPI.sendMessage(uid, {
+        message: txt,
+        categorie: category || 'idea',
+        mail: contactEmail,
+        telephone: contactPhone,
+      });
+      if (error) {
+        console.error('[Cardly] sendMessage RLS/DB error:', error);
+        setMessages(m => [...m, { from: "cardly", text: "⚠️ Impossible d'enregistrer votre message (" + (error.message || error.code || 'erreur inconnue') + "). Réessayez plus tard." }]);
+        setSending(false);
+        return;
+      }
+      console.log('[Cardly] message saved:', data);
+    } catch (err) {
+      console.error('[Cardly] sendMessage threw:', err);
+      setMessages(m => [...m, { from: "cardly", text: "⚠️ " + (err.message || 'Erreur réseau.') }]);
+      setSending(false);
+      return;
     }
     setSending(false);
     setTimeout(() => {
