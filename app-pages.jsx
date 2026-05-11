@@ -593,6 +593,7 @@ function SecretCodePage({ role, plan, onUpgrade }) {
   // manageModal steps: null | "choice" | "cancel-confirm" | "cancel-reason" | "cancel-done"
   const [manageStep, setManageStep] = useStateD(null);
   const [cancelReason, setCancelReason] = useStateD(null);
+  const [saving, setSaving] = useStateD(false);
   const toast = useToast();
 
   const meInit = window.CARTALIS_DATA.profileMe;
@@ -612,6 +613,61 @@ function SecretCodePage({ role, plan, onUpgrade }) {
   const [langue, setLangue] = useStateD("fr");
 
   const canManage = role === "admin" || role === "manager";
+
+  // Sauvegarde réelle : profil → table profiles ; nom_entreprise (admin) → table entreprises
+  const saveProfile = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      let uid = meInit.id;
+      if (window.sb) {
+        const { data: { user } } = await window.sb.auth.getUser();
+        if (user?.id) uid = user.id;
+      }
+      if (!uid) throw new Error('Utilisateur non authentifié.');
+      if (!window.CardlyAPI) throw new Error('Service indisponible.');
+
+      // 1) Mise à jour du profil
+      const { error: pErr } = await window.CardlyAPI.upsertProfile(uid, {
+        prenom:    profile.prenom    || null,
+        nom:       profile.nom       || null,
+        email:     profile.email     || null,
+        telephone: profile.telephone || null,
+        poste:     profile.poste     || null,
+        site_web:  profile.site_web  || null,
+        instagram: profile.instagram || null,
+        linkedin:  profile.linkedin  || null,
+        nom_entreprise: profile.nom_entreprise || null,
+      });
+      if (pErr) throw pErr;
+
+      // 2) Mise à jour du nom d'entreprise (admin uniquement)
+      if (canManage && entInit.id && profile.nom_entreprise && profile.nom_entreprise !== entInit.nom_entreprise) {
+        const { error: eErr } = await window.sb.from('entreprises')
+          .update({ nom_entreprise: profile.nom_entreprise })
+          .eq('id', entInit.id);
+        if (eErr) throw eErr;
+        window.CARTALIS_DATA.entreprise.nom_entreprise = profile.nom_entreprise;
+      }
+
+      // 3) Mise à jour du cache local
+      Object.assign(window.CARTALIS_DATA.profileMe, {
+        prenom:    profile.prenom,
+        nom:       profile.nom,
+        email:     profile.email,
+        telephone: profile.telephone,
+        poste:     profile.poste,
+        site_web:  profile.site_web,
+        instagram: profile.instagram,
+        linkedin:  profile.linkedin,
+      });
+
+      toast.push("Informations mises à jour");
+    } catch (err) {
+      console.error('[Cardly] saveProfile failed:', err);
+      toast.push("Erreur : " + (err.message || "impossible d'enregistrer"));
+    } finally { setSaving(false); }
+  };
 
   const regen = () => {
     const seg = () => Math.random().toString(36).slice(2, 6).toUpperCase();
@@ -689,7 +745,7 @@ function SecretCodePage({ role, plan, onUpgrade }) {
           {/* Profile fields */}
           <div className="card" style={{ padding: 24 }}>
             <div className="serif" style={{ fontSize: 17, marginBottom: 18 }}>Informations personnelles</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <div className="field-grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
               {profileFields.map(({ k, label }) => (
                 <div key={k} className="field" style={{ margin: 0 }}>
                   <label style={{ fontSize: 11, fontWeight: 500, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 5 }}>{label}</label>
@@ -704,7 +760,9 @@ function SecretCodePage({ role, plan, onUpgrade }) {
             </div>
 
             <div style={{ marginTop: 18, display: "flex", justifyContent: "flex-end" }}>
-              <button className="btn btn-primary btn-sm" onClick={() => toast.push("Informations mises à jour")}><Icon.Check size={13} /> Enregistrer</button>
+              <button className="btn btn-primary btn-sm" onClick={saveProfile} disabled={saving}>
+                <Icon.Check size={13} /> {saving ? "Enregistrement…" : "Enregistrer"}
+              </button>
             </div>
           </div>
 
@@ -1290,6 +1348,7 @@ window.SubscriptionPage = SubscriptionPage;
 // ---------- Public scanned card page ----------
 function PublicCardPage({ navigate, params }) {
   const cardId = params.get("id") || "";
+  const nfcUuid = params.get("nfc") || "";
   const inactive = params.get("inactive") === "1";
   const toast = useToast();
   const [savedCount, setSavedCount] = useStateD(0);
@@ -1297,19 +1356,31 @@ function PublicCardPage({ navigate, params }) {
   const [crmModalOpen, setCrmModalOpen] = useStateD(false);
   // État : on tente d'abord le cache local, puis un fetch frais depuis la DB
   const [card, setCard] = useStateD(() =>
-    window.CARTALIS_DATA.cards.find(c => c.id === cardId) || null
+    cardId ? (window.CARTALIS_DATA.cards.find(c => c.id === cardId) || null) : null
   );
   const ent = window.CARTALIS_DATA.entreprise;
 
   const { useEffect: useEffectPub } = React;
   useEffectPub(() => {
-    if (!cardId || !window.CardlyAPI || !window.sb) return;
+    if (!window.CardlyAPI || !window.sb) return;
+    if (!cardId && !nfcUuid) return;
     // Toujours faire un fetch frais : c'est une page publique, on veut
     // les dernières infos (notamment entreprise.website qui peut avoir
     // été oublié dans le cache du LoginForm).
     (async () => {
       try {
-        const { data: raw } = await window.CardlyAPI.getCarteByUuid(cardId);
+        // Si on a un nfc_uuid : on le résout d'abord en carte_uuid via la fonction publique.
+        let effectiveCardId = cardId;
+        if (!effectiveCardId && nfcUuid) {
+          const { data: resolved, error: resErr } = await window.CardlyAPI.resolveNFC(nfcUuid);
+          if (resErr || !resolved) {
+            console.error('[Cardly] resolveNFC failed:', resErr);
+            return;
+          }
+          effectiveCardId = resolved;
+        }
+        if (!effectiveCardId) return;
+        const { data: raw } = await window.CardlyAPI.getCarteByUuid(effectiveCardId);
         if (!raw) return;
         // Charger le profil du propriétaire de la carte
         const { data: profile } = raw.collaborateur_id
@@ -1331,7 +1402,7 @@ function PublicCardPage({ navigate, params }) {
         console.error('[Cardly] PublicCardPage fetch failed:', err);
       }
     })();
-  }, [cardId]);
+  }, [cardId, nfcUuid]);
 
   if (!card) {
     return (
@@ -1441,17 +1512,166 @@ function ContactRow({ icon, label }) {
 }
 window.PublicCardPage = PublicCardPage;
 
+// ---------- Card picker (dropdown stylé liquid-glass) ----------
+function CardPicker({ value, onChange, options, placeholder = "Sélectionner…" }) {
+  const [open, setOpen] = useStateD(false);
+  const ref = React.useRef(null);
+  const current = options.find(o => o.value === value);
+
+  React.useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const glassBase = {
+    background: "rgba(255,255,255,0.55)",
+    backdropFilter: "blur(20px) saturate(180%)",
+    WebkitBackdropFilter: "blur(20px) saturate(180%)",
+    border: "1px solid rgba(255,255,255,0.65)",
+    boxShadow: "0 4px 24px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.8)",
+  };
+
+  return (
+    <div ref={ref} style={{ position: "relative", display: "inline-block", width: "100%", maxWidth: 360 }}>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        style={{
+          ...glassBase,
+          display: "inline-flex", alignItems: "center", gap: 9,
+          padding: "11px 16px", width: "100%",
+          borderRadius: 14, cursor: "pointer",
+          fontSize: 14, fontWeight: 500, color: "var(--ink)",
+        }}
+      >
+        <span style={{ flex: 1, textAlign: "left", color: current ? "var(--ink)" : "var(--ink-3)" }}>
+          {current ? current.label : placeholder}
+        </span>
+        <svg
+          width={13} height={13} viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
+          style={{ opacity: 0.5, transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 200ms" }}
+        >
+          <path d="M6 9l6 6 6-6"/>
+        </svg>
+      </button>
+      {open && (
+        <div style={{
+          ...glassBase,
+          position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0,
+          borderRadius: 16, overflow: "hidden",
+          zIndex: 100, maxHeight: 280, overflowY: "auto",
+          animation: "fade-up 150ms ease both",
+        }}>
+          {options.length === 0 ? (
+            <div style={{ padding: "12px 16px", fontSize: 13, color: "var(--ink-3)" }}>Aucune carte disponible</div>
+          ) : options.map((opt, i) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => { onChange(opt.value); setOpen(false); }}
+              style={{
+                display: "flex", alignItems: "center", gap: 10,
+                width: "100%", padding: "11px 16px",
+                background: value === opt.value ? "rgba(0,0,0,0.07)" : "transparent",
+                border: "none",
+                borderTop: i > 0 ? "1px solid rgba(255,255,255,0.55)" : "none",
+                cursor: "pointer",
+                fontSize: 13.5, fontWeight: value === opt.value ? 600 : 400,
+                color: "var(--ink)", textAlign: "left",
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.05)"}
+              onMouseLeave={e => e.currentTarget.style.background = value === opt.value ? "rgba(0,0,0,0.07)" : "transparent"}
+            >
+              <span style={{ flex: 1 }}>{opt.label}</span>
+              {value === opt.value && (
+                <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 6L9 17l-5-5"/>
+                </svg>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ---------- Support NFC ----------
 function NFCSupportPage() {
-  const { useState: useStateN } = React;
+  const { useState: useStateN, useEffect: useEffectN } = React;
   const [copied, setCopied] = useStateN(false);
-  const [selectedCard, setSelectedCard] = useStateN("card-001");
   const [showRegenerateConfirm, setShowRegenerateConfirm] = useStateN(false);
+  const [nfcRow, setNfcRow] = useStateN(null);    // ligne nfc_cards en DB
+  const [loading, setLoading] = useStateN(true);
+  const [linking, setLinking] = useStateN(false);
   const toast = useToast();
   const cards = window.CARTALIS_DATA.cards;
-  const nfcLink = "https://cartalis.fr/nfc/8a7f9d-exemple";
+  const me = window.CARTALIS_DATA.profileMe;
+  const ent = window.CARTALIS_DATA.entreprise;
+
+  // Construit le lien NFC depuis l'origine actuelle (Vercel) + nfc_uuid
+  const nfcLink = nfcRow?.nfc_uuid
+    ? `${window.location.origin}${window.location.pathname}#/card?nfc=${nfcRow.nfc_uuid}`
+    : "";
+  const selectedCard = nfcRow?.carte_uuid || (cards[0] && cards[0].id) || "";
+
+  // Au montage : récupère / crée la ligne nfc_cards de l'utilisateur
+  useEffectN(() => {
+    if (!window.CardlyAPI || !me.id || !ent.id) { setLoading(false); return; }
+    (async () => {
+      try {
+        const { data } = await window.CardlyAPI.getNFCCards(me.id, ent.id);
+        let row = (data && data[0]) || null;
+        if (!row) {
+          // Pas encore de NFC pour ce user → on en crée une, liée à la première carte si dispo
+          const firstCarte = cards[0]?.id || null;
+          const { data: created, error: cErr } = await window.CardlyAPI.createNFCCard(me.id, ent.id, firstCarte);
+          if (cErr) { console.error('[Cardly] createNFCCard failed:', cErr); }
+          else row = created;
+        }
+        setNfcRow(row);
+      } catch (err) {
+        console.error('[Cardly] NFC fetch failed:', err);
+      } finally { setLoading(false); }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const setSelectedCard = async (carteUuid) => {
+    if (!nfcRow?.id || linking) return;
+    setLinking(true);
+    const prev = nfcRow;
+    setNfcRow({ ...prev, carte_uuid: carteUuid });
+    try {
+      const { error } = await window.CardlyAPI.linkNFCCard(nfcRow.id, carteUuid);
+      if (error) throw error;
+      toast.push("Carte associée mise à jour");
+    } catch (err) {
+      console.error('[Cardly] linkNFCCard failed:', err);
+      setNfcRow(prev);
+      toast.push("Erreur : " + (err.message || "impossible d'associer la carte"));
+    } finally { setLinking(false); }
+  };
+
+  const regenerate = async () => {
+    if (!nfcRow?.id) return;
+    try {
+      const { data, error } = await window.CardlyAPI.regenerateNFCCard(nfcRow.id);
+      if (error) throw error;
+      setNfcRow(data);
+      setShowRegenerateConfirm(false);
+      toast.push("Lien régénéré");
+    } catch (err) {
+      console.error('[Cardly] regenerateNFCCard failed:', err);
+      toast.push("Erreur : " + (err.message || "impossible de régénérer"));
+    }
+  };
 
   const copyLink = () => {
+    if (!nfcLink) return;
+    navigator.clipboard?.writeText(nfcLink);
     setCopied(true);
     toast.push("Lien NFC copié", { icon: <Icon.Copy size={14} /> });
     setTimeout(() => setCopied(false), 2000);
@@ -1508,23 +1728,23 @@ function NFCSupportPage() {
             fontFamily: "var(--font-mono, monospace)", fontSize: 13,
             color: "var(--ink-2)", wordBreak: "break-all",
           }}>
-            {nfcLink}
+            {loading ? "Chargement…" : (nfcLink || "—")}
           </div>
           <div className="row gap-2" style={{ flexWrap: "wrap" }}>
-            <button className="btn btn-primary btn-sm row gap-2" onClick={copyLink}>
+            <button className="btn btn-primary btn-sm row gap-2" onClick={copyLink} disabled={!nfcLink}>
               <Icon.Copy size={13} /> {copied ? "Copié !" : "Copier le lien"}
             </button>
-            <button className="btn btn-sm row gap-2" onClick={() => toast.push("Ouverture du lien…")}>
+            <button className="btn btn-sm row gap-2" disabled={!nfcLink} onClick={() => { if (nfcLink) window.open(nfcLink, "_blank"); }}>
               <Icon.ArrowRight size={13} /> Ouvrir le lien
             </button>
             {!showRegenerateConfirm ? (
-              <button className="btn btn-ghost btn-sm row gap-2" style={{ marginLeft: "auto", color: "var(--ink-3)", fontSize: 12 }} onClick={() => setShowRegenerateConfirm(true)}>
+              <button className="btn btn-ghost btn-sm row gap-2" style={{ marginLeft: "auto", color: "var(--ink-3)", fontSize: 12 }} onClick={() => setShowRegenerateConfirm(true)} disabled={!nfcRow}>
                 <Icon.Refresh size={12} /> Régénérer
               </button>
             ) : (
               <div className="row gap-2" style={{ marginLeft: "auto", alignItems: "center" }}>
                 <span style={{ fontSize: 12, color: "var(--ink-3)" }}>L'ancien lien ne fonctionnera plus.</span>
-                <button className="btn btn-sm" style={{ fontSize: 12, background: "#c0392b", color: "white", border: "none" }} onClick={() => { setShowRegenerateConfirm(false); toast.push("Lien régénéré"); }}>Confirmer</button>
+                <button className="btn btn-sm" style={{ fontSize: 12, background: "#c0392b", color: "white", border: "none" }} onClick={regenerate}>Confirmer</button>
                 <button className="btn btn-ghost btn-sm" style={{ fontSize: 12 }} onClick={() => setShowRegenerateConfirm(false)}>Annuler</button>
               </div>
             )}
@@ -1537,16 +1757,12 @@ function NFCSupportPage() {
         <div className="col gap-4">
           <div className="serif" style={{ fontSize: 17 }}>Carte affichée lors du scan NFC</div>
           <div className="col gap-2">
-            <select
-              className="input"
+            <CardPicker
               value={selectedCard}
-              onChange={(e) => { setSelectedCard(e.target.value); toast.push("Carte associée mise à jour"); }}
-              style={{ padding: "10px 14px", fontSize: 14, maxWidth: 360 }}
-            >
-              {cards.map(c => (
-                <option key={c.id} value={c.id}>{c.nom_carte || `Carte ${c.id}`}</option>
-              ))}
-            </select>
+              onChange={setSelectedCard}
+              placeholder="Sélectionnez une carte"
+              options={cards.map(c => ({ value: c.id, label: c.nom_carte || `Carte ${c.id}` }))}
+            />
             <div className="dim" style={{ fontSize: 13 }}>
               Vous pouvez changer cette carte à tout moment sans reprogrammer votre support NFC.
             </div>

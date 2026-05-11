@@ -219,9 +219,24 @@
           .select('*, cartes(card_name, carte_uuid, statut)')
           .eq('user_id', userId).eq('entreprise_id', entrepriseId);
       },
+      async createNFCCard(userId, entrepriseId, carteUuid) {
+        return window.sb.from('nfc_cards')
+          .insert({ user_id: userId, entreprise_id: entrepriseId, carte_uuid: carteUuid || null })
+          .select().single();
+      },
       async linkNFCCard(nfcId, carteUuid) {
         return window.sb.from('nfc_cards')
           .update({ carte_uuid: carteUuid }).eq('id', nfcId).select().single();
+      },
+      async regenerateNFCCard(nfcId) {
+        // Force la régénération du nfc_uuid via un update sur lui-même.
+        return window.sb.from('nfc_cards')
+          .update({ nfc_uuid: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : null })
+          .eq('id', nfcId).select().single();
+      },
+      // Résout un nfc_uuid en carte_uuid via la fonction publique resolve_nfc (SECURITY DEFINER).
+      async resolveNFC(nfcUuid) {
+        return window.sb.rpc('resolve_nfc', { p_nfc_uuid: nfcUuid });
       },
 
       // ── Edge Functions ───────────────────────────────────────────────────
@@ -269,9 +284,9 @@
           poste_affiche:      profile?.poste          || '',
           telephone_affiche:  profile?.telephone      || '',
           email_affiche:      profile?.email          || '',
-          // Pour les cartes entreprise : le site web est imposé par l'entreprise (géré par le chef).
-          // Pour les cartes personnelles : site web personnel du collaborateur.
-          site_web:           (c.type_card === 'entreprise' ? (entreprise?.website || profile?.site_web) : profile?.site_web) || '',
+          // Site web : TOUJOURS celui de l'entreprise (pour carte perso comme entreprise).
+          // Le profil personnel ne sert plus pour le site web affiché sur la carte.
+          site_web:           entreprise?.website || '',
           afficher_nom:        c.afficher_nom            ?? false,
           afficher_prenom:     c.afficher_prenom         ?? false,
           afficher_entreprise: c.afficher_nom_entreprise ?? false,
