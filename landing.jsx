@@ -1388,11 +1388,17 @@ function DelayedPhoneAnimation({ scrollRef, scanFlipped, scanDesign }) {
               {[
                 { ic: Icon.WhatsApp, t: "WhatsApp" },
                 { ic: Icon.Mail,     t: "Email" },
-                { ic: Icon.User,     t: "Partager" },
+                { ic: null,          t: "Partager mes infos" },
                 { ic: Icon.Globe,    t: "Site web" },
               ].map(({ ic: Ic, t }, i) => (
-                <button key={i} className="btn btn-sm" style={{ justifyContent: "center", fontSize: 11 }}>
-                  <Ic size={13} /> {t}
+                <button key={i} className="btn btn-sm" style={{
+                  justifyContent: "center", fontSize: 11,
+                  whiteSpace: Ic ? "nowrap" : "normal",
+                  textAlign: "center", lineHeight: 1.25,
+                  height: Ic ? undefined : "auto",
+                  minHeight: 36, padding: "6px 10px",
+                }}>
+                  {Ic && <Ic size={16} />} {t}
                 </button>
               ))}
             </div>
