@@ -69,74 +69,8 @@ window.CARTALIS_DATA = (function() {
     { id: "design-costume",            label: "Costume",            front: "https://wkwchmcmdazcrlxcofmo.supabase.co/storage/v1/object/public/card-designs/design-costume-front.webp",            back: "https://wkwchmcmdazcrlxcofmo.supabase.co/storage/v1/object/public/card-designs/design-costume-back.webp",            ink: "#f1deb6", tag: "Élégant" },
   ];
 
-  // Current cards owned by current user
-  const cards = [
-    {
-      id: "card-001",
-      type: "enterprise",
-      nom_carte: "Carte entreprise — Cartalis",
-      design: "design-style-chinois",
-      // displayed fields
-      nom_affiche: "Lamperim",
-      prenom_affiche: "Diego",
-      entreprise_affiche: "Cartalis",
-      poste_affiche: "Directeur commercial",
-      telephone_affiche: "07 67 56 92 24",
-      email_affiche: "contact.cartalis@gmail.com",
-      site_web: "cartalis.fr",
-      // visibility
-      afficher_nom: true,
-      afficher_prenom: true,
-      afficher_entreprise: true,
-      afficher_poste: true,
-      afficher_telephone: true,
-      afficher_email: true,
-      afficher_site_web: true,
-      // positions (% on back face)
-      positions: {
-        name:       { x: 70, y: 26 },
-        entreprise: { x: 70, y: 36 },
-        poste:      { x: 70, y: 46 },
-        phone:      { x: 70, y: 60 },
-        email:      { x: 70, y: 70 },
-        web:        { x: 70, y: 80 },
-      },
-      is_default: true,
-      event: null,
-      statut: "active",
-    },
-    {
-      id: "card-002",
-      type: "personal",
-      nom_carte: "Ma carte minimal",
-      design: "design-serisier",
-      nom_affiche: "Lamperim",
-      prenom_affiche: "Diego",
-      entreprise_affiche: "Cartalis",
-      poste_affiche: "Directeur commercial",
-      telephone_affiche: "07 67 56 92 24",
-      email_affiche: "diego@cartalis.fr",
-      site_web: "cartalis.fr",
-      afficher_nom: true,
-      afficher_prenom: true,
-      afficher_entreprise: false,
-      afficher_poste: true,
-      afficher_telephone: true,
-      afficher_email: true,
-      afficher_site_web: true,
-      positions: {
-        name:       { x: 50, y: 28 },
-        entreprise: { x: 50, y: 38 },
-        poste:      { x: 50, y: 48 },
-        phone:      { x: 50, y: 62 },
-        email:      { x: 50, y: 72 },
-        web:        { x: 50, y: 82 },
-      },
-      is_default: false,
-      event: "Salon Immobilier 2026",
-      statut: "active",
-    },
-  ];
+  // Cards chargées depuis Supabase — tableau vide à l'init, hydraté par auth.jsx / app.jsx
+  const cards = [];
 
   const crmContacts = [
     { id: "c-001", nom: "Dupont",    prenom: "Marie",    email: "marie.dupont@nexity.fr",      tel: "06 11 22 33 44", entreprise: "Nexity",        membre_id: "u-002", membre: "Emma Laurent",   date: "28/04/2026", event: "Salon Immobilier 2026" },
