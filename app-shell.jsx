@@ -11,7 +11,7 @@ function AppLayout({ navigate, params, children, tab, setTab, role, plan, trialE
     { id: "dashboard", label: "Dashboard", icon: <Icon.Chart size={16} /> },
     { id: "crm", label: "CRM", icon: <Icon.Database size={16} /> },
     { id: "secret", label: "Mon compte", icon: <Icon.User size={16} /> },
-    { id: "feedback", label: "Vos idées", icon: <Icon.Sparkle size={16} /> },
+    { id: "feedback", label: "Idée ou problème", icon: <Icon.Sparkle size={16} /> },
     { id: "nfc", label: "Support NFC", icon: <Icon.Nfc size={16} /> },
     { id: "subscription", label: "Abonnement", icon: <Icon.Crown size={16} /> },
   ];
@@ -135,72 +135,199 @@ window.AppLayout = AppLayout;
 
 // ---------- Mes cartes ----------
 function MyCardsPage({ onCustomize, onShareCard, role, trialExpired, onUpgrade }) {
-  const [cards, setCards] = useStateP(window.CARTALIS_DATA.cards);
+  const [cards, setCards] = useStateP([]);
+  const [loadingCards, setLoadingCards] = useStateP(true);
   const [showAdd, setShowAdd] = useStateP(false);
+  const [creating, setCreating] = useStateP(false);
   const [newName, setNewName] = useStateP("");
-  const [newType, setNewType] = useStateP("personal"); // 'personal' | 'enterprise'
-  const [tags, setTags] = useStateP([
-    { id: "tg-1", label: "Salon Immobilier 2026" },
-    { id: "tg-2", label: "Réseau MEDEF" },
-    { id: "tg-3", label: "Portes ouvertes" },
-  ]);
+  const [newType, setNewType] = useStateP("personnel"); // 'personnel' | 'entreprise'
+  const [tags, setTags] = useStateP([]);
   const [selectedTagId, setSelectedTagId] = useStateP(null);
   const [newTagInput, setNewTagInput] = useStateP("");
   const toast = useToast();
 
   const isAdmin = role === "admin" || role === "manager";
 
-  const createTag = () => {
+  // Chargement réel depuis Supabase à chaque montage
+  useEffectP(() => {
+    const userId = window.CARTALIS_DATA?.profileMe?.id;
+    const entrepriseId = window.CARTALIS_DATA?.entreprise?.id;
+    if (!window.CardlyAPI || !userId || !entrepriseId) { setLoadingCards(false); return; }
+    window.CardlyAPI.getMyCartes(userId, entrepriseId)
+      .then(({ data }) => {
+        const profile = window.CARTALIS_DATA?.profileMe;
+        const entreprise = window.CARTALIS_DATA?.entreprise;
+        const mapped = (data || []).map(c => window.CardlyAPI.mapCarteFromDB(c, profile, entreprise));
+        setCards(mapped);
+        window.CARTALIS_DATA.cards = mapped;
+      })
+      .catch(() => {})
+      .finally(() => setLoadingCards(false));
+  }, []);
+
+  // Chargement des événements depuis Supabase
+  useEffectP(() => {
+    const entrepriseId = window.CARTALIS_DATA?.entreprise?.id;
+    if (!window.CardlyAPI || !entrepriseId) return;
+    window.CardlyAPI.getEvenements(entrepriseId).then(({ data }) => {
+      if (!data) return;
+      setTags(data.map(ev => ({ id: ev.evenement_uuid, label: ev.evenement_name, evenement_uuid: ev.evenement_uuid })));
+    }).catch(() => {});
+  }, []);
+
+  const createTag = async () => {
     const v = newTagInput.trim();
     if (!v) return;
-    const t = { id: "tg-" + Math.random().toString(36).slice(2, 6), label: v };
-    setTags([...tags, t]);
-    setSelectedTagId(t.id);
+    const entrepriseId = window.CARTALIS_DATA?.entreprise?.id;
+    // Optimiste : ajouter immédiatement avec un ID temporaire
+    const tempId = "tg-" + Math.random().toString(36).slice(2, 6);
+    const tempTag = { id: tempId, label: v, evenement_uuid: null };
+    setTags(prev => [...prev, tempTag]);
+    setSelectedTagId(tempId);
     setNewTagInput("");
+    // Persistance en base
+    if (window.CardlyAPI && entrepriseId) {
+      try {
+        const { data: ev, error } = await window.CardlyAPI.createEvenement(entrepriseId, v);
+        if (!error && ev) {
+          setTags(prev => prev.map(t => t.id === tempId
+            ? { id: ev.evenement_uuid, label: ev.evenement_name, evenement_uuid: ev.evenement_uuid }
+            : t
+          ));
+          setSelectedTagId(ev.evenement_uuid);
+        }
+      } catch (_) {}
+    }
   };
 
-  const addCard = () => {
+  const addCard = async () => {
     if (!newName.trim()) return;
-    const designs = window.CARTALIS_DATA.cardDesigns;
-    const designId = designs[(cards.length) % designs.length].id;
+    const userId = window.CARTALIS_DATA?.profileMe?.id;
+    const entrepriseId = window.CARTALIS_DATA?.entreprise?.id;
+    if (!window.CardlyAPI || !userId || !entrepriseId) { toast.push("Connexion requise"); return; }
     const tag = tags.find(t => t.id === selectedTagId);
-    const next = {
-      ...window.CARTALIS_DATA.cards[1],
-      id: "card-" + Math.random().toString(36).slice(2, 6),
-      type: newType,
-      nom_carte: newName.trim(),
-      design: designId,
-      is_default: false,
-      tag: tag ? tag.label : null,
-    };
-    setCards([...cards, next]);
-    setShowAdd(false);
-    setNewName("");
-    setNewType("personal");
-    setSelectedTagId(null);
-    setNewTagInput("");
-    toast.push("Carte créée");
+    setCreating(true);
+    try {
+      // Récupère le design immoblier-bleu pour l'écrire directement en DB
+      const defaultDesign = (window.CARTALIS_DATA?.cardDesigns || []).find(d => d.id === 'design-immoblier-bleu')
+        || window.CARTALIS_DATA?.cardDesigns?.[0] || {};
+
+      const { data: newCarte, error } = await window.CardlyAPI.createCarte({
+        collaborateur_id: userId,
+        entreprise_id: entrepriseId,
+        type_card: newType,
+        card_name: newName.trim(),
+        evenement_name: tag ? tag.label : null,
+        evenement_uuid: tag?.evenement_uuid || null,
+        statut: 'active',
+        // ── Config identique au mockup iPhone de la landing page ──
+        // Positions exactes (SCAN_CARD_DATA)
+        prenom_x:         57.7706770270831,   prenom_y:         19.33460308118465,
+        nom_x:            57.7706770270831,   nom_y:            19.33460308118465,
+        nom_entreprise_x: 47.063215515592084, nom_entreprise_y: 50.7604620755852,
+        poste_x:          57.197057416883915, poste_y:          31.197713989721958,
+        telephone_x:      70,                 telephone_y:      60,
+        email_x:          70,                 email_y:          70,
+        site_web_x:       44.57755728227542,  site_web_y:       64.7528528713908,
+        logo_recto_x:     46.10719255709519,  logo_recto_y:     29.372629375965424,
+        logo_verso_x:     23.162641553169696, logo_verso_y:     21.463871364811073,
+        // Côtés : nom/poste/tel/email sur verso, entreprise/web sur recto
+        prenom_side:         'verso',
+        nom_side:            'verso',
+        nom_entreprise_side: 'recto',
+        poste_side:          'verso',
+        telephone_side:      'verso',
+        email_side:          'verso',
+        site_web_side:       'recto',
+        // Tailles (name 1.75×, entreprise 2.5×)
+        prenom_size:         175,
+        nom_size:            175,
+        nom_entreprise_size: 250,
+        poste_size:          100,
+        telephone_size:      100,
+        email_size:          100,
+        site_web_size:       100,
+        // Polices (mockup landing)
+        prenom_police:         'serif',
+        nom_police:            'serif',
+        nom_entreprise_police: 'playfair',
+        poste_police:          'Inter',
+        telephone_police:      'cinzel',
+        email_police:          'playfair',
+        site_web_police:       'Inter',
+        // Couleurs crème (#f3f0ed, même que le mockup)
+        prenom_couleur:         '#f3f0ed',
+        nom_couleur:            '#f3f0ed',
+        nom_entreprise_couleur: '#f3f0ed',
+        poste_couleur:          '#f3f0ed',
+        telephone_couleur:      '#f3f0ed',
+        email_couleur:          '#f3f0ed',
+        site_web_couleur:       '#f3f0ed',
+        // Tous les champs texte désactivés par défaut — l'utilisateur les active manuellement
+        afficher_prenom:         false,
+        afficher_nom:            false,
+        afficher_nom_entreprise: false,
+        afficher_poste:          false,
+        afficher_telephone:      false,
+        afficher_email:          false,
+        afficher_site_web:       false,
+        // Logo sur les deux faces
+        afficher_logo_recto: true,
+        afficher_logo_verso: true,
+        // Design par défaut
+        image_verso: defaultDesign.front || null,
+        image_recto: defaultDesign.back  || null,
+      });
+      if (error) throw error;
+      const profile = window.CARTALIS_DATA?.profileMe;
+      const entreprise = window.CARTALIS_DATA?.entreprise;
+      const mapped = window.CardlyAPI.mapCarteFromDB(newCarte, profile, entreprise);
+      const next = [...cards, mapped];
+      setCards(next);
+      window.CARTALIS_DATA.cards = next;
+      setShowAdd(false);
+      setNewName(""); setNewType("personnel"); setSelectedTagId(null); setNewTagInput("");
+      toast.push("Carte créée ✓");
+      // Redirection immédiate vers la personnalisation
+      onCustomize && onCustomize(mapped.id);
+    } catch (err) {
+      toast.push("Erreur : " + (err.message || "impossible de créer la carte"));
+    } finally { setCreating(false); }
+  };
+
+  const deleteCard = async (cardId) => {
+    try {
+      const { error } = await window.CardlyAPI.deleteCarte(cardId);
+      if (error) throw error;
+      const next = cards.filter(c => c.id !== cardId);
+      setCards(next);
+      window.CARTALIS_DATA.cards = next;
+      toast.push("Carte supprimée");
+    } catch (err) {
+      toast.push("Erreur : " + (err.message || "suppression impossible"));
+    }
   };
 
   return (
     <div className="col gap-6" style={{ position: "relative" }}>
       <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 16 }}>
         <div className="col gap-2">
-          <div className="eyebrow">Espace · {window.CARTALIS_DATA.entreprise.nom_entreprise}</div>
+          <div className="eyebrow">Espace · {window.CARTALIS_DATA?.entreprise?.nom_entreprise || '—'}</div>
           <h1 className="serif" style={{ fontSize: "clamp(28px, 4vw, 40px)", margin: 0, letterSpacing: "-0.02em" }}>Mes cartes</h1>
           <p className="muted" style={{ margin: 0, fontSize: 15 }}>Retrouvez vos cartes digitales et partagez-les en un scan.</p>
-        </div>
-        <div className="row gap-2">
-          <div className="chip chip-gold"><Icon.Sparkle size={11} /> 7 jours d'essai · 4 jours restants</div>
         </div>
       </div>
 
       <div style={{ position: "relative" }}>
         {trialExpired && <LockedOverlay onUpgrade={onUpgrade} />}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: 24 }}>
-          {cards.map(c => <CardListItem key={c.id} card={c} onCustomize={onCustomize} onShare={onShareCard} role={role} />)}
-          <AddCardTile onClick={() => setShowAdd(true)} />
-        </div>
+        {loadingCards ? (
+          <div style={{ textAlign: "center", padding: "60px 0", color: "var(--ink-4)", fontSize: 14 }}>Chargement…</div>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: 24 }}>
+            {cards.map(c => <CardListItem key={c.id} card={c} onCustomize={onCustomize} onShare={onShareCard} onDelete={deleteCard} role={role} />)}
+            <AddCardTile onClick={() => setShowAdd(true)} />
+          </div>
+        )}
       </div>
 
       <Modal open={showAdd} onClose={() => setShowAdd(false)} title={isAdmin ? "Nouvelle carte" : "Nouvelle carte personnelle"}>
@@ -216,8 +343,8 @@ function MyCardsPage({ onCustomize, onShareCard, role, trialExpired, onUpgrade }
             <div style={{ fontSize: 12, color: "var(--ink-3)", fontWeight: 500, letterSpacing: "0.02em" }}>Type de carte</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               {[
-                { id: "enterprise", title: "Entreprise", desc: "Design partagé pour toute l'équipe.", icon: <Icon.Crown size={14} /> },
-                { id: "personal", title: "Personnelle", desc: "Pour un événement ou un projet.", icon: <Icon.User size={14} /> },
+                { id: "entreprise", title: "Entreprise", desc: "Design partagé pour toute l'équipe.", icon: <Icon.Crown size={14} /> },
+                { id: "personnel", title: "Personnelle", desc: "Pour un événement ou un projet.", icon: <Icon.User size={14} /> },
               ].map(opt => {
                 const sel = newType === opt.id;
                 return (
@@ -283,15 +410,17 @@ function MyCardsPage({ onCustomize, onShareCard, role, trialExpired, onUpgrade }
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); createTag(); } }}
               style={{ flex: 1 }}
             />
-            <button type="button" className="btn btn-sm" onClick={createTag} disabled={!newTagInput.trim()}>
+            <button type="button" className="btn btn-sm" onClick={createTag}>
               <Icon.Plus size={12} /> Ajouter
             </button>
           </div>
         </div>
 
         <div className="row gap-3" style={{ justifyContent: "flex-end", marginTop: 20 }}>
-          <button className="btn btn-sm" onClick={() => setShowAdd(false)}>Annuler</button>
-          <button className="btn btn-primary btn-sm" onClick={addCard}>Créer la carte</button>
+          <button className="btn btn-sm" onClick={() => setShowAdd(false)} disabled={creating}>Annuler</button>
+          <button className="btn btn-primary btn-sm" onClick={addCard} disabled={creating || !newName.trim()}>
+            {creating ? "Création…" : "Créer la carte"}
+          </button>
         </div>
       </Modal>
     </div>
@@ -305,27 +434,48 @@ function Field({ label, ...rest }) {
   );
 }
 
-function CardListItem({ card, onCustomize, onShare, role }) {
+function CardListItem({ card, onCustomize, onShare, onDelete, role }) {
   const toast = useToast();
   const [presenting, setPresenting] = useStateP(false);
   const [showStats, setShowStats] = useStateP(false);
-  const isLocked = role === "collaborator" && card.type === "enterprise";
+  const [confirmDel, setConfirmDel] = useStateP(false);
+  const [deleting, setDeleting] = useStateP(false);
+  const isLocked = role === "collaborator" && card.type === "entreprise";
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try { await onDelete(card.id); }
+    finally { setDeleting(false); setConfirmDel(false); }
+  };
+
   return (
     <div className="card fade-up" style={{ padding: 24, display: "flex", flexDirection: "column", gap: 18 }}>
       <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
         <div className="col gap-1">
           <div className="row gap-2" style={{ alignItems: "center", flexWrap: "wrap" }}>
             <div className="serif" style={{ fontSize: 20, letterSpacing: "-0.01em" }}>{card.nom_carte}</div>
-            {card.type === "enterprise" && <span className="chip chip-gold">Entreprise</span>}
+            {card.type === "entreprise" && <span className="chip chip-gold">Entreprise</span>}
             {card.event && <span className="chip" style={{ background: "var(--surface-2)", color: "var(--ink-2)" }}>{card.event}</span>}
           </div>
-          <div className="dim" style={{ fontSize: 12 }}>{card.type === "enterprise" ? "Carte entreprise" : "Carte personnelle"} · {window.CARTALIS_DATA.getDesign(card.design).label}</div>
+          <div className="dim" style={{ fontSize: 12 }}>{card.type === "entreprise" ? "Carte entreprise" : "Carte personnelle"}</div>
         </div>
         <div className="row gap-1">
           <button className="btn btn-ghost btn-sm" onClick={() => onCustomize(card.id)} title="Personnaliser"><Icon.Brush size={14} /></button>
           <button className="btn btn-ghost btn-sm" onClick={() => onShare(card.id)} title="Aperçu public"><Icon.QR size={14} /></button>
+          <button className="btn btn-ghost btn-sm" onClick={() => setConfirmDel(true)} title="Supprimer" style={{ color: "#c0392b" }}><Icon.X size={14} /></button>
         </div>
       </div>
+      {confirmDel && (
+        <div className="card" style={{ padding: "12px 16px", background: "#fff5f5", borderColor: "#f5c6c6", display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ fontSize: 13, fontWeight: 500 }}>Supprimer <em>{card.nom_carte}</em> ? Cette action est irréversible.</div>
+          <div className="row gap-2">
+            <button className="btn btn-sm" style={{ flex: 1, justifyContent: "center" }} onClick={() => setConfirmDel(false)} disabled={deleting}>Annuler</button>
+            <button className="btn btn-sm" style={{ flex: 1, justifyContent: "center", background: "#c0392b", color: "white", border: "none" }} onClick={handleDelete} disabled={deleting}>
+              {deleting ? "Suppression…" : "Oui, supprimer"}
+            </button>
+          </div>
+        </div>
+      )}
 
       <button
         onClick={() => setPresenting(true)}
@@ -421,7 +571,8 @@ function CardStatsModal({ open, onClose, card }) {
 
 function PresentCardModal({ card, onClose }) {
   const toast = useToast();
-  const design = window.CARTALIS_DATA.getDesign(card.design);
+  const design = window.CARTALIS_DATA.cardDesigns.find(d => d.front === card.frontImageUrl)
+    || { front: card.frontImageUrl || null, back: card.backImageUrl || null };
   const [flipped, setFlipped] = useStateP(false);
 
   const shareLink = () => {
@@ -605,7 +756,7 @@ function CustomizePickerPage({ onPick, role, trialExpired, onUpgrade }) {
         {trialExpired && <LockedOverlay onUpgrade={onUpgrade} />}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 22 }}>
           {cards.map(c => {
-            const locked = role === "collaborator" && c.type === "enterprise";
+            const locked = role === "collaborator" && c.type === "entreprise";
             return (
               <button
                 key={c.id}
@@ -624,11 +775,11 @@ function CustomizePickerPage({ onPick, role, trialExpired, onUpgrade }) {
                   <div className="col gap-1" style={{ flex: 1 }}>
                     <div className="serif" style={{ fontSize: 18, letterSpacing: "-0.01em" }}>{c.nom_carte}</div>
                     <div className="dim" style={{ fontSize: 12 }}>
-                      {c.type === "enterprise" ? "Carte entreprise" : "Carte personnelle"} · {window.CARTALIS_DATA.getDesign(c.design).label}
+                      {c.type === "entreprise" ? "Carte entreprise" : "Carte personnelle"}
                     </div>
                   </div>
                   <div className="col gap-1" style={{ alignItems: "flex-end" }}>
-                    {c.type === "enterprise" && <span className="chip chip-gold">Entreprise</span>}
+                    {c.type === "entreprise" && <span className="chip chip-gold">Entreprise</span>}
                     {c.event && <span className="chip" style={{ background: "var(--surface-2)", color: "var(--ink-2)", fontSize: 11 }}>{c.event}</span>}
                   </div>
                 </div>
@@ -724,33 +875,88 @@ function DesignThumb({ design, selected, editable, onSelect }) {
 
 // ---------- Personnalisation ----------
 function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack, onValidate }) {
-  const original = window.CARTALIS_DATA.cards.find(c => c.id === cardId) || window.CARTALIS_DATA.cards[0];
-  const [card, setCard] = useStateP({ ...original, positions: { ...original.positions } });
+  const DEF_COLORS = { name: "#f3f0ed", entreprise: "#f3f0ed", poste: "#f3f0ed", phone: "#f3f0ed", email: "#f3f0ed", web: "#f3f0ed" };
+  const DEF_SIDES  = { name: "recto",   entreprise: "recto",   poste: "recto",   phone: "recto",   email: "recto",   web: "recto" };
+  const DEF_SIZES  = { name: 1,         entreprise: 1,         poste: 0.9,       phone: 0.8,       email: 0.8,       web: 0.8 };
+  const DEF_FONTS  = { name: "default", entreprise: "default", poste: "default", phone: "default", email: "default", web: "default" };
+  const DEF_DECOS  = { name: {},        entreprise: {},        poste: {},        phone: {},        email: {},        web: {} };
+
+  // Lit depuis le cache global (peut être vide si short-circuit du restore de session)
+  const original = (window.CARTALIS_DATA.cards || []).find(c => c.id === cardId)
+    || (window.CARTALIS_DATA.cards || [])[0] || null;
+
+  const [card, setCard] = useStateP(original ? { ...original, positions: { ...(original.positions || {}) } } : null);
+  const [cardLoading, setCardLoading] = useStateP(!original);
   const [flipped, setFlipped] = useStateP(false);
   const [showAIModal, setShowAIModal] = useStateP(false);
   const [aiBlocked, setAIBlocked] = useStateP(false);
   const [aiLoading, setAILoading] = useStateP(false);
   const [aiPrompt, setAIPrompt] = useStateP("");
-  const [logoUrl, setLogoUrl] = useStateP(null);
-  const [frontImageUrl, setFrontImageUrl] = useStateP(null);
-  const [backImageUrl, setBackImageUrl] = useStateP(null);
-  const [fieldColors, setFieldColors] = useStateP({ name: "#2a241a", entreprise: "#2a241a", poste: "#2a241a", phone: "#2a241a", email: "#2a241a", web: "#2a241a" });
-  const [applyAllColor, setApplyAllColor] = useStateP("#2a241a");
+  const [logoUrl, setLogoUrl] = useStateP(original?.logoUrl || null);
+  const [frontImageUrl, setFrontImageUrl] = useStateP(original?.frontImageUrl || null);
+  const [backImageUrl, setBackImageUrl] = useStateP(original?.backImageUrl || null);
+  const [fieldColors, setFieldColors] = useStateP(original?.fieldColors || DEF_COLORS);
+  const [applyAllColor, setApplyAllColor] = useStateP((original?.fieldColors?.name) || "#f3f0ed");
   const setFieldColor = (key, color) => setFieldColors(fc => ({ ...fc, [key]: color }));
-  const [fieldSides, setFieldSides] = useStateP({ name: "recto", entreprise: "recto", poste: "recto", phone: "recto", email: "recto", web: "recto" });
+  const [fieldSides, setFieldSides] = useStateP(original?.fieldSides || DEF_SIDES);
   const setFieldSide = (key, side) => setFieldSides(fs => ({ ...fs, [key]: side }));
-  const [fieldSizes, setFieldSizes] = useStateP({ name: 1, entreprise: 1, poste: 1, phone: 1, email: 1, web: 1 });
+  const [fieldSizes, setFieldSizes] = useStateP(original?.fieldSizes || DEF_SIZES);
   const bumpFieldSize = (key, delta) => setFieldSizes(fs => ({ ...fs, [key]: Math.max(0.5, Math.min(3, Math.round(((fs[key] || 1) + delta) * 10) / 10)) }));
-  const [fieldFonts, setFieldFonts] = useStateP({ name: "default", entreprise: "default", poste: "default", phone: "default", email: "default", web: "default" });
+  const [fieldFonts, setFieldFonts] = useStateP(original?.fieldFonts || DEF_FONTS);
   const setFieldFont = (key, font) => setFieldFonts(ff => ({ ...ff, [key]: font }));
-  const [fieldDecorations, setFieldDecorations] = useStateP({ name: {}, entreprise: {}, poste: {}, phone: {}, email: {}, web: {} });
+  const [fieldDecorations, setFieldDecorations] = useStateP(original?.fieldDecorations || DEF_DECOS);
   const toggleFieldDecoration = (key, prop) => setFieldDecorations(d => ({ ...d, [key]: { ...d[key], [prop]: !d[key]?.[prop] } }));
-  const [logoSide, setLogoSide] = useStateP("both"); // "recto" | "verso" | "both"
-  const [logoSizeRecto, setLogoSizeRecto] = useStateP(1);
-  const [logoSizeVerso, setLogoSizeVerso] = useStateP(1);
+  const [logoSide, setLogoSide] = useStateP(original?.logoSide || "both"); // "recto" | "verso" | "both"
+  const [logoSizeRecto, setLogoSizeRecto] = useStateP(original?.logoSizeRecto || 1);
+  const [logoSizeVerso, setLogoSizeVerso] = useStateP(original?.logoSizeVerso || 1);
+  // selectedDesignId: dérivé des images stockées — permet de surligner la vignette active
+  const [selectedDesignId, setSelectedDesignId] = useStateP(() => {
+    const initFront = original?.frontImageUrl || null;
+    if (!initFront) return null;
+    return (window.CARTALIS_DATA.cardDesigns || []).find(d => d.front === initFront)?.id || null;
+  });
+  const [saving, setSaving] = useStateP(false);
   const [sizeDrafts, setSizeDrafts] = useStateP({});
   const [logoSizeRectoDraft, setLogoSizeRectoDraft] = useStateP(undefined);
   const [logoSizeVersoDraft, setLogoSizeVersoDraft] = useStateP(undefined);
+  // Ces hooks doivent rester ici (avant tout return conditionnel) — règles des hooks React
+  const cardPreviewRef = useRefP(null);
+  const [downloading, setDownloading] = useStateP(false);
+
+  // Toujours rafraîchir depuis la DB — évite les données obsolètes après navigation
+  useEffectP(() => {
+    if (!cardId || !window.CardlyAPI) { setCardLoading(false); return; }
+    window.CardlyAPI.getCarteByUuid(cardId)
+      .then(({ data, error }) => {
+        if (!error && data) {
+          const profile = window.CARTALIS_DATA?.profileMe;
+          const entreprise = window.CARTALIS_DATA?.entreprise;
+          const mapped = window.CardlyAPI.mapCarteFromDB(data, profile, entreprise);
+          setCard({ ...mapped, positions: { ...(mapped.positions || {}) } });
+          setLogoUrl(mapped.logoUrl || null);
+          setFrontImageUrl(mapped.frontImageUrl || null);
+          setBackImageUrl(mapped.backImageUrl || null);
+          setFieldColors(mapped.fieldColors || DEF_COLORS);
+          setApplyAllColor((mapped.fieldColors?.name) || "#f3f0ed");
+          setFieldSides(mapped.fieldSides || DEF_SIDES);
+          setFieldSizes(mapped.fieldSizes || DEF_SIZES);
+          setFieldFonts(mapped.fieldFonts || DEF_FONTS);
+          setLogoSide(mapped.logoSide || "both");
+          setLogoSizeRecto(mapped.logoSizeRecto || 1);
+          setLogoSizeVerso(mapped.logoSizeVerso || 1);
+          setSelectedDesignId(
+            (window.CARTALIS_DATA.cardDesigns || []).find(d => d.front === mapped.frontImageUrl)?.id || null
+          );
+          // Mettre à jour le cache global
+          const existing = (window.CARTALIS_DATA.cards || []).some(c => c.id === mapped.id);
+          window.CARTALIS_DATA.cards = existing
+            ? (window.CARTALIS_DATA.cards || []).map(c => c.id === mapped.id ? mapped : c)
+            : [...(window.CARTALIS_DATA.cards || []), mapped];
+        }
+      })
+      .catch(() => {})
+      .finally(() => setCardLoading(false));
+  }, [cardId]);
   const FONT_OPTIONS = [
     { value: "default",    label: "Défaut" },
     { value: "display",    label: "Display" },
@@ -766,11 +972,22 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
     { value: "script",     label: "Script" },
   ];
   const toast = useToast();
-  const isAdminOnEnterprise = card.type === "enterprise" && role === "collaborator";
-  const editable = !isAdminOnEnterprise;
 
-  const cardPreviewRef = useRefP(null);
-  const [downloading, setDownloading] = useStateP(false);
+  // Afficher un spinner pendant le chargement initial ou si carte introuvable
+  if (cardLoading) return (
+    <div className="col gap-4" style={{ alignItems: "center", justifyContent: "center", minHeight: 300 }}>
+      <div className="muted" style={{ fontSize: 15 }}>Chargement de la carte…</div>
+    </div>
+  );
+  if (!card) return (
+    <div className="col gap-4" style={{ alignItems: "center", justifyContent: "center", minHeight: 300 }}>
+      {onBack && <button className="btn btn-ghost btn-sm" onClick={onBack}><Icon.ArrowLeft size={13} /> Retour</button>}
+      <div className="muted" style={{ fontSize: 15 }}>Carte introuvable.</div>
+    </div>
+  );
+
+  const isAdminOnEnterprise = card.type === "entreprise" && role === "collaborator";
+  const editable = !isAdminOnEnterprise;
 
   const downloadFace = async (side) => {
     const container = cardPreviewRef.current;
@@ -810,6 +1027,20 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
     }
   };
 
+
+  const saveToLanding = (slot) => {
+    const config = {
+      logoUrl, logoSide, logoSizeRecto, logoSizeVerso,
+      fieldSides, fieldSizes, fieldFonts, fieldColors, fieldDecorations,
+      frontImageUrl, backImageUrl,
+      card: { ...card },
+    };
+    const key = slot === "hero" ? "cardly_landing_hero" : "cardly_landing_mockup";
+    localStorage.setItem(key, JSON.stringify(config));
+    navigator.clipboard.writeText(JSON.stringify(config, null, 2))
+      .then(() => toast.push("✅ Config copiée ! Colle-la à Claude", { icon: <Icon.Check size={14}/> }))
+      .catch(() => toast.push("💾 Sauvegardé dans localStorage"));
+  };
   const designs = window.CARTALIS_DATA.cardDesigns;
   const setField = (k, v) => setCard(c => ({ ...c, [k]: v }));
   const movePos = (key, pos) => setCard(c => ({ ...c, positions: { ...c.positions, [key]: pos } }));
@@ -873,13 +1104,11 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
             />
             <div className="row gap-2" style={{ flexWrap: "wrap", justifyContent: "center" }}>
               <button className="btn btn-sm" onClick={() => setFlipped(!flipped)}><Icon.Refresh size={13}/> Tester le flip</button>
-              <button className="btn btn-sm" disabled={downloading} onClick={() => downloadFace('recto')} style={{ gap: 5 }}>
-                <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                {downloading ? "Export…" : "↓ Recto"}
+              <button className="btn btn-sm" onClick={() => saveToLanding("hero")} style={{ gap: 5, background: "linear-gradient(135deg,#b88a3e,#d4a853)", color: "#fff", border: "none", fontWeight: 600 }}>
+                ✨ Carte principale
               </button>
-              <button className="btn btn-sm" disabled={downloading} onClick={() => downloadFace('verso')} style={{ gap: 5 }}>
-                <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                {downloading ? "Export…" : "↓ Verso"}
+              <button className="btn btn-sm" onClick={() => saveToLanding("mockup")} style={{ gap: 5, background: "linear-gradient(135deg,#2a241a,#4a3f2e)", color: "#fff", border: "none", fontWeight: 600 }}>
+                📱 Mockup iPhone
               </button>
             </div>
           </div>
@@ -890,16 +1119,24 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
             <div className="card" style={{ padding: 20 }}>
               <div className="row" style={{ justifyContent: "space-between", marginBottom: 14 }}>
                 <div className="serif" style={{ fontSize: 17 }}>Modèle</div>
-                <span className="chip">{window.CARTALIS_DATA.getDesign(card.design).label}</span>
+                <span className="chip">
+                  {designs.find(d => d.id === selectedDesignId)?.label || 'Personnalisé'}
+                </span>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, maxHeight: 280, overflowY: "auto", paddingRight: 4 }}>
                 {designs.map(d => (
                   <DesignThumb
                     key={d.id}
                     design={d}
-                    selected={card.design === d.id}
+                    selected={selectedDesignId === d.id}
                     editable={editable}
-                    onSelect={(id) => setField("design", id)}
+                    onSelect={(id) => {
+                      const picked = designs.find(x => x.id === id);
+                      if (!picked) return;
+                      setSelectedDesignId(id);
+                      setFrontImageUrl(picked.front || null);
+                      setBackImageUrl(picked.back || null);
+                    }}
                   />
                 ))}
               </div>
@@ -1215,8 +1452,20 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
                   <Icon.Sparkle size={14} /> Générer une image IA
                   {plan !== "team" && <span className="chip chip-gold" style={{ marginLeft: "auto", fontSize: 10 }}>Team</span>}
                 </button>
-                <button className="btn btn-primary" disabled={!editable} onClick={() => { toast.push("Modifications sauvegardées"); onValidate && onValidate(cardId); }}>
-                  <Icon.Check size={14} /> Valider <Icon.ArrowRight size={13} />
+                <button className="btn btn-primary" disabled={!editable || saving} onClick={async () => {
+                  if (!window.CardlyAPI || !cardId) return;
+                  setSaving(true);
+                  try {
+                    const dbData = window.CardlyAPI.carteToDBUpdate(card, { fieldColors, fieldSides, fieldSizes, fieldFonts, fieldDecorations, logoUrl, logoSide, logoSizeRecto, logoSizeVerso, frontImageUrl, backImageUrl });
+                    const { error } = await window.CardlyAPI.updateCarte(cardId, dbData);
+                    if (error) { toast.push("Erreur : " + error.message); return; }
+                    const updatedCard = { ...card, fieldColors, fieldSides, fieldSizes, fieldFonts, fieldDecorations, logoUrl, logoSide, logoSizeRecto, logoSizeVerso, frontImageUrl, backImageUrl };
+                    window.CARTALIS_DATA.cards = (window.CARTALIS_DATA.cards || []).map(c => c.id === cardId ? updatedCard : c);
+                    toast.push("Modifications sauvegardées ✓");
+                    onValidate && onValidate(cardId);
+                  } finally { setSaving(false); }
+                }}>
+                  {saving ? "Sauvegarde…" : <><Icon.Check size={14} /> Valider <Icon.ArrowRight size={13} /></>}
                 </button>
               </div>
             </div>
@@ -1425,31 +1674,79 @@ function CardImageUpload({ label, hint, disabled, imageUrl, onChange, onClear })
 
 // ---------- Personnalisation Scan ----------
 function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack }) {
-  const cards = window.CARTALIS_DATA.cards;
-  const card = (cardId && cards.find(c => c.id === cardId)) || cards[0];
   const ent = window.CARTALIS_DATA.entreprise;
   const toast = useToast();
-  const [scanButtons, setScanButtons] = useStateP({
-    contact: true,
-    whatsapp: true,
-    mail: true,
-    instagram: true,
-    linkedin: true,
-    crm: true,
-    rdv: false,
+
+  // Initialise depuis le cache global si disponible, sinon null (chargée via DB ensuite)
+  const initCard = (cardId && (window.CARTALIS_DATA.cards || []).find(c => c.id === cardId))
+    || (window.CARTALIS_DATA.cards || [])[0] || null;
+
+  const [card, setCard] = useStateP(initCard);
+  const [cardLoading, setCardLoading] = useStateP(true);
+
+  const [scanButtons, setScanButtons] = useStateP(initCard?.scanButtons || {
+    contact: true, whatsapp: true, mail: true, instagram: true, linkedin: true, crm: true, rdv: false,
   });
-  const [rdvUrl, setRdvUrl] = useStateP("");
-  const [crmFields, setCrmFields] = useStateP({
-    nom: true,
-    prenom: true,
-    societe: true,
-    mail: true,
-    tel: true,
+  const [rdvUrl, setRdvUrl] = useStateP(initCard?.rdvUrl || "");
+  const [crmFields, setCrmFields] = useStateP(initCard?.crmFields || {
+    nom: true, prenom: true, societe: true, mail: true, tel: true,
   });
   const [flipped, setFlipped] = useStateP(false);
   const [crmModalOpen, setCrmModalOpen] = useStateP(false);
+  const [saving, setSaving] = useStateP(false);
   const toggleBtn = (k) => setScanButtons(s => ({ ...s, [k]: !s[k] }));
   const toggleCrm = (k) => setCrmFields(f => ({ ...f, [k]: !f[k] }));
+
+  // Toujours rafraîchir la carte depuis la DB pour éviter les données obsolètes
+  useEffectP(() => {
+    if (!cardId || !window.CardlyAPI) { setCardLoading(false); return; }
+    window.CardlyAPI.getCarteByUuid(cardId)
+      .then(({ data, error }) => {
+        if (!error && data) {
+          const profile = window.CARTALIS_DATA?.profileMe;
+          const entreprise = window.CARTALIS_DATA?.entreprise;
+          const mapped = window.CardlyAPI.mapCarteFromDB(data, profile, entreprise);
+          setCard(mapped);
+          setScanButtons(mapped.scanButtons || {
+            contact: true, whatsapp: true, mail: true, instagram: true, linkedin: true, crm: true, rdv: false,
+          });
+          setRdvUrl(mapped.rdvUrl || "");
+          setCrmFields(mapped.crmFields || { nom: true, prenom: true, societe: true, mail: true, tel: true });
+          // Mettre à jour le cache global
+          const existing = (window.CARTALIS_DATA.cards || []).some(c => c.id === mapped.id);
+          window.CARTALIS_DATA.cards = existing
+            ? (window.CARTALIS_DATA.cards || []).map(c => c.id === mapped.id ? mapped : c)
+            : [...(window.CARTALIS_DATA.cards || []), mapped];
+        }
+      })
+      .catch(() => {})
+      .finally(() => setCardLoading(false));
+  }, [cardId]);
+
+  const handleSaveScan = async () => {
+    if (!window.CardlyAPI || !card?.id) return;
+    setSaving(true);
+    try {
+      const dbData = window.CardlyAPI.scanConfigToDBUpdate(scanButtons, rdvUrl, crmFields);
+      const { error } = await window.CardlyAPI.updateCarte(card.id, dbData);
+      if (error) { toast.push("Erreur : " + error.message); return; }
+      const updatedCard = { ...card, scanButtons: { ...scanButtons }, rdvUrl, crmFields: { ...crmFields } };
+      window.CARTALIS_DATA.cards = (window.CARTALIS_DATA.cards || []).map(c => c.id === card.id ? updatedCard : c);
+      toast.push("Personnalisation enregistrée ✓");
+    } finally { setSaving(false); }
+  };
+
+  if (cardLoading) return (
+    <div className="col gap-6" style={{ alignItems: "center", justifyContent: "center", minHeight: 300 }}>
+      <div className="muted" style={{ fontSize: 15 }}>Chargement de la carte…</div>
+    </div>
+  );
+  if (!card) return (
+    <div className="col gap-6" style={{ alignItems: "center", justifyContent: "center", minHeight: 300 }}>
+      {onBack && <button className="btn btn-ghost btn-sm" onClick={onBack}><Icon.ArrowLeft size={13} /> Retour</button>}
+      <div className="muted" style={{ fontSize: 15 }}>Carte introuvable.</div>
+    </div>
+  );
 
   return (
     <div className="col gap-6" style={{ position: "relative" }}>
@@ -1639,8 +1936,8 @@ function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, on
               )}
             </div>
 
-            <button className="btn btn-primary" onClick={() => toast.push("Personnalisation enregistrée")}>
-              <Icon.Check size={14} /> Sauvegarder
+            <button className="btn btn-primary" disabled={saving} onClick={handleSaveScan}>
+              {saving ? "Sauvegarde…" : <><Icon.Check size={14} /> Sauvegarder</>}
             </button>
           </div>
         </div>

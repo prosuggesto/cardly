@@ -238,15 +238,15 @@ const SCAN_LOGO_URL = "data:image/svg+xml," + encodeURIComponent(
 );
 
 const HERO_CARD = {
-  id: "card-chinois-demo",
-  design: "design-blossom",
-  nom_affiche: "Moreau",
-  prenom_affiche: "Élise",
-  entreprise_affiche: "Studio Solange",
-  poste_affiche: "Directrice artistique",
-  telephone_affiche: "06 18 43 72 95",
-  email_affiche: "elise@studiosolange.fr",
-  site_web: "studiosolange.fr",
+  id: "card-001",
+  design: "design-style-chinois",
+  nom_affiche: "Lamperim",
+  prenom_affiche: "Diego",
+  entreprise_affiche: "Cartalis",
+  poste_affiche: "Directeur commercial",
+  telephone_affiche: "07 67 56 92 24",
+  email_affiche: "contact.cartalis@gmail.com",
+  site_web: "cartalis.fr",
   afficher_nom: true,
   afficher_prenom: true,
   afficher_entreprise: true,
@@ -255,24 +255,26 @@ const HERO_CARD = {
   afficher_email: true,
   afficher_site_web: true,
   positions: {
-    name:       { x: 50, y: 24 },
-    entreprise: { x: 50, y: 40 },
-    poste:      { x: 50, y: 51 },
-    phone:      { x: 50, y: 63 },
-    email:      { x: 50, y: 73 },
-    web:        { x: 50, y: 83 },
-    logoRecto:  { x: 15, y: 80 },
+    name:       { x: 70,    y: 26 },
+    entreprise: { x: 40.75, y: 55.84 },
+    poste:      { x: 70.20, y: 34.54 },
+    phone:      { x: 72.30, y: 60.10 },
+    email:      { x: 70,    y: 70 },
+    web:        { x: 38.46, y: 72.26 },
+    logoVerso:  { x: 35.97, y: 23.90 },
+    logoRecto:  { x: 40.37, y: 29.07 },
   },
 };
 
 function HeroSection({ navigate }) {
   const [heroFlipped, setHeroFlipped] = useStateL(false);
   const [imgsReady, setImgsReady] = useStateL(false);
+  const heroDesign = window.CARTALIS_DATA.cardDesigns.find(d => d.id === "design-style-chinois") || window.CARTALIS_DATA.cardDesigns[0];
   const [step, setStep] = useStateL(0);
 
   useEffectL(() => {
     let loaded = 0;
-    const srcs = ["assets/card-chinois-recto.png", "assets/card-chinois-verso.png"];
+    const srcs = [heroDesign.front, heroDesign.back];
     const onLoad = () => { loaded++; if (loaded >= srcs.length) setImgsReady(true); };
     srcs.forEach(src => {
       const img = new Image();
@@ -388,19 +390,20 @@ function HeroSection({ navigate }) {
             >
               <Card3D
                 card={HERO_CARD}
+                design={heroDesign}
                 width={420}
                 float={true}
                 showQR={false}
                 flipped={heroFlipped}
-                frontImageUrl="assets/card-chinois-recto.png"
-                backImageUrl="assets/card-chinois-verso.png"
-                logoUrl={STUDIO_LOGO_URL}
-                logoSide="recto"
-                logoSizeRecto={0.52}
-                fieldSides={{ name: "verso", entreprise: "verso", poste: "verso", phone: "verso", email: "verso", web: "verso" }}
-                fieldSizes={{ name: 1.7, entreprise: 1.0, poste: 0.82, phone: 0.78, email: 0.78, web: 0.78 }}
-                fieldFonts={{ name: "display", entreprise: "display" }}
-                fieldColors={{ name: "#1a150e", entreprise: "#b88a3e", poste: "#6a5a4a", phone: "#3a2f22", email: "#3a2f22", web: "#3a2f22" }}
+                logoUrl="assets/hero-logo.png"
+                logoSide="both"
+                logoSizeRecto={1}
+                logoSizeVerso={1}
+                fieldSides={{ name: "verso", entreprise: "recto", poste: "verso", phone: "verso", email: "verso", web: "recto" }}
+                fieldSizes={{ name: 1.5, entreprise: 2.5, poste: 1, phone: 1, email: 1, web: 1 }}
+                fieldFonts={{ name: "playfair", entreprise: "playfair", poste: "raleway", phone: "cinzel", email: "playfair", web: "default" }}
+                fieldColors={{ name: "#ae863d", entreprise: "#ae863d", poste: "#ae863d", phone: "#ae863d", email: "#ae863d", web: "#ae863d" }}
+                fieldDecorations={{ name: {}, entreprise: {}, poste: {}, phone: {}, email: { italic: true }, web: {} }}
               />
             </div>
             {/* Badges */}
@@ -1002,13 +1005,15 @@ function DelayedPhoneAnimation({ scrollRef, scanFlipped, scanDesign }) {
                 float={false}
                 flipped={scanFlipped}
                 showQR={false}
-                logoUrl={SCAN_LOGO_URL}
-                logoSide="verso"
-                logoSizeVerso={0.45}
-                fieldSides={{ name: "verso", entreprise: "verso", poste: "verso", phone: "verso", email: "verso", web: "verso" }}
-                fieldSizes={{ name: 1.5, entreprise: 0.95, poste: 0.82, phone: 0.75, email: 0.75, web: 0.75 }}
-                fieldFonts={{ name: "display", entreprise: "display" }}
-                fieldColors={{ name: "#1a150e", entreprise: "#b88a3e", poste: "#6a5a4a", phone: "#2a241a", email: "#2a241a", web: "#2a241a" }}
+                logoUrl="assets/hero-logo.png"
+                logoSide="both"
+                logoSizeRecto={1}
+                logoSizeVerso={1}
+                fieldSides={{ name: "verso", entreprise: "recto", poste: "verso", phone: "verso", email: "verso", web: "recto" }}
+                fieldSizes={{ name: 1.75, entreprise: 2.5, poste: 1, phone: 1, email: 1, web: 1 }}
+                fieldFonts={{ name: "serif", entreprise: "playfair", poste: "default", phone: "cinzel", email: "playfair", web: "default" }}
+                fieldColors={{ name: "#f3f0ed", entreprise: "#f3f0ed", poste: "#f3f0ed", phone: "#f3f0ed", email: "#f3f0ed", web: "#f3f0ed" }}
+                fieldDecorations={{ name: {}, entreprise: { underline: false }, poste: {}, phone: {}, email: {}, web: {} }}
               />
             </div>
 
@@ -1068,32 +1073,33 @@ function DelayedPhoneAnimation({ scrollRef, scanFlipped, scanDesign }) {
 
 // ---------- ScanPreviewSection — ce que le prospect voit après le scan ----------
 const SCAN_CARD_DATA = {
-  id: "scan-demo",
-  design: "design-mon-fugi-vangog",
-  nom_affiche: "Bernard",
-  prenom_affiche: "Sophie",
-  entreprise_affiche: "Agence Lumière",
-  poste_affiche: "Consultante senior",
-  telephone_affiche: "06 45 78 23 91",
-  email_affiche: "s.bernard@agence-lumiere.fr",
-  site_web: "agence-lumiere.fr",
+  id: "card-001",
+  design: "design-immoblier-bleu",
+  nom_affiche: "Lamperim",
+  prenom_affiche: "Diego",
+  entreprise_affiche: "Cartalis",
+  poste_affiche: "Directeur commercial",
+  telephone_affiche: "07 67 56 92 24",
+  email_affiche: "contact.cartalis@gmail.com",
+  site_web: "cartalis.fr",
   afficher_nom: true, afficher_prenom: true, afficher_entreprise: true,
   afficher_poste: true, afficher_telephone: true, afficher_email: true, afficher_site_web: true,
   positions: {
-    name:       { x: 50, y: 26 },
-    entreprise: { x: 50, y: 41 },
-    poste:      { x: 50, y: 52 },
-    phone:      { x: 50, y: 65 },
-    email:      { x: 50, y: 75 },
-    web:        { x: 50, y: 85 },
-    logoVerso:  { x: 50, y: 13 },
+    name:       { x: 57.7706770270831,   y: 19.33460308118465  },
+    entreprise: { x: 47.063215515592084, y: 50.7604620755852   },
+    poste:      { x: 57.197057416883915, y: 31.197713989721958 },
+    phone:      { x: 70,                 y: 60                 },
+    email:      { x: 70,                 y: 70                 },
+    web:        { x: 44.57755728227542,  y: 64.7528528713908   },
+    logoRecto:  { x: 46.10719255709519,  y: 29.372629375965424 },
+    logoVerso:  { x: 23.162641553169696, y: 21.463871364811073 },
   },
 };
 
 function ScanPreviewSection() {
   const [scanFlipped, setScanFlipped] = useStateL(false);
   const scrollRef = React.useRef(null);
-  const scanDesign = window.CARTALIS_DATA.cardDesigns.find(d => d.id === "design-mon-fugi-vangog")
+  const scanDesign = window.CARTALIS_DATA.cardDesigns.find(d => d.id === "design-immoblier-bleu")
     || window.CARTALIS_DATA.cardDesigns[0];
 
   // Auto-flip la carte toutes les 3 s

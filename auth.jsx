@@ -202,9 +202,61 @@ function Field({ label, ...rest }) {
 
 function AdminForm({ onSubmit, onBack }) {
   const [form, setForm] = useStateA({});
-  const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+  const [loading, setLoading] = useStateA(false);
+  const [error, setError] = useStateA(null);
+  const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!window.CardlyAPI) { setError("Service indisponible."); return; }
+    setError(null); setLoading(true);
+    try {
+      // 1. Créer le compte auth
+      const { data: authData, error: authErr } = await window.CardlyAPI.signUp(form.email, form.pwd);
+      if (authErr) throw authErr;
+      const userId = authData.user.id;
+
+      // 2. Créer l'entreprise (le trigger SQL crée aussi entreprise_members owner+active)
+      const { data: ent, error: entErr } = await window.CardlyAPI.createEntreprise(userId, form.entreprise, form.web);
+      if (entErr) throw entErr;
+
+      // 3. Mettre à jour le profil
+      await window.CardlyAPI.upsertProfile(userId, {
+        nom: form.nom, prenom: form.prenom, email: form.email,
+        telephone: form.phone, nom_entreprise: form.entreprise,
+        poste: form.poste || null,
+        site_web: form.web || null,
+        instagram: form.instagram || null,
+        linkedin: form.linkedin || null,
+      });
+
+      // 4. Pré-remplir CARTALIS_DATA pour que l'app fonctionne immédiatement
+      if (window.CARTALIS_DATA) {
+        window.CARTALIS_DATA.profileMe.id        = userId;
+        window.CARTALIS_DATA.profileMe.role      = 'admin';
+        window.CARTALIS_DATA.profileMe.nom       = form.nom       || '';
+        window.CARTALIS_DATA.profileMe.prenom    = form.prenom    || '';
+        window.CARTALIS_DATA.profileMe.email     = form.email     || '';
+        window.CARTALIS_DATA.profileMe.telephone = form.phone     || '';
+        window.CARTALIS_DATA.profileMe.poste     = form.poste     || '';
+        window.CARTALIS_DATA.profileMe.site_web  = form.web       || '';
+        window.CARTALIS_DATA.profileMe.instagram = form.instagram || '';
+        window.CARTALIS_DATA.profileMe.linkedin  = form.linkedin  || '';
+        window.CARTALIS_DATA.entreprise.id             = ent.id;
+        window.CARTALIS_DATA.entreprise.nom_entreprise = ent.nom_entreprise || form.entreprise;
+        window.CARTALIS_DATA.entreprise.code_secret    = ent.code_secret;
+        window.CARTALIS_DATA.entreprise.plan           = ent.plan || 'free';
+        window.CARTALIS_DATA.cards = [];
+      }
+
+      onSubmit(ent.code_secret);
+    } catch (err) {
+      setError(err.message || "Une erreur est survenue.");
+    } finally { setLoading(false); }
+  };
+
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSubmit("CARDLY-8K4P"); }} className="col gap-3">
+    <form onSubmit={handleSubmit} className="col gap-3">
       <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
         <div className="col">
           <div className="serif" style={{ fontSize: 22, letterSpacing: "-0.01em" }}>Créer mon entreprise</div>
@@ -220,8 +272,9 @@ function AdminForm({ onSubmit, onBack }) {
         <Field label="Email" type="email" placeholder="vous@entreprise.fr" onChange={set("email")} required />
         <Field label="Téléphone" placeholder="07 67 56 92 24" onChange={set("phone")} required />
       </FieldRow>
+      <Field label="Nom de l'entreprise" placeholder="Immo Costa" onChange={set("entreprise")} required />
       <FieldRow>
-        <Field label="Nom de l'entreprise" placeholder="Immo Costa" onChange={set("entreprise")} required />
+        <Field label="Poste / Titre" placeholder="Directeur commercial" onChange={set("poste")} />
         <Field label="Site web" placeholder="immocosta.fr" onChange={set("web")} />
       </FieldRow>
       <FieldRow>
@@ -229,16 +282,70 @@ function AdminForm({ onSubmit, onBack }) {
         <Field label="LinkedIn" placeholder="https://linkedin.com/in/votre-profil" onChange={set("linkedin")} />
       </FieldRow>
       <Field label="Mot de passe" type="password" placeholder="••••••••" onChange={set("pwd")} required />
-      <button type="submit" className="btn btn-primary" style={{ marginTop: 6, justifyContent: "center" }}>
-        Créer mon entreprise <Icon.ArrowRight size={14} />
+      {error && <div style={{ padding: "10px 14px", borderRadius: 10, fontSize: 13, background: "#f6e2dd", border: "1px solid #e3b5aa", color: "#8b2e20" }}>{error}</div>}
+      <button type="submit" disabled={loading} className="btn btn-primary" style={{ marginTop: 6, justifyContent: "center" }}>
+        {loading ? "Création en cours…" : <><span>Créer mon entreprise</span> <Icon.ArrowRight size={14} /></>}
       </button>
     </form>
   );
 }
 
 function CollabForm({ onSubmit, onBack }) {
+  const [form, setForm] = useStateA({});
+  const [loading, setLoading] = useStateA(false);
+  const [error, setError] = useStateA(null);
+  const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!window.CardlyAPI) { setError("Service indisponible."); return; }
+    setError(null); setLoading(true);
+    try {
+      // 1. Créer le compte auth
+      const { data: authData, error: authErr } = await window.CardlyAPI.signUp(form.email, form.pwd);
+      if (authErr) throw authErr;
+      const userId = authData.user.id;
+
+      // 2. Trouver l'entreprise par code secret
+      const { data: ent, error: entErr } = await window.CardlyAPI.getEntrepriseByCode(form.code);
+      if (entErr || !ent) throw new Error("Code secret introuvable. Vérifiez auprès de votre administrateur.");
+
+      // 3. Rejoindre l'entreprise (statut pending, en attente de validation admin)
+      await window.CardlyAPI.joinEntreprise(ent.id, userId);
+
+      // 4. Mettre à jour le profil
+      await window.CardlyAPI.upsertProfile(userId, {
+        nom: form.nom, prenom: form.prenom, email: form.email,
+        telephone: form.phone, poste: form.poste, nom_entreprise: ent.nom_entreprise,
+        instagram: form.instagram || null,
+        linkedin: form.linkedin || null,
+      });
+
+      // 5. Pré-remplir CARTALIS_DATA
+      if (window.CARTALIS_DATA) {
+        window.CARTALIS_DATA.profileMe.id        = userId;
+        window.CARTALIS_DATA.profileMe.role      = 'collaborator';
+        window.CARTALIS_DATA.profileMe.nom       = form.nom    || '';
+        window.CARTALIS_DATA.profileMe.prenom    = form.prenom || '';
+        window.CARTALIS_DATA.profileMe.email     = form.email  || '';
+        window.CARTALIS_DATA.profileMe.telephone = form.phone  || '';
+        window.CARTALIS_DATA.profileMe.poste     = form.poste  || '';
+        window.CARTALIS_DATA.profileMe.instagram = form.instagram || '';
+        window.CARTALIS_DATA.profileMe.linkedin  = form.linkedin  || '';
+        window.CARTALIS_DATA.entreprise.id             = ent.id;
+        window.CARTALIS_DATA.entreprise.nom_entreprise = ent.nom_entreprise;
+        window.CARTALIS_DATA.entreprise.plan           = ent.plan || 'free';
+        window.CARTALIS_DATA.cards = [];
+      }
+
+      onSubmit();
+    } catch (err) {
+      setError(err.message || "Une erreur est survenue.");
+    } finally { setLoading(false); }
+  };
+
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }} className="col gap-3">
+    <form onSubmit={handleSubmit} className="col gap-3">
       <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
         <div className="col">
           <div className="serif" style={{ fontSize: 22, letterSpacing: "-0.01em" }}>Rejoindre mon entreprise</div>
@@ -247,32 +354,109 @@ function CollabForm({ onSubmit, onBack }) {
         <button type="button" className="btn btn-ghost btn-sm" onClick={onBack}>← Retour</button>
       </div>
       <FieldRow>
-        <Field label="Prénom" placeholder="Emma" required />
-        <Field label="Nom" placeholder="Laurent" required />
+        <Field label="Prénom" placeholder="Emma" onChange={set("prenom")} required />
+        <Field label="Nom" placeholder="Laurent" onChange={set("nom")} required />
       </FieldRow>
       <FieldRow>
-        <Field label="Email" type="email" placeholder="emma@entreprise.fr" required />
-        <Field label="Téléphone" placeholder="06 ..." required />
+        <Field label="Email" type="email" placeholder="emma@entreprise.fr" onChange={set("email")} required />
+        <Field label="Téléphone" placeholder="06 ..." onChange={set("phone")} required />
       </FieldRow>
       <FieldRow>
-        <Field label="Poste" placeholder="Conseillère commerciale" required />
-        <Field label="Code secret entreprise" placeholder="CARDLY-XXXX" required />
+        <Field label="Poste" placeholder="Conseillère commerciale" onChange={set("poste")} required />
+        <Field label="Code secret entreprise" placeholder="CARDLY-XXXX" onChange={set("code")} required />
       </FieldRow>
       <FieldRow>
-        <Field label="Instagram" placeholder="https://instagram.com/votre-compte" />
-        <Field label="LinkedIn" placeholder="https://linkedin.com/in/votre-profil" />
+        <Field label="Instagram" placeholder="https://instagram.com/votre-compte" onChange={set("instagram")} />
+        <Field label="LinkedIn" placeholder="https://linkedin.com/in/votre-profil" onChange={set("linkedin")} />
       </FieldRow>
-      <Field label="Mot de passe" type="password" placeholder="••••••••" required />
-      <button type="submit" className="btn btn-primary" style={{ marginTop: 6, justifyContent: "center" }}>
-        Rejoindre mon entreprise <Icon.ArrowRight size={14} />
+      <Field label="Mot de passe" type="password" placeholder="••••••••" onChange={set("pwd")} required />
+      {error && <div style={{ padding: "10px 14px", borderRadius: 10, fontSize: 13, background: "#f6e2dd", border: "1px solid #e3b5aa", color: "#8b2e20" }}>{error}</div>}
+      <button type="submit" disabled={loading} className="btn btn-primary" style={{ marginTop: 6, justifyContent: "center" }}>
+        {loading ? "Envoi…" : <><span>Rejoindre mon entreprise</span> <Icon.ArrowRight size={14} /></>}
       </button>
     </form>
   );
 }
 
 function LoginForm({ onSubmit }) {
+  const [email, setEmail] = useStateA("");
+  const [pwd, setPwd] = useStateA("");
+  const [loading, setLoading] = useStateA(false);
+  const [error, setError] = useStateA(null);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!window.CardlyAPI) { setError("Service indisponible."); return; }
+    setError(null); setLoading(true);
+    try {
+      // 1. Connexion
+      const { data: authData, error: authErr } = await window.CardlyAPI.signIn(email, pwd);
+      if (authErr) throw authErr;
+      const userId = authData.user.id;
+
+      // 2. Charger le profil
+      const { data: profile } = await window.CardlyAPI.getProfile(userId);
+
+      // 3. Charger le membership + entreprise
+      const { data: membership } = await window.CardlyAPI.getMyMembership(userId);
+      const entrepriseId = membership?.entreprise_id;
+
+      // Fallback : si le join entreprises(*) a échoué (FK manquante ou RLS), on fetch séparément
+      let entrepriseData = membership?.entreprises || null;
+      if (!entrepriseData && entrepriseId) {
+        const { data: entFallback } = await window.sb.from('entreprises')
+          .select('id, nom_entreprise, code_secret, plan')
+          .eq('id', entrepriseId)
+          .single();
+        entrepriseData = entFallback;
+      }
+
+      // 4. Mettre à jour CARTALIS_DATA avec les vraies données
+      if (profile) {
+        Object.assign(window.CARTALIS_DATA.profileMe, {
+          id: userId,
+          nom: profile.nom || '',
+          prenom: profile.prenom || '',
+          email: profile.email || '',
+          telephone: profile.telephone || '',
+          poste: profile.poste || '',
+          site_web: profile.site_web || '',
+          instagram: profile.instagram || '',
+          linkedin: profile.linkedin || '',
+        });
+      }
+
+      // Rôle toujours déduit du membership, même si le join entreprise a raté
+      if (membership) {
+        const isAdmin = membership.role === 'owner' || membership.role === 'admin';
+        window.CARTALIS_DATA.profileMe.role = isAdmin ? 'admin' : 'collaborator';
+      }
+
+      if (entrepriseData && entrepriseId) {
+        Object.assign(window.CARTALIS_DATA.entreprise, {
+          id: entrepriseId,
+          nom_entreprise: entrepriseData.nom_entreprise,
+          code_secret: entrepriseData.code_secret,
+          plan: entrepriseData.plan || 'free',
+        });
+      }
+
+      // 5. Charger les cartes (via le mapper centralisé)
+      if (entrepriseId) {
+        const { data: cartesDB } = await window.CardlyAPI.getMyCartes(userId, entrepriseId);
+        window.CARTALIS_DATA.cards = (cartesDB || []).map(c =>
+          window.CardlyAPI.mapCarteFromDB(c, profile, entrepriseData)
+        );
+      }
+
+      onSubmit();
+    } catch (err) {
+      setError(err.message || "Email ou mot de passe incorrect.");
+    } finally { setLoading(false); }
+  };
+
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }} className="col gap-3" style={{ maxWidth: 380, margin: "0 auto" }}>
+    <form onSubmit={handleSubmit} className="col gap-3" style={{ maxWidth: 380, margin: "0 auto" }}>
       <div className="col" style={{ marginBottom: 6 }}>
         <div className="serif" style={{ fontSize: 26, letterSpacing: "-0.01em" }}>Se connecter</div>
         <div className="dim" style={{ fontSize: 13 }}>Accédez à votre espace Cartalis.</div>
@@ -302,14 +486,12 @@ function LoginForm({ onSubmit }) {
         <div style={{ flex: 1, height: 1, background: "var(--line)" }} />
       </div>
 
-      <Field label="Email" type="email" placeholder="vous@entreprise.fr" defaultValue="contact.cardly@gmail.com" required />
-      <Field label="Mot de passe" type="password" placeholder="••••••••" defaultValue="demo1234" required />
-      <button type="submit" className="btn btn-primary" style={{ marginTop: 6, justifyContent: "center" }}>
-        Se connecter <Icon.ArrowRight size={14} />
+      <Field label="Email" type="email" placeholder="vous@entreprise.fr" value={email} onChange={e => setEmail(e.target.value)} required />
+      <Field label="Mot de passe" type="password" placeholder="••••••••" value={pwd} onChange={e => setPwd(e.target.value)} required />
+      {error && <div style={{ padding: "10px 14px", borderRadius: 10, fontSize: 13, background: "#f6e2dd", border: "1px solid #e3b5aa", color: "#8b2e20" }}>{error}</div>}
+      <button type="submit" disabled={loading} className="btn btn-primary" style={{ marginTop: 6, justifyContent: "center" }}>
+        {loading ? "Connexion…" : <><span>Se connecter</span> <Icon.ArrowRight size={14} /></>}
       </button>
-      <div className="dim" style={{ fontSize: 12, textAlign: "center", marginTop: 4 }}>
-        Astuce : utilisez les valeurs pré-remplies pour la démo.
-      </div>
     </form>
   );
 }
