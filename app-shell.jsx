@@ -482,7 +482,7 @@ function CardListItem({ card, onCustomize, onShare, onDelete, role }) {
         style={{ display: "flex", justifyContent: "center", padding: "8px 0", background: "transparent", border: 0, cursor: "pointer" }}
         title="Présenter au client"
       >
-        <Card3D card={card} width={320} float={true} />
+        <Card3D card={card} width={320} float={true} frontImageUrl={card.frontImageUrl} backImageUrl={card.backImageUrl} />
       </button>
 
       {isLocked && (
@@ -638,7 +638,7 @@ function PresentCardModal({ card, onClose }) {
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div onClick={() => setFlipped(f => !f)} style={{ cursor: "pointer", display: "inline-block" }}>
-            <Card3D card={card} width={420} float={true} flipped={flipped} />
+            <Card3D card={card} width={420} float={true} flipped={flipped} frontImageUrl={card.frontImageUrl} backImageUrl={card.backImageUrl} />
           </div>
         </div>
 
@@ -784,7 +784,7 @@ function CustomizePickerPage({ onPick, role, trialExpired, onUpgrade }) {
                   </div>
                 </div>
                 <div style={{ display: "flex", justifyContent: "center", padding: "4px 0" }}>
-                  <Card3D card={c} width={260} float={true} />
+                  <Card3D card={c} width={260} float={true} frontImageUrl={c.frontImageUrl} backImageUrl={c.backImageUrl} />
                 </div>
                 <div className="row" style={{ justifyContent: "space-between", alignItems: "center", paddingTop: 4, borderTop: "1px solid var(--line)" }}>
                   {locked ? (
@@ -1767,7 +1767,7 @@ function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, on
           {/* Scanned card preview — identique à PublicCardPage */}
           <div className="card" style={{ padding: 28, display: "flex", flexDirection: "column", alignItems: "center", gap: 28, background: "linear-gradient(180deg, #fffdf6, #f7f2e6)" }}>
             <div onClick={() => setFlipped(f => !f)} style={{ cursor: "pointer", display: "inline-block" }}>
-              <Card3D card={card} width={360} float={true} flipped={flipped} />
+              <Card3D card={card} width={360} float={true} flipped={flipped} frontImageUrl={card.frontImageUrl} backImageUrl={card.backImageUrl} />
             </div>
             <div className="card" style={{ padding: 24, width: "100%", maxWidth: 440, background: "var(--surface)" }}>
               <div className="col gap-1" style={{ alignItems: "center", textAlign: "center", marginBottom: 18 }}>

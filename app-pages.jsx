@@ -1246,7 +1246,7 @@ function PublicCardPage({ navigate, params }) {
         )}
 
         <div onClick={() => setFlipped(f => !f)} style={{ cursor: "pointer", display: "inline-block" }}>
-          <Card3D card={card} width={Math.min(380, window.innerWidth - 60)} float={true} flipped={flipped} />
+          <Card3D card={card} width={Math.min(380, window.innerWidth - 60)} float={true} flipped={flipped} frontImageUrl={card.frontImageUrl} backImageUrl={card.backImageUrl} />
         </div>
 
         <div className="card" style={{ padding: 24, width: "100%" }}>
