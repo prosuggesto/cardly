@@ -21,6 +21,15 @@
       async signOut() {
         return window.sb.auth.signOut();
       },
+      // Démarre le flow OAuth Google. Supabase redirige vers Google puis revient
+      // sur redirectTo (l'app détecte la session automatiquement au retour).
+      async signInWithGoogle() {
+        const base = window.location.origin + window.location.pathname;
+        return window.sb.auth.signInWithOAuth({
+          provider: 'google',
+          options: { redirectTo: base + '#/app' },
+        });
+      },
 
       // ── Profile ──────────────────────────────────────────────────────────
       async getProfile(userId) {

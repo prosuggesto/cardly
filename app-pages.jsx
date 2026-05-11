@@ -941,14 +941,46 @@ function FeedbackPage() {
   const [messages, setMessages] = useStateD([]);
   const [input, setInput] = useStateD("");
   const [sent, setSent] = useStateD(false);
+  const [sending, setSending] = useStateD(false);
   const bottomRef = React.useRef(null);
   const inputRef = React.useRef(null);
 
+  const introFor = (cat) => cat === "problem"
+    ? "🐛 Bonjour " + (me.prenom || '') + " ! Décrivez le problème que vous avez rencontré — nous vous recontacterons dans les 48h sur " + (contactEmail || me.email || '') + "."
+    : "💡 Bonjour " + (me.prenom || '') + " ! Quelle idée souhaitez-vous partager ? On lit tout.";
+
+  // Charge l'historique des messages utilisateur depuis la DB (RLS : sender='user' uniquement).
+  // Les bulles bot (intro + accusé) sont régénérées côté UI pour garder le contexte.
+  React.useEffect(() => {
+    if (!me.id || !window.CardlyAPI) return;
+    (async () => {
+      try {
+        const { data } = await window.CardlyAPI.getIdees(me.id);
+        if (data && data.length) {
+          const lastCat = data[data.length - 1].categorie || 'idea';
+          const reconstructed = [{ from: "cardly", text: introFor(lastCat) }];
+          data.forEach((r, i) => {
+            reconstructed.push({ from: "user", text: r.message });
+            // Insère un accusé après chaque message utilisateur, sauf après le dernier (on l'ajoute après pour matcher l'envoi en cours)
+            if (i < data.length - 1) {
+              reconstructed.push({ from: "cardly", text: "Merci pour votre retour ! 🙏 On prend bonne note et on revient vers vous si nécessaire." });
+            }
+          });
+          reconstructed.push({ from: "cardly", text: "Merci pour votre retour ! 🙏 On prend bonne note et on revient vers vous si nécessaire." });
+          setMessages(reconstructed);
+          setCategory(lastCat);
+          setStep("chat");
+          setSent(true);
+        }
+      } catch (err) {
+        console.error('[Cardly] getIdees failed:', err);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const openChat = (cat) => {
-    const intro = cat === "problem"
-      ? "🐛 Bonjour " + me.prenom + " ! Décrivez le problème que vous avez rencontré — nous vous recontacterons dans les 48h sur " + contactEmail + "."
-      : "💡 Bonjour " + me.prenom + " ! Quelle idée souhaitez-vous partager ? On lit tout.";
-    setMessages([{ from: "cardly", text: intro }]);
+    setMessages([{ from: "cardly", text: introFor(cat) }]);
     setStep("chat");
     setTimeout(() => { if (inputRef.current) inputRef.current.focus(); }, 150);
   };
@@ -964,12 +996,27 @@ function FeedbackPage() {
 
   const confirmContact = () => { openChat("problem"); };
 
-  const send = () => {
+  const send = async () => {
     const txt = input.trim();
-    if (!txt) return;
+    if (!txt || sending) return;
     setMessages(m => [...m, { from: "user", text: txt }]);
     setInput("");
     setSent(true);
+    setSending(true);
+    // Persister le message utilisateur en DB (RLS : sender='user' obligatoire)
+    if (me.id && window.CardlyAPI) {
+      try {
+        await window.CardlyAPI.sendMessage(me.id, {
+          message: txt,
+          categorie: category || 'idea',
+          mail: contactEmail,
+          telephone: contactPhone,
+        });
+      } catch (err) {
+        console.error('[Cardly] sendMessage failed:', err);
+      }
+    }
+    setSending(false);
     setTimeout(() => {
       setMessages(m => [...m, { from: "cardly", text: "Merci pour votre retour ! 🙏 On prend bonne note et on revient vers vous si nécessaire." }]);
     }, 800);
@@ -1156,7 +1203,7 @@ function FeedbackPage() {
                     className="btn btn-primary"
                     style={{ borderRadius: "50%", width: 40, height: 40, padding: 0, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
                     onClick={send}
-                    disabled={!input.trim()}
+                    disabled={!input.trim() || sending}
                   >
                     <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/>

@@ -467,7 +467,20 @@ function LoginForm({ onSubmit }) {
 
       <button
         type="button"
-        onClick={onSubmit}
+        disabled={loading}
+        onClick={async () => {
+          if (!window.CardlyAPI) { setError("Service indisponible."); return; }
+          setError(null); setLoading(true);
+          try {
+            const { error: oauthErr } = await window.CardlyAPI.signInWithGoogle();
+            if (oauthErr) throw oauthErr;
+            // signInWithOAuth déclenche une redirection vers Google.
+            // Au retour, la session est rétablie automatiquement et l'app reroute sur /app.
+          } catch (err) {
+            setError(err.message || "Connexion Google échouée.");
+            setLoading(false);
+          }
+        }}
         className="btn"
         style={{
           justifyContent: "center", height: 44, gap: 10,
