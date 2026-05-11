@@ -1386,16 +1386,16 @@ function DelayedPhoneAnimation({ scrollRef, scanFlipped, scanDesign }) {
             {/* boutons secondaires */}
             <div className="scan-action-grid">
               {[
-                { ic: Icon.WhatsApp, t: "WhatsApp" },
-                { ic: Icon.Mail,     t: "Email" },
+                { ic: Icon.WhatsApp, t: "WhatsApp", iconSize: 16 },
+                { ic: Icon.Mail,     t: "Email",    iconSize: 14 },
                 { ic: null,          t: "Partager mes infos" },
-                { ic: Icon.Globe,    t: "Site web" },
-              ].map(({ ic: Ic, t }, i) => (
+                { ic: Icon.Globe,    t: "Site web", iconSize: 14 },
+              ].map(({ ic: Ic, t, iconSize }, i) => (
                 <button key={i} className="btn btn-sm" style={{
                   justifyContent: "center", fontSize: 10,
                   whiteSpace: "nowrap", padding: "0 4px", gap: 4,
                 }}>
-                  {Ic && <Ic size={13} />} {t}
+                  {Ic && <span style={{ display: "inline-flex", flexShrink: 0 }}><Ic size={iconSize} /></span>} {t}
                 </button>
               ))}
             </div>
