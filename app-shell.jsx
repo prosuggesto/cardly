@@ -754,7 +754,7 @@ function CustomizePickerPage({ onPick, role, trialExpired, onUpgrade }) {
       </div>
       <div style={{ position: "relative" }}>
         {trialExpired && <LockedOverlay onUpgrade={onUpgrade} />}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 22 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 440px))", gap: 22 }}>
           {cards.map(c => {
             const locked = role === "collaborator" && c.type === "entreprise";
             return (
