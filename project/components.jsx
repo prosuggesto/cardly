@@ -163,7 +163,7 @@ function Card3D({
           fontSize: width * 0.08, color: D.ink, opacity: 0.95,
           letterSpacing: "0.02em",
         }}>
-          {window.CARDLY_DATA.entreprise.nom_entreprise}
+          {card?.entreprise_affiche || window.CARDLY_DATA?.entreprise?.nom_entreprise || ''}
         </div>
         <div style={{
           position: "absolute", bottom: "14%", left: "8%",
@@ -384,4 +384,188 @@ function useHashRoute() {
 }
 window.useHashRoute = useHashRoute;
 
-Object.assign(window, { Icon, Logo, Card3D, FloatingBadge, SectionHeader, LockedOverlay, Modal, ToastProvider, useToast, useHashRoute });
+// ---------- Fix Card3D: use card.entreprise_affiche for company name on front ----------
+// (patched in renderFront above — line 166 now reads card?.entreprise_affiche)
+
+// ---------- CardlySession context ----------
+const CardlySessionCtx = React.createContext(null);
+
+function CardlySessionProvider({ children }) {
+  const [session, setSession] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [membership, setMembership] = useState(null);
+  const [pendingMembership, setPendingMembership] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const loadUserData = useCallback(async (userId) => {
+    try {
+      const [profileRes, memberRes, pendingRes] = await Promise.all([
+        window.CardlyAPI.getProfile(userId),
+        window.CardlyAPI.getMyMembership(userId),
+        window.CardlyAPI.getMyPendingMembership(userId),
+      ]);
+      if (!profileRes.error && profileRes.data) setProfile(profileRes.data);
+      setMembership(memberRes.data || null);
+      setPendingMembership(pendingRes.data || null);
+    } catch (e) {
+      console.error('[Cardly] loadUserData error', e);
+    }
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    window.sb.auth.getSession().then(({ data: { session: s } }) => {
+      if (!mounted) return;
+      setSession(s);
+      if (s?.user) {
+        loadUserData(s.user.id).finally(() => { if (mounted) setLoading(false); });
+      } else {
+        setLoading(false);
+      }
+    });
+    const { data: { subscription } } = window.sb.auth.onAuthStateChange((_event, s) => {
+      setSession(s);
+      if (s?.user) {
+        setLoading(true);
+        loadUserData(s.user.id).finally(() => { if (mounted) setLoading(false); });
+      } else {
+        setProfile(null);
+        setMembership(null);
+        setPendingMembership(null);
+        setLoading(false);
+      }
+    });
+    return () => { mounted = false; subscription.unsubscribe(); };
+  }, [loadUserData]);
+
+  const role = (membership?.role === 'owner' || membership?.role === 'admin') ? 'admin' : 'collaborator';
+  const plan = membership?.entreprises?.plan || 'solo';
+  const entreprise = membership?.entreprises || null;
+
+  const refreshProfile = useCallback(async () => {
+    if (session?.user) {
+      const res = await window.CardlyAPI.getProfile(session.user.id);
+      if (!res.error && res.data) setProfile(res.data);
+    }
+  }, [session]);
+
+  const refreshMembership = useCallback(async () => {
+    if (session?.user) {
+      const [m, p] = await Promise.all([
+        window.CardlyAPI.getMyMembership(session.user.id),
+        window.CardlyAPI.getMyPendingMembership(session.user.id),
+      ]);
+      setMembership(m.data || null);
+      setPendingMembership(p.data || null);
+    }
+  }, [session]);
+
+  return (
+    <CardlySessionCtx.Provider value={{
+      session, profile, membership, pendingMembership, loading,
+      role, plan, entreprise,
+      setProfile, setMembership,
+      refreshProfile, refreshMembership,
+    }}>
+      {children}
+    </CardlySessionCtx.Provider>
+  );
+}
+function useCardlySession() { return React.useContext(CardlySessionCtx); }
+
+// ---------- Spinner ----------
+function Spinner({ size = 32 }) {
+  useEffect(() => {
+    if (!document.getElementById('cardly-spin-kf')) {
+      const s = document.createElement('style');
+      s.id = 'cardly-spin-kf';
+      s.textContent = '@keyframes cardly-spin { to { transform: rotate(360deg); } }';
+      document.head.appendChild(s);
+    }
+  }, []);
+  return (
+    <div style={{
+      width: size, height: size,
+      border: `${Math.max(2, Math.floor(size / 14))}px solid var(--line-2)`,
+      borderTopColor: 'var(--gold)',
+      borderRadius: '50%',
+      animation: 'cardly-spin 700ms linear infinite',
+      display: 'inline-block',
+      flexShrink: 0,
+    }} />
+  );
+}
+
+// ---------- mapCarteFromDB: DB carte row + profile → Card3D-compatible object ----------
+function mapCarteFromDB(dbCarte, profile) {
+  if (!dbCarte) return null;
+  return {
+    id: dbCarte.carte_uuid,
+    carte_uuid: dbCarte.carte_uuid,
+    type: dbCarte.type_card,
+    nom_carte: dbCarte.card_name,
+    design: 'design-blossom',              // design stored as image_recto in DB; default theme for now
+    // Contact values come from the owner's profile
+    nom_affiche:        profile?.nom || '',
+    prenom_affiche:     profile?.prenom || '',
+    entreprise_affiche: profile?.nom_entreprise || '',
+    poste_affiche:      profile?.poste || '',
+    telephone_affiche:  profile?.telephone || '',
+    email_affiche:      profile?.email || '',
+    site_web:           profile?.site_web || '',
+    // Visibility toggles
+    afficher_nom:        dbCarte.afficher_nom,
+    afficher_prenom:     dbCarte.afficher_prenom,
+    afficher_entreprise: dbCarte.afficher_nom_entreprise,
+    afficher_poste:      dbCarte.afficher_poste,
+    afficher_telephone:  dbCarte.afficher_telephone,
+    afficher_email:      dbCarte.afficher_email,
+    afficher_site_web:   dbCarte.afficher_site_web,
+    // Positions (% values stored per-field in DB)
+    positions: {
+      name:  { x: +dbCarte.prenom_x    || 70, y: +dbCarte.prenom_y    || 30 },
+      poste: { x: +dbCarte.poste_x     || 70, y: +dbCarte.poste_y     || 42 },
+      phone: { x: +dbCarte.telephone_x || 70, y: +dbCarte.telephone_y || 58 },
+      email: { x: +dbCarte.email_x     || 70, y: +dbCarte.email_y     || 68 },
+      web:   { x: +dbCarte.site_web_x  || 70, y: +dbCarte.site_web_y  || 78 },
+    },
+    is_default: dbCarte.type_card === 'enterprise',
+    statut: dbCarte.statut,
+    _raw: dbCarte,
+  };
+}
+
+// ---------- defaultCarteInsert: full default payload to INSERT a new carte ----------
+function defaultCarteInsert(userId, entrepriseId, cardName, typeCard) {
+  return {
+    collaborateur_id: userId, entreprise_id: entrepriseId,
+    type_card: typeCard || 'personal', card_name: cardName,
+    afficher_prenom: true, afficher_nom: true, afficher_nom_entreprise: true,
+    afficher_poste: true, afficher_telephone: true, afficher_email: true, afficher_site_web: true,
+    afficher_logo_recto: false, afficher_logo_verso: false,
+    afficher_instagram: false, afficher_linkedin: false,
+    prenom_couleur: '#2a241a', nom_couleur: '#2a241a', nom_entreprise_couleur: '#2a241a',
+    poste_couleur: '#b88a3e', telephone_couleur: '#2a241a', email_couleur: '#2a241a', site_web_couleur: '#2a241a',
+    prenom_side: 'back',       prenom_x: 70,    prenom_y: 30,    prenom_size: 24, prenom_police: 'Inter Tight',         prenom_gras: true,  prenom_italique: false, prenom_souligne: false,
+    nom_side: 'back',          nom_x: 70,        nom_y: 30,        nom_size: 24,   nom_police: 'Inter Tight',             nom_gras: true,    nom_italique: false,    nom_souligne: false,
+    nom_entreprise_side: 'front', nom_entreprise_x: 12, nom_entreprise_y: 20, nom_entreprise_size: 18, nom_entreprise_police: 'Cormorant Garamond', nom_entreprise_gras: false, nom_entreprise_italique: false, nom_entreprise_souligne: false,
+    poste_side: 'back',        poste_x: 70,      poste_y: 42,      poste_size: 13, poste_police: 'Inter Tight',          poste_gras: false,  poste_italique: false,  poste_souligne: false,
+    telephone_side: 'back',    telephone_x: 70,  telephone_y: 58,  telephone_size: 12, telephone_police: 'Inter Tight',   telephone_gras: false, telephone_italique: false, telephone_souligne: false,
+    email_side: 'back',        email_x: 70,      email_y: 68,      email_size: 12,  email_police: 'Inter Tight',          email_gras: false,  email_italique: false,  email_souligne: false,
+    site_web_side: 'back',     site_web_x: 70,   site_web_y: 78,   site_web_size: 12, site_web_police: 'Inter Tight',    site_web_gras: false, site_web_italique: false, site_web_souligne: false,
+    logo_recto_size: 80, logo_recto_x: 50, logo_recto_y: 50,
+    logo_verso_size: 70, logo_verso_x: 18, logo_verso_y: 22,
+    stat_clic_scans: 0, stat_clic_add_contact: 0, stat_clic_whatsapp: 0,
+    stat_clic_mail: 0, stat_clic_instagram: 0, stat_clic_linkedin: 0,
+    stat_clic_site_web: 0, stat_clic_crm: 0,
+    statut: 'active',
+  };
+}
+
+window.CardlySessionProvider = CardlySessionProvider;
+window.useCardlySession = useCardlySession;
+window.Spinner = Spinner;
+window.mapCarteFromDB = mapCarteFromDB;
+window.defaultCarteInsert = defaultCarteInsert;
+
+Object.assign(window, { Icon, Logo, Card3D, FloatingBadge, SectionHeader, LockedOverlay, Modal, ToastProvider, useToast, useHashRoute, CardlySessionProvider, useCardlySession, Spinner, mapCarteFromDB, defaultCarteInsert });

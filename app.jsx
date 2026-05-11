@@ -26,11 +26,17 @@ function App() {
     window.parent.postMessage({ type: "__edit_mode_set_keys", edits: { [k]: v } }, "*");
   };
 
+  // Rôle et plan réels depuis les données DB (renseignés par LoginForm), sinon tweaks démo
+  const role = (path === '/app' && window.CARTALIS_DATA?.profileMe?.role) || tweaks.role;
+  const plan = (path === '/app' && window.CARTALIS_DATA?.entreprise?.plan) || tweaks.plan;
+
   const [tab, setTabRaw] = useStateApp("cards");
   const [customizeId, setCustomizeId] = useStateApp(null);
   const [scanCardId, setScanCardId] = useStateApp(null);
   const setTab = (t) => { setTabRaw(t); if (t !== "customize") setCustomizeId(null); };
   const [tweaksOpen, setTweaksOpen] = useStateApp(false);
+  // sessionReady : true une fois que CARTALIS_DATA est hydraté depuis Supabase
+  const [sessionReady, setSessionReady] = useStateApp(false);
 
   useEffectApp(() => {
     const onMsg = (e) => {
@@ -43,6 +49,79 @@ function App() {
     return () => window.removeEventListener("message", onMsg);
   }, []);
 
+  // Garde de session + restauration CARTALIS_DATA après refresh
+  useEffectApp(() => {
+    if (path !== '/app' || !window.sb || !window.CardlyAPI) return;
+    setSessionReady(false);
+
+    (async () => {
+      try {
+        const { data: { session } } = await window.sb.auth.getSession();
+        if (!session) { navigate('/auth?mode=login'); return; }
+
+        const userId = session.user.id;
+
+        // Si les données sont déjà celles du bon user (ex : juste après login), on n'recharge pas
+        if (window.CARTALIS_DATA.profileMe.id === userId) { setSessionReady(true); return; }
+
+        // --- Restauration complète depuis Supabase ---
+        const { data: profile } = await window.CardlyAPI.getProfile(userId);
+
+        const { data: membership } = await window.CardlyAPI.getMyMembership(userId);
+        const entrepriseId = membership?.entreprise_id;
+
+        let entrepriseData = membership?.entreprises || null;
+        if (!entrepriseData && entrepriseId) {
+          const { data: entFallback } = await window.sb
+            .from('entreprises').select('id, nom_entreprise, code_secret, plan')
+            .eq('id', entrepriseId).single();
+          entrepriseData = entFallback;
+        }
+
+        // Profil
+        Object.assign(window.CARTALIS_DATA.profileMe, {
+          id: userId,
+          nom:       profile?.nom       || '',
+          prenom:    profile?.prenom    || '',
+          email:     profile?.email     || '',
+          telephone: profile?.telephone || '',
+          poste:     profile?.poste     || '',
+          site_web:  profile?.site_web  || '',
+          instagram: profile?.instagram || '',
+          linkedin:  profile?.linkedin  || '',
+        });
+
+        // Rôle
+        if (membership) {
+          const isAdmin = membership.role === 'owner' || membership.role === 'admin';
+          window.CARTALIS_DATA.profileMe.role = isAdmin ? 'admin' : 'collaborator';
+        }
+
+        // Entreprise
+        if (entrepriseData && entrepriseId) {
+          Object.assign(window.CARTALIS_DATA.entreprise, {
+            id:             entrepriseId,
+            nom_entreprise: entrepriseData.nom_entreprise,
+            code_secret:    entrepriseData.code_secret,
+            plan:           entrepriseData.plan || 'free',
+          });
+        }
+
+        // Cartes
+        if (entrepriseId) {
+          const { data: cartesDB } = await window.CardlyAPI.getMyCartes(userId, entrepriseId);
+          window.CARTALIS_DATA.cards = (cartesDB || []).map(c =>
+            window.CardlyAPI.mapCarteFromDB(c, profile, entrepriseData)
+          );
+        }
+      } catch (err) {
+        console.error('[Cartalis] Session restore failed:', err);
+      } finally {
+        setSessionReady(true);
+      }
+    })();
+  }, [path]);
+
   // Page selection
   let page = null;
   if (path === "/" || path === "") {
@@ -52,19 +131,34 @@ function App() {
   } else if (path === "/card") {
     page = <PublicCardPage navigate={navigate} params={params} />;
   } else if (path === "/app") {
-    page = (
+    if (!sessionReady) {
+      page = (
+        <div style={{
+          minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
+          background: "var(--bg)", flexDirection: "column", gap: 16,
+        }}>
+          <div style={{
+            width: 44, height: 44, borderRadius: 14,
+            background: "linear-gradient(135deg, var(--gold-2), var(--gold))",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            color: "white", fontSize: 20, fontWeight: 700,
+          }}>C</div>
+          <div className="dim" style={{ fontSize: 14 }}>Chargement de votre espace…</div>
+        </div>
+      );
+    } else page = (
       <AppLayout
         navigate={navigate}
         tab={tab} setTab={setTab}
-        role={tweaks.role} plan={tweaks.plan}
+        role={role} plan={plan}
         trialExpired={tweaks.trialExpired}
-        onLogout={() => navigate("/")}
+        onLogout={async () => { if (window.CardlyAPI) await window.CardlyAPI.signOut(); navigate("/"); }}
         onUpgrade={() => setTab("subscription")}
       >
         {tab === "cards" && <MyCardsPage
           onCustomize={(id) => { setTabRaw("customize"); setCustomizeId(id); }}
           onShareCard={(id) => navigate(`/card?id=${id}`)}
-          role={tweaks.role}
+          role={role}
           trialExpired={tweaks.trialExpired}
           onUpgrade={() => setTab("subscription")}
         />}
@@ -72,8 +166,8 @@ function App() {
           customizeId
             ? <CustomizationPage
                 cardId={customizeId}
-                role={tweaks.role}
-                plan={tweaks.plan}
+                role={role}
+                plan={plan}
                 trialExpired={tweaks.trialExpired}
                 onUpgrade={() => setTab("subscription")}
                 onBack={() => setCustomizeId(null)}
@@ -81,24 +175,25 @@ function App() {
               />
             : <CustomizePickerPage
                 onPick={(id) => setCustomizeId(id)}
-                role={tweaks.role}
+                role={role}
                 trialExpired={tweaks.trialExpired}
                 onUpgrade={() => setTab("subscription")}
               />
         )}
         {tab === "scan" && <ScanCustomizationPage
           cardId={scanCardId}
-          role={tweaks.role}
-          plan={tweaks.plan}
+          role={role}
+          plan={plan}
           trialExpired={tweaks.trialExpired}
           onUpgrade={() => setTab("subscription")}
           onBack={() => { setTabRaw("customize"); setCustomizeId(scanCardId); }}
         />}
-        {tab === "dashboard" && <DashboardPage role={tweaks.role} trialExpired={tweaks.trialExpired} onUpgrade={() => setTab("subscription")} />}
-        {tab === "crm" && <CrmPage role={tweaks.role} />}
-        {tab === "secret" && <SecretCodePage role={tweaks.role} plan={tweaks.plan} onUpgrade={() => setTab("subscription")} />}
+        {tab === "dashboard" && <DashboardPage role={role} trialExpired={tweaks.trialExpired} onUpgrade={() => setTab("subscription")} />}
+        {tab === "crm" && <CrmPage role={role} />}
+        {tab === "secret" && <SecretCodePage role={role} plan={plan} onUpgrade={() => setTab("subscription")} />}
         {tab === "feedback" && <FeedbackPage />}
-        {tab === "subscription" && <SubscriptionPage plan={tweaks.plan} onSetPlan={(p) => setTweak("plan", p)} />}
+        {tab === "nfc" && <NFCSupportPage />}
+        {tab === "subscription" && <SubscriptionPage plan={plan} onSetPlan={(p) => setTweak("plan", p)} />}
       </AppLayout>
     );
   } else {

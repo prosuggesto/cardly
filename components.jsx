@@ -36,6 +36,7 @@ const Icon = {
   Calendar: (p) => <svg width={p.size||16} height={p.size||16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>,
   Database: (p) => <svg width={p.size||16} height={p.size||16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/></svg>,
   Download: (p) => <svg width={p.size||16} height={p.size||16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>,
+  Nfc: (p) => <svg width={p.size||16} height={p.size||16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12a8 8 0 00-8-8"/><path d="M16 12a4 4 0 00-4-4"/><path d="M12 12h.01"/><path d="M4 4l16 16"/></svg>,
 };
 window.Icon = Icon;
 
@@ -102,6 +103,7 @@ function Card3D({
   fieldSides,        // { name, entreprise, poste, phone, email, web } — "recto" | "verso"
   fieldSizes,        // per-field font-size multiplier (default 1)
   fieldFonts,        // per-field font family key
+  fieldDecorations,  // per-field { bold, italic, underline }
   logoSize = 1,      // [legacy] logo size multiplier — used as fallback if no per-side size
   logoSide = "both", // "recto" | "verso" | "both"
   logoSizeRecto,     // recto-side size multiplier
@@ -109,11 +111,17 @@ function Card3D({
 }) {
   const FONT_FAMILIES = {
     default: undefined,
-    display: "var(--font-display), Georgia, 'Times New Roman', serif",
-    serif: "Georgia, 'Times New Roman', serif",
-    sans: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
-    mono: "var(--font-mono), 'Courier New', monospace",
-    script: "'Brush Script MT', 'Lucida Handwriting', cursive",
+    display:    "var(--font-display), Georgia, 'Times New Roman', serif",
+    serif:      "Georgia, 'Times New Roman', serif",
+    sans:       "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+    mono:       "var(--font-mono), 'Courier New', monospace",
+    script:     "'Brush Script MT', 'Lucida Handwriting', cursive",
+    playfair:   "'Playfair Display', Georgia, serif",
+    lora:       "'Lora', Georgia, serif",
+    raleway:    "'Raleway', 'Helvetica Neue', sans-serif",
+    montserrat: "'Montserrat', 'Helvetica Neue', sans-serif",
+    cinzel:     "'Cinzel', 'Times New Roman', serif",
+    dancing:    "'Dancing Script', cursive",
   };
   const D = design || (card && window.CARTALIS_DATA.getDesign(card.design)) || window.CARTALIS_DATA.cardDesigns[0];
   const ratio = 0.63; // typical card aspect
@@ -188,25 +196,25 @@ function Card3D({
   const fields = !card ? [] : [
     { key: "name",  show: card.afficher_nom || card.afficher_prenom,
       text: `${card.afficher_prenom ? card.prenom_affiche : ""} ${card.afficher_nom ? card.nom_affiche : ""}`.trim(),
-      style: { fontSize: width * 0.062, fontWeight: 500, letterSpacing: "-0.01em" } },
+      style: { fontSize: width * 0.034, letterSpacing: "-0.01em" } },
     { key: "entreprise", show: card.afficher_entreprise,
       text: card.entreprise_affiche || window.CARTALIS_DATA.entreprise.nom_entreprise,
-      style: { fontSize: width * 0.038, fontWeight: 500, letterSpacing: "0.02em" } },
+      style: { fontSize: width * 0.034, letterSpacing: "0.02em" } },
     { key: "poste", show: card.afficher_poste,
       text: card.poste_affiche,
       style: { fontSize: width * 0.034, color: "var(--gold)", letterSpacing: "0.04em" } },
     { key: "phone", show: card.afficher_telephone,
       text: card.telephone_affiche,
       icon: <Icon.Phone size={width * 0.034} />,
-      style: { fontSize: width * 0.032 } },
+      style: { fontSize: width * 0.034 } },
     { key: "email", show: card.afficher_email,
       text: card.email_affiche,
       icon: <Icon.Mail size={width * 0.034} />,
-      style: { fontSize: width * 0.032 } },
+      style: { fontSize: width * 0.034 } },
     { key: "web", show: card.afficher_site_web,
       text: card.site_web,
       icon: <Icon.Globe size={width * 0.034} />,
-      style: { fontSize: width * 0.032 } },
+      style: { fontSize: width * 0.034 } },
   ];
 
   const inkColorBack = D.ink || "#2a241a";
@@ -219,6 +227,7 @@ function Card3D({
     const fontKey = (fieldFonts && fieldFonts[f.key]) || "default";
     const fontFamily = FONT_FAMILIES[fontKey];
     const baseFontSize = f.style.fontSize;
+    const deco = (fieldDecorations && fieldDecorations[f.key]) || {};
     return (
       <div
         key={f.key}
@@ -230,6 +239,9 @@ function Card3D({
           color: (fieldColors && fieldColors[f.key]) || f.style.color || inkColorBack,
           fontSize: baseFontSize * sizeMul,
           ...(fontFamily ? { fontFamily } : {}),
+          ...(deco.bold ? { fontWeight: "700" } : {}),
+          ...(deco.italic ? { fontStyle: "italic" } : {}),
+          ...(deco.underline ? { textDecoration: "underline" } : {}),
           display: "inline-flex", alignItems: "center", gap: 6,
         }}
       >
@@ -255,15 +267,15 @@ function Card3D({
           position: "absolute", left: `${lp.x}%`, top: `${lp.y}%`,
           transform: "translate(-50%, -50%)",
           width: ls, height: ls,
-          backgroundImage: `url(${logoUrl})`,
-          backgroundSize: "contain", backgroundRepeat: "no-repeat", backgroundPosition: "center",
           cursor: draggable && editable ? (dragging === posKey ? "grabbing" : "grab") : "default",
           outline: draggable && editable ? "1px dashed transparent" : "none",
           transition: "outline-color 150ms",
         }}
         onMouseEnter={(e) => { if (draggable && editable) e.currentTarget.style.outlineColor = "rgba(184,138,62,0.6)"; }}
         onMouseLeave={(e) => { if (draggable && editable) e.currentTarget.style.outlineColor = "transparent"; }}
-      />
+      >
+        <img src={logoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", pointerEvents: "none" }} />
+      </div>
     );
   };
 

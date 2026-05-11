@@ -5,17 +5,23 @@ const { useState: useStateP, useEffect: useEffectP, useRef: useRefP } = React;
 // ---------- App shell ----------
 function AppLayout({ navigate, params, children, tab, setTab, role, plan, trialExpired, onLogout, onUpgrade }) {
   const [menuOpen, setMenuOpen] = useStateP(false);
+  const { profile, entreprise } = useCardlySession();
+
   const tabs = [
-    { id: "cards", label: "Mes cartes", icon: <Icon.Card size={16} /> },
-    { id: "customize", label: "Personnalisation", icon: <Icon.Brush size={16} /> },
-    { id: "dashboard", label: "Dashboard", icon: <Icon.Chart size={16} /> },
-    { id: "secret", label: "Code secret", icon: <Icon.Key size={16} />, adminOnly: false },
-    { id: "subscription", label: "Abonnement", icon: <Icon.Crown size={16} /> },
+    { id: "cards",        label: "Mes cartes",      icon: <Icon.Card size={16} /> },
+    { id: "customize",   label: "Personnalisation", icon: <Icon.Brush size={16} /> },
+    { id: "dashboard",   label: "Dashboard",        icon: <Icon.Chart size={16} /> },
+    { id: "secret",      label: "Code secret",      icon: <Icon.Key size={16} /> },
+    { id: "subscription",label: "Abonnement",       icon: <Icon.Crown size={16} /> },
   ];
   const visibleTabs = tabs;
   const tabLabel = visibleTabs.find(t => t.id === tab)?.label || "";
-  const me = window.CARDLY_DATA.profileMe;
-  const ent = window.CARDLY_DATA.entreprise;
+
+  // Safe display values
+  const prenom   = profile?.prenom || "—";
+  const nom      = profile?.nom    || "";
+  const entNom   = entreprise?.nom_entreprise || "—";
+  const initials = `${prenom[0] || ""}${nom[0] || ""}`.toUpperCase() || "?";
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
@@ -43,15 +49,15 @@ function AppLayout({ navigate, params, children, tab, setTab, role, plan, trialE
             </div>
             <div className="row gap-2" style={{ alignItems: "center" }}>
               <div className="col hide-md" style={{ alignItems: "flex-end", lineHeight: 1.2 }}>
-                <div style={{ fontSize: 13, fontWeight: 500 }}>{me.prenom} {me.nom}</div>
-                <div className="dim" style={{ fontSize: 11 }}>{ent.nom_entreprise}</div>
+                <div style={{ fontSize: 13, fontWeight: 500 }}>{prenom} {nom}</div>
+                <div className="dim" style={{ fontSize: 11 }}>{entNom}</div>
               </div>
               <div style={{
                 width: 36, height: 36, borderRadius: "50%",
                 background: "linear-gradient(135deg, var(--gold-2), var(--gold))",
                 color: "white", display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: 13, fontWeight: 600,
-              }}>{me.prenom[0]}{me.nom[0]}</div>
+              }}>{initials}</div>
             </div>
           </div>
         </div>
@@ -81,10 +87,10 @@ function AppLayout({ navigate, params, children, tab, setTab, role, plan, trialE
                   width: 36, height: 36, borderRadius: "50%",
                   background: "linear-gradient(135deg, var(--gold-2), var(--gold))",
                   color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 600,
-                }}>{me.prenom[0]}{me.nom[0]}</div>
+                }}>{initials}</div>
                 <div className="col" style={{ lineHeight: 1.2 }}>
-                  <div style={{ fontSize: 14, fontWeight: 500 }}>{me.prenom} {me.nom}</div>
-                  <div className="dim" style={{ fontSize: 12 }}>{role === "admin" ? "Admin · " : ""}{ent.nom_entreprise}</div>
+                  <div style={{ fontSize: 14, fontWeight: 500 }}>{prenom} {nom}</div>
+                  <div className="dim" style={{ fontSize: 12 }}>{role === "admin" ? "Admin · " : ""}{entNom}</div>
                 </div>
               </div>
             </div>
@@ -132,48 +138,63 @@ window.AppLayout = AppLayout;
 
 // ---------- Mes cartes ----------
 function MyCardsPage({ onCustomize, onShareCard, role, trialExpired, onUpgrade }) {
-  const [cards, setCards] = useStateP(window.CARDLY_DATA.cards);
+  const { session, profile, entreprise } = useCardlySession();
+  const [cards, setCards] = useStateP([]);
+  const [cardsLoading, setCardsLoading] = useStateP(true);
   const [showAdd, setShowAdd] = useStateP(false);
   const [newName, setNewName] = useStateP("");
   const toast = useToast();
 
-  const addCard = () => {
-    if (!newName.trim()) return;
-    const designs = window.CARDLY_DATA.cardDesigns;
-    const designId = designs[(cards.length) % designs.length].id;
-    const next = {
-      ...window.CARDLY_DATA.cards[1],
-      id: "card-" + Math.random().toString(36).slice(2, 6),
-      type: "personal",
-      nom_carte: newName.trim(),
-      design: designId,
-      is_default: false,
-    };
-    setCards([...cards, next]);
+  // Load real cartes on mount
+  useEffectP(() => {
+    if (!session?.user || !entreprise?.id) { setCardsLoading(false); return; }
+    window.CardlyAPI.getMyCartes(session.user.id, entreprise.id).then(({ data, error }) => {
+      if (!error && data) {
+        setCards(data.map(c => mapCarteFromDB(c, profile)));
+      }
+      setCardsLoading(false);
+    });
+  }, [session, entreprise, profile]);
+
+  const addCard = async () => {
+    if (!newName.trim() || !session?.user || !entreprise?.id) return;
+    const payload = defaultCarteInsert(session.user.id, entreprise.id, newName.trim(), 'personal');
+    const { data, error } = await window.CardlyAPI.createCarte(payload);
+    if (error) { toast.push("Erreur : " + error.message, { icon: <Icon.X size={14}/> }); return; }
+    setCards(prev => [...prev, mapCarteFromDB(data, profile)]);
     setShowAdd(false);
     setNewName("");
     toast.push("Carte créée");
   };
 
+  const entNom = entreprise?.nom_entreprise || "—";
+
   return (
     <div className="col gap-6" style={{ position: "relative" }}>
       <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 16 }}>
         <div className="col gap-2">
-          <div className="eyebrow">Espace · {window.CARDLY_DATA.entreprise.nom_entreprise}</div>
+          <div className="eyebrow">Espace · {entNom}</div>
           <h1 className="serif" style={{ fontSize: "clamp(28px, 4vw, 40px)", margin: 0, letterSpacing: "-0.02em" }}>Mes cartes</h1>
           <p className="muted" style={{ margin: 0, fontSize: 15 }}>Retrouvez vos cartes digitales et partagez-les en un scan.</p>
         </div>
         <div className="row gap-2">
-          <div className="chip chip-gold"><Icon.Sparkle size={11} /> 7 jours d'essai · 4 jours restants</div>
+          <div className="chip chip-gold"><Icon.Sparkle size={11} /> 7 jours d'essai</div>
         </div>
       </div>
 
       <div style={{ position: "relative" }}>
         {trialExpired && <LockedOverlay onUpgrade={onUpgrade} />}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: 24 }}>
-          {cards.map(c => <CardListItem key={c.id} card={c} onCustomize={onCustomize} onShare={onShareCard} role={role} />)}
-          <AddCardTile onClick={() => setShowAdd(true)} />
-        </div>
+        {cardsLoading ? (
+          <div className="col" style={{ alignItems: "center", padding: 60, gap: 16 }}>
+            <Spinner size={36} />
+            <div className="dim" style={{ fontSize: 14 }}>Chargement de vos cartes…</div>
+          </div>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: 24 }}>
+            {cards.map(c => <CardListItem key={c.id} card={c} onCustomize={onCustomize} onShare={onShareCard} role={role} />)}
+            <AddCardTile onClick={() => setShowAdd(true)} />
+          </div>
+        )}
       </div>
 
       <Modal open={showAdd} onClose={() => setShowAdd(false)} title="Nouvelle carte personnelle">
@@ -199,6 +220,7 @@ function CardListItem({ card, onCustomize, onShare, role }) {
   const toast = useToast();
   const [presenting, setPresenting] = useStateP(false);
   const isLocked = role === "collaborator" && card.type === "enterprise";
+  const design = window.CARDLY_DATA.getDesign(card.design);
   return (
     <div className="card fade-up" style={{ padding: 24, display: "flex", flexDirection: "column", gap: 18 }}>
       <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -207,7 +229,7 @@ function CardListItem({ card, onCustomize, onShare, role }) {
             <div className="serif" style={{ fontSize: 20, letterSpacing: "-0.01em" }}>{card.nom_carte}</div>
             {card.is_default && <span className="chip chip-gold">Défaut</span>}
           </div>
-          <div className="dim" style={{ fontSize: 12 }}>{card.type === "enterprise" ? "Carte entreprise" : "Carte personnelle"} · {window.CARDLY_DATA.getDesign(card.design).label}</div>
+          <div className="dim" style={{ fontSize: 12 }}>{card.type === "enterprise" ? "Carte entreprise" : "Carte personnelle"} · {design.label}</div>
         </div>
         <div className="row gap-1">
           <button className="btn btn-ghost btn-sm" onClick={() => onCustomize(card.id)} title="Personnaliser"><Icon.Brush size={14} /></button>
@@ -311,7 +333,6 @@ function PresentCardModal({ card, onClose }) {
 }
 
 function FakeQR({ seed = "x", size = 180 }) {
-  // deterministic pseudo-QR pattern
   const N = 21;
   let h = 0;
   for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
@@ -362,7 +383,20 @@ function AddCardTile({ onClick }) {
 
 // ---------- Personnalisation : sélecteur ----------
 function CustomizePickerPage({ onPick, role, trialExpired, onUpgrade }) {
-  const cards = window.CARDLY_DATA.cards;
+  const { session, profile, entreprise } = useCardlySession();
+  const [cards, setCards] = useStateP([]);
+  const [cardsLoading, setCardsLoading] = useStateP(true);
+
+  useEffectP(() => {
+    if (!session?.user || !entreprise?.id) { setCardsLoading(false); return; }
+    window.CardlyAPI.getMyCartes(session.user.id, entreprise.id).then(({ data, error }) => {
+      if (!error && data) setCards(data.map(c => mapCarteFromDB(c, profile)));
+      setCardsLoading(false);
+    });
+  }, [session, entreprise, profile]);
+
+  if (cardsLoading) return <div className="col" style={{ alignItems: "center", padding: 60, gap: 16 }}><Spinner size={36} /><div className="dim">Chargement…</div></div>;
+
   return (
     <div className="col gap-6" style={{ position: "relative" }}>
       <div className="col gap-2">
@@ -423,8 +457,9 @@ window.CustomizePickerPage = CustomizePickerPage;
 
 // ---------- Personnalisation ----------
 function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack }) {
-  const original = window.CARDLY_DATA.cards.find(c => c.id === cardId) || window.CARDLY_DATA.cards[0];
-  const [card, setCard] = useStateP({ ...original, positions: { ...original.positions } });
+  const { session, profile, entreprise } = useCardlySession();
+  const [card, setCard] = useStateP(null);
+  const [cardLoading, setCardLoading] = useStateP(true);
   const [flipped, setFlipped] = useStateP(true);
   const [showAIModal, setShowAIModal] = useStateP(false);
   const [aiBlocked, setAIBlocked] = useStateP(false);
@@ -432,10 +467,23 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
   const [aiPrompt, setAIPrompt] = useStateP("");
   const [logoUrl, setLogoUrl] = useStateP(null);
   const toast = useToast();
+
+  // Load the specific card
+  useEffectP(() => {
+    if (!cardId) { setCardLoading(false); return; }
+    window.CardlyAPI.getCarteByUuid(cardId).then(({ data, error }) => {
+      if (!error && data) setCard(mapCarteFromDB(data, profile));
+      setCardLoading(false);
+    });
+  }, [cardId, profile]);
+
+  if (cardLoading) return <div className="col" style={{ alignItems: "center", padding: 60, gap: 16 }}><Spinner size={36} /><div className="dim">Chargement…</div></div>;
+  if (!card) return <div className="col" style={{ alignItems: "center", padding: 60 }}><div className="dim">Carte introuvable.</div></div>;
+
   const isAdminOnEnterprise = card.type === "enterprise" && role === "collaborator";
   const editable = !isAdminOnEnterprise;
-
   const designs = window.CARDLY_DATA.cardDesigns;
+
   const setField = (k, v) => setCard(c => ({ ...c, [k]: v }));
   const movePos = (key, pos) => setCard(c => ({ ...c, positions: { ...c.positions, [key]: pos } }));
 
@@ -450,6 +498,29 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
       setShowAIModal(false);
       toast.push("Visuel généré", { icon: <Icon.Sparkle size={14}/> });
     }, 1800);
+  };
+
+  const handleSave = async () => {
+    if (!card.carte_uuid) return;
+    // Build update payload from positions and visibility
+    const update = {
+      afficher_prenom:        card.afficher_prenom,
+      afficher_nom:           card.afficher_nom,
+      afficher_nom_entreprise: card.afficher_entreprise,
+      afficher_poste:         card.afficher_poste,
+      afficher_telephone:     card.afficher_telephone,
+      afficher_email:         card.afficher_email,
+      afficher_site_web:      card.afficher_site_web,
+      prenom_x: card.positions.name.x,   prenom_y: card.positions.name.y,
+      nom_x:    card.positions.name.x,   nom_y:    card.positions.name.y,
+      poste_x:  card.positions.poste.x,  poste_y:  card.positions.poste.y,
+      telephone_x: card.positions.phone.x, telephone_y: card.positions.phone.y,
+      email_x: card.positions.email.x,   email_y: card.positions.email.y,
+      site_web_x: card.positions.web.x,  site_web_y: card.positions.web.y,
+    };
+    const { error } = await window.CardlyAPI.updateCarte(card.carte_uuid, update);
+    if (error) toast.push("Erreur lors de la sauvegarde", { icon: <Icon.X size={14}/> });
+    else toast.push("Modifications sauvegardées");
   };
 
   return (
@@ -519,13 +590,13 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
               <div className="serif" style={{ fontSize: 17, marginBottom: 14 }}>Champs visibles</div>
               <div className="col gap-1">
                 {[
-                  ["afficher_prenom", "Prénom"],
-                  ["afficher_nom", "Nom"],
-                  ["afficher_entreprise", "Nom de l'entreprise"],
-                  ["afficher_poste", "Poste"],
+                  ["afficher_prenom",    "Prénom"],
+                  ["afficher_nom",       "Nom"],
+                  ["afficher_entreprise","Nom de l'entreprise"],
+                  ["afficher_poste",     "Poste"],
                   ["afficher_telephone", "Téléphone"],
-                  ["afficher_email", "Email"],
-                  ["afficher_site_web", "Site web"],
+                  ["afficher_email",     "Email"],
+                  ["afficher_site_web",  "Site web"],
                 ].map(([k, label]) => (
                   <button key={k} disabled={!editable} onClick={() => setField(k, !card[k])} style={{
                     display: "flex", justifyContent: "space-between", alignItems: "center",
@@ -550,7 +621,7 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
                   <Icon.Sparkle size={14} /> Générer une image IA
                   {plan !== "team" && <span className="chip chip-gold" style={{ marginLeft: "auto", fontSize: 10 }}>Team</span>}
                 </button>
-                <button className="btn btn-primary" disabled={!editable} onClick={() => toast.push("Modifications sauvegardées")}>
+                <button className="btn btn-primary" disabled={!editable} onClick={handleSave}>
                   <Icon.Check size={14} /> Sauvegarder
                 </button>
               </div>
@@ -570,16 +641,8 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
           </button>
         </div>
         {aiLoading && (
-          <div style={{
-            marginTop: 14, height: 6, borderRadius: 999, overflow: "hidden",
-            background: "var(--surface-2)",
-          }}>
-            <div style={{
-              height: "100%", width: "40%",
-              background: "linear-gradient(90deg, var(--gold-2), var(--gold))",
-              animation: "shimmer 1.4s linear infinite",
-              backgroundSize: "200% 100%",
-            }} />
+          <div style={{ marginTop: 14, height: 6, borderRadius: 999, overflow: "hidden", background: "var(--surface-2)" }}>
+            <div style={{ height: "100%", width: "40%", background: "linear-gradient(90deg, var(--gold-2), var(--gold))", animation: "shimmer 1.4s linear infinite", backgroundSize: "200% 100%" }} />
           </div>
         )}
       </Modal>
