@@ -73,7 +73,7 @@ function App() {
         let entrepriseData = membership?.entreprises || null;
         if (!entrepriseData && entrepriseId) {
           const { data: entFallback } = await window.sb
-            .from('entreprises').select('id, nom_entreprise, code_secret, plan')
+            .from('entreprises').select('id, nom_entreprise, code_secret, plan, website')
             .eq('id', entrepriseId).single();
           entrepriseData = entFallback;
         }
@@ -104,6 +104,7 @@ function App() {
             nom_entreprise: entrepriseData.nom_entreprise,
             code_secret:    entrepriseData.code_secret,
             plan:           entrepriseData.plan || 'free',
+            website:        entrepriseData.website || '',
           });
         }
 
@@ -187,6 +188,7 @@ function App() {
           trialExpired={tweaks.trialExpired}
           onUpgrade={() => setTab("subscription")}
           onBack={() => { setTabRaw("customize"); setCustomizeId(scanCardId); }}
+          onFinish={() => { setTabRaw("cards"); setScanCardId(null); setCustomizeId(null); }}
         />}
         {tab === "dashboard" && <DashboardPage role={role} trialExpired={tweaks.trialExpired} onUpgrade={() => setTab("subscription")} />}
         {tab === "crm" && <CrmPage role={role} />}

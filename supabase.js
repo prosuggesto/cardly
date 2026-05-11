@@ -109,8 +109,44 @@
       async createCarte(data) {
         return window.sb.from('cartes').insert(data).select().single();
       },
+      // Réplique une carte entreprise pour chaque membre actif de l'entreprise
+      // (sauf le créateur, qui a déjà sa carte). Chaque réplique partage le même
+      // design / positions / scan config, mais avec son propre collaborateur_id.
+      // Les infos personnelles (nom, prenom, telephone, email, poste) sont
+      // lues depuis le profil du membre au moment du render (mapCarteFromDB).
+      async replicateCarteForMembers(carteData, entrepriseId, excludeUserId) {
+        // 1) Récupérer tous les membres ACTIFS de l'entreprise (sauf le créateur)
+        const { data: members, error: mErr } = await window.sb
+          .from('entreprise_members')
+          .select('user_id')
+          .eq('entreprise_id', entrepriseId)
+          .eq('statut', 'active');
+        if (mErr || !members?.length) return { data: [], error: mErr };
+        const targets = members.map(m => m.user_id).filter(uid => uid && uid !== excludeUserId);
+        if (!targets.length) return { data: [], error: null };
+        // 2) Construire les payloads (un par membre cible) — on retire les champs auto-gérés
+        const { id, carte_uuid, created_at, updated_at, ...base } = carteData;
+        const rows = targets.map(uid => ({ ...base, collaborateur_id: uid }));
+        // 3) Insertion en bulk
+        return window.sb.from('cartes').insert(rows).select();
+      },
       async updateCarte(carteUuid, data) {
-        return window.sb.from('cartes').update(data).eq('carte_uuid', carteUuid).select().single();
+        const { data: master, error } = await window.sb.from('cartes')
+          .update(data).eq('carte_uuid', carteUuid).select().single();
+        if (error) return { data: null, error };
+        // Si carte entreprise : propager la modif à toutes les répliques
+        // (même entreprise + même nom de carte + type entreprise, sauf la master)
+        if (master?.type_card === 'entreprise' && master.entreprise_id && master.card_name) {
+          try {
+            await window.sb.from('cartes')
+              .update(data)
+              .eq('entreprise_id', master.entreprise_id)
+              .eq('card_name', master.card_name)
+              .eq('type_card', 'entreprise')
+              .neq('carte_uuid', carteUuid);
+          } catch (_) { /* best-effort */ }
+        }
+        return { data: master, error: null };
       },
       async deleteCarte(carteUuid) {
         return window.sb.from('cartes').delete().eq('carte_uuid', carteUuid);
@@ -224,7 +260,9 @@
           poste_affiche:      profile?.poste          || '',
           telephone_affiche:  profile?.telephone      || '',
           email_affiche:      profile?.email          || '',
-          site_web:           profile?.site_web        || '',
+          // Pour les cartes entreprise : le site web est imposé par l'entreprise (géré par le chef).
+          // Pour les cartes personnelles : site web personnel du collaborateur.
+          site_web:           (c.type_card === 'entreprise' ? (entreprise?.website || profile?.site_web) : profile?.site_web) || '',
           afficher_nom:        c.afficher_nom            ?? false,
           afficher_prenom:     c.afficher_prenom         ?? false,
           afficher_entreprise: c.afficher_nom_entreprise ?? false,

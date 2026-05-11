@@ -288,6 +288,20 @@ function MyCardsPage({ onCustomize, onShareCard, role, trialExpired, onUpgrade }
       setShowAdd(false);
       setNewName(""); setNewType("personnel"); setSelectedTagId(null); setNewTagInput("");
       toast.push("Carte créée ✓");
+
+      // Si carte entreprise → répliquer pour tous les autres membres actifs
+      // (même design, positions, scan config — leurs infos personnelles seront
+      // lues depuis leur profil au moment du render)
+      if (newType === 'entreprise' && entrepriseId) {
+        try {
+          const { data: clones, error: rErr } = await window.CardlyAPI.replicateCarteForMembers(newCarte, entrepriseId, userId);
+          if (rErr) console.warn('[Cardly] replicate failed:', rErr);
+          else if (clones?.length) {
+            toast.push(`Carte propagée à ${clones.length} collaborateur(s)`);
+          }
+        } catch (e) { console.warn('[Cardly] replicate threw:', e); }
+      }
+
       // Redirection immédiate vers la personnalisation
       onCustomize && onCustomize(mapped.id);
     } catch (err) {
@@ -1673,7 +1687,7 @@ function CardImageUpload({ label, hint, disabled, imageUrl, onChange, onClear })
 }
 
 // ---------- Personnalisation Scan ----------
-function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack }) {
+function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack, onFinish }) {
   const ent = window.CARTALIS_DATA.entreprise;
   const toast = useToast();
 
@@ -1733,6 +1747,7 @@ function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, on
       const updatedCard = { ...card, scanButtons: { ...scanButtons }, rdvUrl, crmFields: { ...crmFields } };
       window.CARTALIS_DATA.cards = (window.CARTALIS_DATA.cards || []).map(c => c.id === card.id ? updatedCard : c);
       toast.push("Personnalisation enregistrée ✓");
+      onFinish && onFinish(card.id);
     } finally { setSaving(false); }
   };
 
