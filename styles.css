@@ -435,40 +435,48 @@ img, video, svg { max-width: 100%; height: auto; }
   }
 }
 
-/* ── Pricing cards : compacter sur mobile ─────────────────────────────── */
-@media (max-width: 700px) {
-  .pricing-card {
-    padding: 22px !important;
-    gap: 14px !important;
-  }
-  .pricing-card .serif[style*="font-size: 44"] {
-    font-size: 34px !important;
-  }
+/* ── Auto-scroll fluide du mockup téléphone (section "Expérience prospect") ── */
+@keyframes phone-mock-scroll {
+  0%, 8%     { transform: translateY(0); }
+  48%, 58%   { transform: translateY(-260px); }
+  98%, 100%  { transform: translateY(0); }
 }
-@media (max-width: 420px) {
-  .pricing-card {
-    padding: 18px !important;
-    gap: 12px !important;
-  }
-  .pricing-card .serif[style*="font-size: 44"] {
-    font-size: 28px !important;
-  }
+.phone-mock-scroll {
+  animation: phone-mock-scroll 10s ease-in-out infinite;
+  will-change: transform;
 }
 
-/* ── Auth signup : la carte 3D devient grande et scrollable sur mobile ── */
+/* ── Pricing cards : zoom global pour tout réduire proportionnellement ── */
 @media (max-width: 700px) {
-  .auth-3d-card {
-    /* Beaucoup plus de hauteur pour qu'un formulaire d'inscription tienne */
-    height: min(640px, 78vh) !important;
-    width: min(640px, 94vw) !important;
-  }
-  /* La face arrière (formulaire) doit pouvoir scroller en interne */
-  .auth-3d-card .card-face-back > div { overscroll-behavior: contain; }
+  .pricing-card { zoom: 0.85; }
+}
+@media (max-width: 600px) {
+  .pricing-card { zoom: 0.75; }
 }
 @media (max-width: 420px) {
-  .auth-3d-card {
-    height: min(720px, 82vh) !important;
-  }
+  .pricing-card { zoom: 0.68; }
+}
+
+/* ── Auth signup : la carte garde sa taille, on rétrécit le CONTENU ─── */
+@media (max-width: 700px) {
+  /* Tous les éléments du formulaire passent en mode compact */
+  .auth-3d-card .field { gap: 4px !important; }
+  .auth-3d-card .input,
+  .auth-3d-card input { padding: 8px 10px !important; font-size: 12.5px !important; }
+  .auth-3d-card label,
+  .auth-3d-card .field > div:first-child { font-size: 10.5px !important; }
+  .auth-3d-card .serif { font-size: 18px !important; }
+  .auth-3d-card .btn { padding: 8px 12px !important; font-size: 12px !important; min-height: 32px !important; }
+  .auth-3d-card .col.gap-3 { gap: 8px !important; }
+  /* La zone scrollable de la face arrière */
+  .auth-3d-card .card-face-back > div { padding: 14px 16px !important; overscroll-behavior: contain; }
+  /* Texte de description sous les boutons rôle */
+  .auth-3d-card .dim { font-size: 11px !important; }
+}
+@media (max-width: 420px) {
+  .auth-3d-card .input,
+  .auth-3d-card input { padding: 7px 9px !important; font-size: 12px !important; }
+  .auth-3d-card .serif { font-size: 16px !important; }
 }
 
 /* ── Mockups landing : rétrécir l'ensemble (contenu + frame) sur mobile ── */

@@ -617,6 +617,80 @@ function DashboardPreview() {
   const [fading, setFading] = useStateL(false);
   const SLIDES = ["Vue d'ensemble", "Tableau membres", "Détail canal"];
 
+  // Sur mobile : on shunte tout le mockup navigateur compliqué et on rend
+  // une version épurée — un seul bloc clair, lisible, aéré.
+  const [vw, setVw] = useStateL(typeof window !== 'undefined' ? window.innerWidth : 1024);
+  useEffectL(() => {
+    const onResize = () => setVw(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  const isMobile = vw <= 700;
+
+  if (isMobile) {
+    const totalLeads = active.reduce((sum, c) => sum + (c.leads || 0), 0);
+    const topMember = active[0];
+    return (
+      <section style={{ padding: "60px 0" }}>
+        <div className="container col gap-8">
+          <SectionHeader
+            eyebrow="Dashboard"
+            title="Suivez les performances de vos équipes."
+            subtitle="Visualisez les interactions générées par chaque collaborateur."
+          />
+          <div className="card" style={{ padding: 24, background: "linear-gradient(180deg, #fffdf6 0%, var(--surface) 100%)", display: "flex", flexDirection: "column", gap: 22 }}>
+            <div className="col gap-1">
+              <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-3)" }}>DASHBOARD · AVRIL 2026</div>
+              <div className="serif" style={{ fontSize: 22, letterSpacing: "-0.01em" }}>Performance des membres</div>
+            </div>
+
+            {/* 3 KPIs */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+              {[
+                { label: "Leads ce mois", value: totalLeads, delta: "+24" },
+                { label: "Meilleur membre", value: topMember?.prenom || "—", delta: (topMember?.leads || 0) + " leads" },
+                { label: "Membres actifs", value: active.length, delta: "sur " + collabs.length },
+              ].map((k, i) => (
+                <div key={i} style={{ padding: "12px 10px", borderRadius: 12, background: "var(--surface)", border: "1px solid var(--line)", display: "flex", flexDirection: "column", gap: 4 }}>
+                  <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)" }}>{k.label}</div>
+                  <div className="serif" style={{ fontSize: 18, lineHeight: 1.1 }}>{k.value}</div>
+                  <div className="dim" style={{ fontSize: 10 }}>{k.delta}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Top 3 leaderboard */}
+            <div className="col gap-2">
+              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-2)" }}>Top 3 du mois</div>
+              {active.slice(0, 3).map((c, i) => (
+                <div key={c.id} className="row gap-3" style={{ alignItems: "center", padding: "10px 12px", borderRadius: 10, background: i === 0 ? "linear-gradient(135deg, #fdf3df, #fffaf0)" : "var(--surface)", border: "1px solid var(--line)" }}>
+                  <div style={{
+                    width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
+                    background: i === 0 ? "linear-gradient(135deg, var(--gold-2), var(--gold))" : "var(--surface-2)",
+                    color: i === 0 ? "white" : "var(--ink-3)",
+                    display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700,
+                  }}>{i + 1}</div>
+                  <div className="col" style={{ flex: 1, lineHeight: 1.2 }}>
+                    <div style={{ fontSize: 13, fontWeight: 500 }}>{c.prenom} {c.nom}</div>
+                    <div className="dim" style={{ fontSize: 10 }}>{c.poste}</div>
+                  </div>
+                  <div className="serif" style={{ fontSize: 16, color: "var(--gold-deep)" }}>{c.leads}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Demandes pendantes */}
+            {pending.length > 0 && (
+              <div style={{ padding: "10px 12px", borderRadius: 10, background: "rgba(45,122,79,0.06)", border: "1px solid rgba(45,122,79,0.2)", fontSize: 12, color: "var(--ink-2)" }}>
+                <strong style={{ color: "var(--good, #2d7a4f)" }}>{pending.length}</strong> demande{pending.length > 1 ? "s" : ""} en attente
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   // Exactly matches FilterSelect in the real dashboard (glass, 44px height, rounded-rect)
   const glassChip = {
     background: "rgba(255,255,255,0.45)",
@@ -991,10 +1065,13 @@ function DelayedPhoneAnimation({ scrollRef, scanFlipped, scanDesign }) {
           <div style={{ height: 36, background: "var(--bg)", display: "flex", alignItems: "flex-end", justifyContent: "space-between", padding: "0 20px 4px", fontSize: 10, color: "var(--ink-3)" }}>
             <span>9:41</span><span style={{ letterSpacing: 1 }}>●●●</span>
           </div>
-          {/* scrollable content */}
+          {/* Conteneur fixe : on cache le débordement et on translate l'inner via CSS @keyframes.
+              Plus fluide que scrollTop (GPU-accelerated), pas de secousse, marche sur tous les appareils. */}
+          <div style={{ maxHeight: 540, overflow: "hidden" }}>
           <div
             ref={scrollRef}
-            style={{ padding: "4px 14px 24px", overflowY: "scroll", maxHeight: 540, scrollbarWidth: "none" }}
+            className="phone-mock-scroll"
+            style={{ padding: "4px 14px 24px" }}
           >
             {/* mini header */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
@@ -1071,6 +1148,7 @@ function DelayedPhoneAnimation({ scrollRef, scanFlipped, scanDesign }) {
               <Icon.Linkedin size={36} />
             </div>
           </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1114,35 +1192,8 @@ function ScanPreviewSection() {
     return () => clearInterval(t);
   }, []);
 
-  // Auto-scroll fluide haut ↔ bas pour révéler les icônes sociales.
-  // IMPORTANT : sur mobile, scrollTop est arrondi à l'entier, donc on accumule
-  // la position fractionnaire dans une variable séparée puis on assigne floor.
-  useEffectL(() => {
-    let dir = 1;
-    let raf;
-    let last = 0;
-    let acc = 0;            // position fractionnaire accumulée
-    const SPEED = 0.8;      // px par frame logique
-    const step = (ts) => {
-      if (ts - last > 20) { // ~50 fps max
-        last = ts;
-        if (scrollRef.current) {
-          const el = scrollRef.current;
-          const max = el.scrollHeight - el.clientHeight;
-          if (max > 0) {
-            acc += dir * SPEED;
-            if (acc >= max - 2) { acc = max; dir = -1; }
-            else if (acc <= 0) { acc = 0; dir = 1; }
-            el.scrollTop = Math.round(acc);
-          }
-        }
-      }
-      raf = requestAnimationFrame(step);
-    };
-    // Démarre après 1.2 s pour laisser le temps de voir la position initiale
-    const t = setTimeout(() => { raf = requestAnimationFrame(step); }, 1200);
-    return () => { clearTimeout(t); cancelAnimationFrame(raf); };
-  }, []);
+  // Auto-scroll géré 100% en CSS via @keyframes phone-mock-scroll
+  // (cf. styles.css). GPU-accelerated, pas de secousses, marche partout.
 
   return (
     <section style={{ padding: "120px 0" }} className="section-bg-soft">
