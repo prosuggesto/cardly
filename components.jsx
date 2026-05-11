@@ -105,10 +105,23 @@ function Card3D({
   fieldFonts,        // per-field font family key
   fieldDecorations,  // per-field { bold, italic, underline }
   logoSize = 1,      // [legacy] logo size multiplier — used as fallback if no per-side size
-  logoSide = "both", // "recto" | "verso" | "both"
+  logoSide,          // "recto" | "verso" | "both"
   logoSizeRecto,     // recto-side size multiplier
   logoSizeVerso,     // verso-side size multiplier
 }) {
+  // Fallback automatique sur les valeurs portées par `card` quand les props ne sont pas explicitement fournies.
+  // Permet d'appeler <Card3D card={card} /> sans répéter toutes les props de style.
+  fieldColors      = fieldColors      ?? card?.fieldColors;
+  fieldSides       = fieldSides       ?? card?.fieldSides;
+  fieldSizes       = fieldSizes       ?? card?.fieldSizes;
+  fieldFonts       = fieldFonts       ?? card?.fieldFonts;
+  fieldDecorations = fieldDecorations ?? card?.fieldDecorations;
+  logoUrl          = logoUrl          ?? card?.logoUrl;
+  logoSide         = logoSide         ?? card?.logoSide ?? "both";
+  logoSizeRecto    = logoSizeRecto    ?? card?.logoSizeRecto;
+  logoSizeVerso    = logoSizeVerso    ?? card?.logoSizeVerso;
+  frontImageUrl    = frontImageUrl    ?? card?.frontImageUrl;
+  backImageUrl     = backImageUrl     ?? card?.backImageUrl;
   const FONT_FAMILIES = {
     default: undefined,
     display:    "var(--font-display), Georgia, 'Times New Roman', serif",
