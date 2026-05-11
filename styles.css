@@ -521,7 +521,44 @@ img, video, svg { max-width: 100%; height: auto; }
 
 /* ── Auth signup : carte garde sa taille, contenu réduit + scroll mobile ─ */
 @media (max-width: 700px) {
-  /* Permettre le scroll tactile fluide dans la face arrière */
+  /* ─ Face AVANT (choix du rôle) ────────────────────────────────────────
+     La carte fait `min(420px, 60vw)` de haut → ~225px sur 375px de large.
+     Avant : les 2 RoleButton (240px chacun) wrappaient en colonne et le
+     2e bouton sortait du cadre. Solution : on les force côte à côte en
+     flex:1 et on compacte (icône, padding, description masquée). */
+  .auth-3d-card .card-face:not(.card-face-back) > div[style*="padding: 0 32px"] {
+    padding: 0 14px !important;
+    gap: 10px !important;
+  }
+  .auth-3d-card .card-face:not(.card-face-back) .logo-mark {
+    width: 32px !important; height: 32px !important; font-size: 15px !important;
+  }
+  .auth-3d-card .card-face:not(.card-face-back) .row.gap-3 {
+    flex-wrap: nowrap !important;
+    width: 100% !important;
+    gap: 8px !important;
+  }
+  .auth-3d-card .card-face:not(.card-face-back) .row.gap-3 > button {
+    width: auto !important;
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    padding: 10px 10px !important;
+    gap: 4px !important;
+  }
+  /* Réduit l'icône carrée à gauche du titre dans chaque RoleButton */
+  .auth-3d-card .card-face:not(.card-face-back) .row.gap-3 > button > .row > div:first-child {
+    width: 24px !important; height: 24px !important; border-radius: 7px !important;
+  }
+  /* Titre RoleButton plus petit et qui peut se replier sur 2 lignes */
+  .auth-3d-card .card-face:not(.card-face-back) .row.gap-3 > button .serif {
+    font-size: 12.5px !important; line-height: 1.15 !important;
+  }
+  /* Description masquée sur mobile : les titres sont assez explicites */
+  .auth-3d-card .card-face:not(.card-face-back) .row.gap-3 > button > .dim {
+    display: none !important;
+  }
+
+  /* ─ Face ARRIÈRE (formulaire) — inchangé ───────────────────────────── */
   .auth-3d-card .card-face-back > div {
     padding: 14px 16px !important;
     overflow: auto !important;
@@ -529,7 +566,6 @@ img, video, svg { max-width: 100%; height: auto; }
     touch-action: pan-y;
     overscroll-behavior: contain;
   }
-  /* Tous les éléments du formulaire passent en mode compact */
   .auth-3d-card .field { gap: 4px !important; margin: 0 0 6px !important; }
   .auth-3d-card .input,
   .auth-3d-card input,
@@ -545,6 +581,12 @@ img, video, svg { max-width: 100%; height: auto; }
   .auth-3d-card .input,
   .auth-3d-card input { padding: 7px 9px !important; font-size: 12px !important; }
   .auth-3d-card .serif { font-size: 16px !important; }
+  .auth-3d-card .card-face:not(.card-face-back) .row.gap-3 > button .serif {
+    font-size: 11.5px !important;
+  }
+  .auth-3d-card .card-face:not(.card-face-back) .row.gap-3 > button {
+    padding: 8px 8px !important;
+  }
 }
 
 /* ── Mockups landing : rétrécir l'ensemble (contenu + frame) sur mobile ── */
