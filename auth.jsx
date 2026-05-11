@@ -61,10 +61,10 @@ function AuthPage({ navigate, params }) {
             </div>
           </div>
         ) : (
-          <div className="scene-3d" style={{ perspective: 2200 }}>
+          <div className="scene-3d auth-3d-scene" style={{ perspective: 2200 }}>
             <div style={{ animation: "float-soft 7s ease-in-out infinite" }}>
               <div
-                className="card-3d"
+                className="card-3d auth-3d-card"
                 style={{
                   width: "min(640px, 92vw)",
                   height: "min(420px, 60vw)",

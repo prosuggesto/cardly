@@ -435,6 +435,42 @@ img, video, svg { max-width: 100%; height: auto; }
   }
 }
 
+/* ── Pricing cards : compacter sur mobile ─────────────────────────────── */
+@media (max-width: 700px) {
+  .pricing-card {
+    padding: 22px !important;
+    gap: 14px !important;
+  }
+  .pricing-card .serif[style*="font-size: 44"] {
+    font-size: 34px !important;
+  }
+}
+@media (max-width: 420px) {
+  .pricing-card {
+    padding: 18px !important;
+    gap: 12px !important;
+  }
+  .pricing-card .serif[style*="font-size: 44"] {
+    font-size: 28px !important;
+  }
+}
+
+/* ── Auth signup : la carte 3D devient grande et scrollable sur mobile ── */
+@media (max-width: 700px) {
+  .auth-3d-card {
+    /* Beaucoup plus de hauteur pour qu'un formulaire d'inscription tienne */
+    height: min(640px, 78vh) !important;
+    width: min(640px, 94vw) !important;
+  }
+  /* La face arrière (formulaire) doit pouvoir scroller en interne */
+  .auth-3d-card .card-face-back > div { overscroll-behavior: contain; }
+}
+@media (max-width: 420px) {
+  .auth-3d-card {
+    height: min(720px, 82vh) !important;
+  }
+}
+
 /* ── Mockups landing : rétrécir l'ensemble (contenu + frame) sur mobile ── */
 /* On utilise `zoom` qui (contrairement à transform: scale) réduit aussi
    la box layout — donc pas de chevauchement avec la section suivante. */

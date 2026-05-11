@@ -398,8 +398,9 @@ function HeroSection({ navigate }) {
             )}
             <div
               onClick={() => setHeroFlipped(f => !f)}
-              onMouseEnter={() => setHeroFlipped(true)}
-              onMouseLeave={() => setHeroFlipped(false)}
+              // Hover uniquement sur souris (sinon double-trigger sur tactile : 1er tap = hover+click → bug)
+              onPointerEnter={(e) => { if (e.pointerType === 'mouse') setHeroFlipped(true); }}
+              onPointerLeave={(e) => { if (e.pointerType === 'mouse') setHeroFlipped(false); }}
               style={{
                 cursor: "pointer", zIndex: 1,
                 opacity: imgsReady ? 1 : 0,
@@ -639,14 +640,7 @@ function DashboardPreview() {
     </span>
   );
 
-  useEffectL(() => {
-    const t = setInterval(() => {
-      setFading(true);
-      setTimeout(() => { setSlide(s => (s + 1) % 3); setFading(false); }, 320);
-    }, 4500);
-    return () => clearInterval(t);
-  }, []);
-
+  // Plus d'auto-rotation : c'est l'utilisateur qui pilote via les tabs intégrés au mockup.
   const goTo = (i) => { setFading(true); setTimeout(() => { setSlide(i); setFading(false); }, 220); };
 
   // ── Slide 0 : vue d'ensemble (filtres + KPIs + Top 3 podium + demandes) ──
@@ -871,11 +865,23 @@ function DashboardPreview() {
             padding: "0 24px", display: "flex", alignItems: "center", justifyContent: "space-between",
             height: 48, borderRadius: "16px 16px 0 0",
           }}>
-            <div className="row gap-3" style={{ alignItems: "center" }}>
-              <div style={{ width: 22, height: 22, borderRadius: 6, background: "linear-gradient(135deg,var(--gold-2),var(--gold))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "white" }}>C</div>
-              <div style={{ width: 1, height: 18, background: "var(--line)" }}/>
-              <div className="serif" style={{ fontSize: 14, letterSpacing: "-0.01em" }}>
-                {["Dashboard","Membres","Détail canal"][slide]}
+            <div className="row gap-3 dash-mockup-tabs" style={{ alignItems: "center" }}>
+              <div style={{ width: 22, height: 22, borderRadius: 6, background: "linear-gradient(135deg,var(--gold-2),var(--gold))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "white", flexShrink: 0 }}>C</div>
+              <div style={{ width: 1, height: 18, background: "var(--line)", flexShrink: 0 }}/>
+              {/* Tabs intégrés au header du mockup (style onglets d'app) */}
+              <div className="row gap-1" style={{ flexWrap: "wrap" }}>
+                {SLIDES.map((label, i) => (
+                  <button key={i} onClick={() => goTo(i)} style={{
+                    padding: "5px 10px", borderRadius: 8, border: "none",
+                    background: slide === i ? "var(--ink)" : "transparent",
+                    color: slide === i ? "white" : "var(--ink-3)",
+                    fontSize: 11, fontWeight: slide === i ? 600 : 400,
+                    cursor: "pointer", transition: "all 180ms",
+                    whiteSpace: "nowrap",
+                  }}>
+                    {label}
+                  </button>
+                ))}
               </div>
             </div>
             <div className="row gap-3" style={{ alignItems: "center" }}>
@@ -928,26 +934,6 @@ function DashboardPreview() {
           </div>
         </div>
 
-        {/* Tab indicators */}
-        <div className="row gap-3" style={{ justifyContent: "center", alignItems: "center" }}>
-          {SLIDES.map((label, i) => (
-            <button key={i} onClick={() => goTo(i)} style={{
-              display: "flex", alignItems: "center", gap: 7,
-              padding: "7px 16px", borderRadius: 999, border: "1px solid var(--line)",
-              background: slide === i ? "var(--ink)" : "transparent",
-              color: slide === i ? "white" : "var(--ink-3)",
-              fontSize: 12, fontWeight: slide === i ? 600 : 400,
-              cursor: "pointer", transition: "all 200ms",
-            }}>
-              <div style={{
-                width: 6, height: 6, borderRadius: "50%",
-                background: slide === i ? "white" : "var(--ink-4)",
-                transition: "background 200ms",
-              }}/>
-              {label}
-            </button>
-          ))}
-        </div>
       </AnimatedSection>
     </section>
   );
@@ -1340,7 +1326,7 @@ function PricingCard({ name, price, basePrice, billing, period, tagline, feature
     ? basePrice.toLocaleString("fr-FR") + "€"
     : null;
   return (
-    <div className="card" style={{
+    <div className="card pricing-card" style={{
       padding: 32,
       position: "relative",
       ...(featured ? {
