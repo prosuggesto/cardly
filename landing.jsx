@@ -616,7 +616,8 @@ function DashboardPreview() {
   const pending = collabs.filter(c => c.statut === "en_attente");
   const [slide, setSlide] = useStateL(0);
   const [fading, setFading] = useStateL(false);
-  const SLIDES = ["Vue d'ensemble", "Tableau des membres", "Détail par canaux"];
+  const SLIDES = ["Vue d'ensemble", "Tableau des membres", "Détail par canal"];
+  const sectionRef = useRefL(null);
 
   // Sur mobile : on shunte tout le mockup navigateur compliqué et on rend
   // une version épurée — un seul bloc clair, lisible, aéré.
@@ -664,7 +665,7 @@ function DashboardPreview() {
     );
 
     return (
-      <section style={{ padding: "60px 0" }}>
+      <section ref={sectionRef} style={{ padding: "60px 0" }}>
         <div className="container col gap-6">
           {/* Header — identique au vrai dashboard */}
           <div className="col gap-2">
@@ -783,7 +784,7 @@ function DashboardPreview() {
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                   <thead>
                     <tr style={{ background: "var(--surface-2)" }}>
-                      {["Membre", "Poste", "Rôle", "Leads"].map(h => (
+                      {["Membre", "Poste", "Rôle", "Leads", "Clics canaux", "Gestion"].map(h => (
                         <th key={h} style={{ textAlign: "left", padding: "10px 14px", fontWeight: 500, color: "var(--ink-3)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>{h}</th>
                       ))}
                     </tr>
@@ -791,6 +792,9 @@ function DashboardPreview() {
                   <tbody>
                     {collabs.map(c => {
                       const isResp = c.role_membre === "responsable" || c.role === "admin" || c.role === "manager";
+                      const totalClics = (c.total_clic_mail || 0) + (c.total_clic_instagram || 0) +
+                        (c.total_clic_linkedin || 0) + (c.total_clic_site_web || 0) +
+                        (c.total_clic_whatsapp || 0) + (c.total_clic_crm || 0);
                       return (
                         <tr key={c.id} style={{ borderTop: "1px solid var(--line)" }}>
                           <td style={{ padding: "12px 14px", whiteSpace: "nowrap" }}>
@@ -812,6 +816,22 @@ function DashboardPreview() {
                           </td>
                           <td style={{ padding: "12px 14px" }}>
                             <span className="serif" style={{ fontSize: 16 }}>{c.leads}</span>
+                          </td>
+                          <td style={{ padding: "12px 14px" }}>
+                            <div className="row gap-1" style={{ alignItems: "center" }}>
+                              <span className="serif" style={{ fontSize: 15 }}>{totalClics}</span>
+                              <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.35 }}><path d="M9 18l6-6-6-6"/></svg>
+                            </div>
+                          </td>
+                          <td style={{ padding: "12px 14px", whiteSpace: "nowrap" }}>
+                            <div className="row gap-1">
+                              <button className="btn btn-sm" style={{ padding: "4px 8px", fontSize: 11 }}>
+                                {isResp ? <Icon.Crown size={10} /> : <Icon.User size={10} />}
+                              </button>
+                              <button className="btn btn-sm" style={{ padding: "4px 8px", fontSize: 11, color: "var(--ink-3)" }}>
+                                <Icon.Trash size={10} />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -886,7 +906,7 @@ function DashboardPreview() {
           {/* ── Tabs en bas pour switcher entre les 3 vues ── */}
           <div className="row gap-2" style={{ justifyContent: "center", flexWrap: "wrap", marginTop: 8 }}>
             {SLIDES.map((label, i) => (
-              <button key={i} onClick={() => setSlide(i)} style={{
+              <button key={i} onClick={() => { setSlide(i); sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} style={{
                 display: "flex", alignItems: "center", gap: 7,
                 padding: "8px 16px", borderRadius: 999, border: "1px solid var(--line)",
                 background: slide === i ? "var(--ink)" : "var(--surface)",
