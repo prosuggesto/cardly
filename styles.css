@@ -435,6 +435,15 @@ img, video, svg { max-width: 100%; height: auto; }
   }
 }
 
+/* ── Grille 2 colonnes des boutons d'action dans le mockup carte (scan preview) ──
+   Définie via className et non style inline pour éviter le sélecteur [style*="1fr 1fr"]
+   qui force le passage en 1 colonne sur mobile. */
+.scan-action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
 /* ── Auto-scroll fluide du mockup téléphone (section "Expérience prospect") ── */
 /* On scroll juste assez pour révéler les icônes Insta/LinkedIn, pas plus. */
 @keyframes phone-mock-scroll {
@@ -649,8 +658,8 @@ img, video, svg { max-width: 100%; height: auto; }
   .h-scroll { gap: 14px; }
   [class*="grid"] { gap: 16px; }
 
-  /* 2 cols larges → 1 col sur mobile (sauf grids internes de mockup) */
-  [style*="grid-template-columns: 1fr 1fr"]:not([style*="1fr 1fr 1fr"]):not(.scan-action-grid) {
+  /* 2 cols larges → 1 col sur mobile */
+  [style*="grid-template-columns: 1fr 1fr"]:not([style*="1fr 1fr 1fr"]) {
     grid-template-columns: 1fr !important;
   }
   /* 3 cols inline (boutons larges) → 1 col sur mobile */
