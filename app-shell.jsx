@@ -875,18 +875,23 @@ function DesignThumb({ design, selected, editable, onSelect }) {
 
 // ---------- Personnalisation ----------
 function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack, onValidate }) {
-  const original = window.CARTALIS_DATA.cards.find(c => c.id === cardId) || window.CARTALIS_DATA.cards[0];
-  const [card, setCard] = useStateP({ ...original, positions: { ...original.positions } });
-  const [flipped, setFlipped] = useStateP(false);
-  const [showAIModal, setShowAIModal] = useStateP(false);
-  const [aiBlocked, setAIBlocked] = useStateP(false);
-  const [aiLoading, setAILoading] = useStateP(false);
-  const [aiPrompt, setAIPrompt] = useStateP("");
   const DEF_COLORS = { name: "#f3f0ed", entreprise: "#f3f0ed", poste: "#f3f0ed", phone: "#f3f0ed", email: "#f3f0ed", web: "#f3f0ed" };
   const DEF_SIDES  = { name: "recto",   entreprise: "recto",   poste: "recto",   phone: "recto",   email: "recto",   web: "recto" };
   const DEF_SIZES  = { name: 1,         entreprise: 1,         poste: 0.9,       phone: 0.8,       email: 0.8,       web: 0.8 };
   const DEF_FONTS  = { name: "default", entreprise: "default", poste: "default", phone: "default", email: "default", web: "default" };
   const DEF_DECOS  = { name: {},        entreprise: {},        poste: {},        phone: {},        email: {},        web: {} };
+
+  // Lit depuis le cache global (peut être vide si short-circuit du restore de session)
+  const original = (window.CARTALIS_DATA.cards || []).find(c => c.id === cardId)
+    || (window.CARTALIS_DATA.cards || [])[0] || null;
+
+  const [card, setCard] = useStateP(original ? { ...original, positions: { ...(original.positions || {}) } } : null);
+  const [cardLoading, setCardLoading] = useStateP(!original);
+  const [flipped, setFlipped] = useStateP(false);
+  const [showAIModal, setShowAIModal] = useStateP(false);
+  const [aiBlocked, setAIBlocked] = useStateP(false);
+  const [aiLoading, setAILoading] = useStateP(false);
+  const [aiPrompt, setAIPrompt] = useStateP("");
   const [logoUrl, setLogoUrl] = useStateP(original?.logoUrl || null);
   const [frontImageUrl, setFrontImageUrl] = useStateP(original?.frontImageUrl || null);
   const [backImageUrl, setBackImageUrl] = useStateP(original?.backImageUrl || null);
@@ -914,6 +919,41 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
   const [sizeDrafts, setSizeDrafts] = useStateP({});
   const [logoSizeRectoDraft, setLogoSizeRectoDraft] = useStateP(undefined);
   const [logoSizeVersoDraft, setLogoSizeVersoDraft] = useStateP(undefined);
+
+  // Toujours rafraîchir depuis la DB — évite les données obsolètes après navigation
+  useEffectP(() => {
+    if (!cardId || !window.CardlyAPI) { setCardLoading(false); return; }
+    window.CardlyAPI.getCarteByUuid(cardId)
+      .then(({ data, error }) => {
+        if (!error && data) {
+          const profile = window.CARTALIS_DATA?.profileMe;
+          const entreprise = window.CARTALIS_DATA?.entreprise;
+          const mapped = window.CardlyAPI.mapCarteFromDB(data, profile, entreprise);
+          setCard({ ...mapped, positions: { ...(mapped.positions || {}) } });
+          setLogoUrl(mapped.logoUrl || null);
+          setFrontImageUrl(mapped.frontImageUrl || null);
+          setBackImageUrl(mapped.backImageUrl || null);
+          setFieldColors(mapped.fieldColors || DEF_COLORS);
+          setApplyAllColor((mapped.fieldColors?.name) || "#f3f0ed");
+          setFieldSides(mapped.fieldSides || DEF_SIDES);
+          setFieldSizes(mapped.fieldSizes || DEF_SIZES);
+          setFieldFonts(mapped.fieldFonts || DEF_FONTS);
+          setLogoSide(mapped.logoSide || "both");
+          setLogoSizeRecto(mapped.logoSizeRecto || 1);
+          setLogoSizeVerso(mapped.logoSizeVerso || 1);
+          setSelectedDesignId(
+            (window.CARTALIS_DATA.cardDesigns || []).find(d => d.front === mapped.frontImageUrl)?.id || null
+          );
+          // Mettre à jour le cache global
+          const existing = (window.CARTALIS_DATA.cards || []).some(c => c.id === mapped.id);
+          window.CARTALIS_DATA.cards = existing
+            ? (window.CARTALIS_DATA.cards || []).map(c => c.id === mapped.id ? mapped : c)
+            : [...(window.CARTALIS_DATA.cards || []), mapped];
+        }
+      })
+      .catch(() => {})
+      .finally(() => setCardLoading(false));
+  }, [cardId]);
   const FONT_OPTIONS = [
     { value: "default",    label: "Défaut" },
     { value: "display",    label: "Display" },
@@ -929,6 +969,20 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
     { value: "script",     label: "Script" },
   ];
   const toast = useToast();
+
+  // Afficher un spinner pendant le chargement initial ou si carte introuvable
+  if (cardLoading) return (
+    <div className="col gap-4" style={{ alignItems: "center", justifyContent: "center", minHeight: 300 }}>
+      <div className="muted" style={{ fontSize: 15 }}>Chargement de la carte…</div>
+    </div>
+  );
+  if (!card) return (
+    <div className="col gap-4" style={{ alignItems: "center", justifyContent: "center", minHeight: 300 }}>
+      {onBack && <button className="btn btn-ghost btn-sm" onClick={onBack}><Icon.ArrowLeft size={13} /> Retour</button>}
+      <div className="muted" style={{ fontSize: 15 }}>Carte introuvable.</div>
+    </div>
+  );
+
   const isAdminOnEnterprise = card.type === "entreprise" && role === "collaborator";
   const editable = !isAdminOnEnterprise;
 
@@ -1620,15 +1674,21 @@ function CardImageUpload({ label, hint, disabled, imageUrl, onChange, onClear })
 
 // ---------- Personnalisation Scan ----------
 function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack }) {
-  const cards = window.CARTALIS_DATA.cards;
-  const card = (cardId && cards.find(c => c.id === cardId)) || cards[0];
   const ent = window.CARTALIS_DATA.entreprise;
   const toast = useToast();
-  const [scanButtons, setScanButtons] = useStateP(card?.scanButtons || {
+
+  // Initialise depuis le cache global si disponible, sinon null (chargée via DB ensuite)
+  const initCard = (cardId && (window.CARTALIS_DATA.cards || []).find(c => c.id === cardId))
+    || (window.CARTALIS_DATA.cards || [])[0] || null;
+
+  const [card, setCard] = useStateP(initCard);
+  const [cardLoading, setCardLoading] = useStateP(true);
+
+  const [scanButtons, setScanButtons] = useStateP(initCard?.scanButtons || {
     contact: true, whatsapp: true, mail: true, instagram: true, linkedin: true, crm: true, rdv: false,
   });
-  const [rdvUrl, setRdvUrl] = useStateP(card?.rdvUrl || "");
-  const [crmFields, setCrmFields] = useStateP(card?.crmFields || {
+  const [rdvUrl, setRdvUrl] = useStateP(initCard?.rdvUrl || "");
+  const [crmFields, setCrmFields] = useStateP(initCard?.crmFields || {
     nom: true, prenom: true, societe: true, mail: true, tel: true,
   });
   const [flipped, setFlipped] = useStateP(false);
@@ -1636,6 +1696,32 @@ function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, on
   const [saving, setSaving] = useStateP(false);
   const toggleBtn = (k) => setScanButtons(s => ({ ...s, [k]: !s[k] }));
   const toggleCrm = (k) => setCrmFields(f => ({ ...f, [k]: !f[k] }));
+
+  // Toujours rafraîchir la carte depuis la DB pour éviter les données obsolètes
+  useEffectP(() => {
+    if (!cardId || !window.CardlyAPI) { setCardLoading(false); return; }
+    window.CardlyAPI.getCarteByUuid(cardId)
+      .then(({ data, error }) => {
+        if (!error && data) {
+          const profile = window.CARTALIS_DATA?.profileMe;
+          const entreprise = window.CARTALIS_DATA?.entreprise;
+          const mapped = window.CardlyAPI.mapCarteFromDB(data, profile, entreprise);
+          setCard(mapped);
+          setScanButtons(mapped.scanButtons || {
+            contact: true, whatsapp: true, mail: true, instagram: true, linkedin: true, crm: true, rdv: false,
+          });
+          setRdvUrl(mapped.rdvUrl || "");
+          setCrmFields(mapped.crmFields || { nom: true, prenom: true, societe: true, mail: true, tel: true });
+          // Mettre à jour le cache global
+          const existing = (window.CARTALIS_DATA.cards || []).some(c => c.id === mapped.id);
+          window.CARTALIS_DATA.cards = existing
+            ? (window.CARTALIS_DATA.cards || []).map(c => c.id === mapped.id ? mapped : c)
+            : [...(window.CARTALIS_DATA.cards || []), mapped];
+        }
+      })
+      .catch(() => {})
+      .finally(() => setCardLoading(false));
+  }, [cardId]);
 
   const handleSaveScan = async () => {
     if (!window.CardlyAPI || !card?.id) return;
@@ -1649,6 +1735,18 @@ function ScanCustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, on
       toast.push("Personnalisation enregistrée ✓");
     } finally { setSaving(false); }
   };
+
+  if (cardLoading) return (
+    <div className="col gap-6" style={{ alignItems: "center", justifyContent: "center", minHeight: 300 }}>
+      <div className="muted" style={{ fontSize: 15 }}>Chargement de la carte…</div>
+    </div>
+  );
+  if (!card) return (
+    <div className="col gap-6" style={{ alignItems: "center", justifyContent: "center", minHeight: 300 }}>
+      {onBack && <button className="btn btn-ghost btn-sm" onClick={onBack}><Icon.ArrowLeft size={13} /> Retour</button>}
+      <div className="muted" style={{ fontSize: 15 }}>Carte introuvable.</div>
+    </div>
+  );
 
   return (
     <div className="col gap-6" style={{ position: "relative" }}>
