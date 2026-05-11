@@ -577,34 +577,54 @@ function ConversionTimeline() {
     { n: "05", t: "Le clic est comptabilisé", d: "Lead enregistré dans le dashboard." },
     { n: "06", t: "L'équipe suit les performances", d: "Visualisez qui convertit le mieux." },
   ];
+  const [vw, setVw] = useStateL(typeof window !== 'undefined' ? window.innerWidth : 1024);
+  useEffectL(() => {
+    const onResize = () => setVw(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  const isMobile = vw <= 700;
+
   return (
-    <section style={{ padding: "120px 0" }} className="section-bg-mid">
-      <AnimatedSection className="container col gap-10">
+    <section style={{ padding: isMobile ? "60px 0" : "120px 0" }} className="section-bg-mid">
+      <AnimatedSection className="container col gap-8">
         <SectionHeader
           eyebrow="Conversion"
           title="Une carte de visite qui ne se contente pas d'être jolie. Elle convertit."
           subtitle="Cartalis transforme une interaction physique en relation digitale. Le prospect ne repart pas seulement avec votre nom : il peut enregistrer votre contact, ouvrir une conversation et garder un lien direct avec vous."
         />
-        <AnimatedStaggerGroup columns={3}>
-          {steps.map((s, i) => (
-            <div key={i} className="col gap-3" style={{ position: "relative" }}>
-              <div className="row gap-3" style={{ alignItems: "center" }}>
-                <div style={{
-                  width: 44, height: 44, borderRadius: 12,
-                  background: "var(--surface)", border: "1px solid var(--line)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 500,
-                  boxShadow: "var(--shadow-1)",
-                }}>{s.n}</div>
-                {i < steps.length - 1 && (
-                  <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg, var(--line-2), transparent)" }} />
-                )}
+        {isMobile ? (
+          <div className="conversion-grid">
+            {steps.map((s, i) => (
+              <div key={i} className="card" style={{ padding: "14px 16px" }}>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", color: "var(--ink-3)", marginBottom: 7 }}>{s.n}</div>
+                <div className="serif" style={{ fontSize: 14, lineHeight: 1.3, marginBottom: 5 }}>{s.t}</div>
+                <div className="muted" style={{ fontSize: 11.5, lineHeight: 1.45 }}>{s.d}</div>
               </div>
-              <div className="serif" style={{ fontSize: 18, lineHeight: 1.2, letterSpacing: "-0.01em" }}>{s.t}</div>
-              <div className="muted" style={{ fontSize: 13, lineHeight: 1.5 }}>{s.d}</div>
-            </div>
-          ))}
-        </AnimatedStaggerGroup>
+            ))}
+          </div>
+        ) : (
+          <AnimatedStaggerGroup columns={3}>
+            {steps.map((s, i) => (
+              <div key={i} className="col gap-3" style={{ position: "relative" }}>
+                <div className="row gap-3" style={{ alignItems: "center" }}>
+                  <div style={{
+                    width: 44, height: 44, borderRadius: 12,
+                    background: "var(--surface)", border: "1px solid var(--line)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 500,
+                    boxShadow: "var(--shadow-1)",
+                  }}>{s.n}</div>
+                  {i < steps.length - 1 && (
+                    <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg, var(--line-2), transparent)" }} />
+                  )}
+                </div>
+                <div className="serif" style={{ fontSize: 18, lineHeight: 1.2, letterSpacing: "-0.01em" }}>{s.t}</div>
+                <div className="muted" style={{ fontSize: 13, lineHeight: 1.5 }}>{s.d}</div>
+              </div>
+            ))}
+          </AnimatedStaggerGroup>
+        )}
       </AnimatedSection>
     </section>
   );
@@ -1298,7 +1318,7 @@ function DelayedPhoneAnimation({ scrollRef, scanFlipped, scanDesign }) {
           }} />
           {/* status bar */}
           <div style={{ height: 36, background: "var(--bg)", display: "flex", alignItems: "flex-end", justifyContent: "space-between", padding: "0 20px 4px", fontSize: 10, color: "var(--ink-3)" }}>
-            <span>9:41</span><span style={{ letterSpacing: 1 }}>●●●</span>
+            <span>9:41</span><span style={{ fontWeight: 700, fontSize: 11, letterSpacing: 0 }}>5G</span>
           </div>
           {/* Conteneur fixe : on cache le débordement et on translate l'inner via CSS @keyframes.
               Plus fluide que scrollTop (GPU-accelerated), pas de secousse, marche sur tous les appareils. */}
@@ -1368,11 +1388,11 @@ function DelayedPhoneAnimation({ scrollRef, scanFlipped, scanDesign }) {
               {[
                 { ic: Icon.WhatsApp, t: "WhatsApp" },
                 { ic: Icon.Mail,     t: "Email" },
-                { ic: Icon.User,     t: "Partager mes infos" },
+                { ic: Icon.User,     t: "Partager" },
                 { ic: Icon.Globe,    t: "Site web" },
               ].map(({ ic: Ic, t }, i) => (
                 <button key={i} className="btn btn-sm" style={{ justifyContent: "center", fontSize: 11 }}>
-                  <Ic size={11} /> {t}
+                  <Ic size={13} /> {t}
                 </button>
               ))}
             </div>
