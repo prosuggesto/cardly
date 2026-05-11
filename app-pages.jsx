@@ -949,6 +949,11 @@ function FeedbackPage() {
     ? "🐛 Bonjour " + (me.prenom || '') + " ! Décrivez le problème que vous avez rencontré — nous vous recontacterons dans les 48h sur " + (contactEmail || me.email || '') + "."
     : "💡 Bonjour " + (me.prenom || '') + " ! Quelle idée souhaitez-vous partager ? On lit tout.";
 
+  // Mapping entre valeurs UI ("idea"/"problem") et valeurs DB autorisées par
+  // la contrainte CHECK mes_idees_categorie_check.
+  const uiCatToDb = (cat) => cat === "problem" ? "problemes_rencontres" : "mes_idees";
+  const dbCatToUi = (cat) => cat === "problemes_rencontres" ? "problem" : "idea";
+
   // Charge l'historique des messages utilisateur depuis la DB (RLS : sender='user' uniquement).
   // Les bulles bot (intro + accusé) sont régénérées côté UI pour garder le contexte.
   React.useEffect(() => {
@@ -957,7 +962,7 @@ function FeedbackPage() {
       try {
         const { data } = await window.CardlyAPI.getIdees(me.id);
         if (data && data.length) {
-          const lastCat = data[data.length - 1].categorie || 'idea';
+          const lastCat = dbCatToUi(data[data.length - 1].categorie);
           const reconstructed = [{ from: "cardly", text: introFor(lastCat) }];
           data.forEach((r, i) => {
             reconstructed.push({ from: "user", text: r.message });
@@ -1017,7 +1022,7 @@ function FeedbackPage() {
 
       const { data, error } = await window.CardlyAPI.sendMessage(uid, {
         message: txt,
-        categorie: category || 'idea',
+        categorie: uiCatToDb(category || 'idea'),
         mail: contactEmail,
         telephone: contactPhone,
       });
