@@ -416,6 +416,11 @@ img, video, svg { max-width: 100%; height: auto; }
 /* Card 3D : ne dépasse jamais le viewport */
 .card-3d { max-width: 100%; }
 
+/* Floating badges (autour du hero) : masquer sur mobile */
+@media (max-width: 700px) {
+  .floating-badge { display: none !important; }
+}
+
 /* ── Helpers d'affichage (déjà utilisés dans le JSX) ───────────────────── */
 @media (max-width: 900px) {
   .hide-md { display: none !important; }

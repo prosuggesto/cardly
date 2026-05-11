@@ -114,12 +114,16 @@ function AnimatedStaggerGroup({ children, columns = 3 }) {
 
   const childArray = React.Children.toArray(children);
 
+  // Intrinsèquement responsive : auto-fit + minmax(min(...), 1fr)
+  // - "min(Xpx, 100%)" évite le débordement quand le conteneur < Xpx
+  // - quand la place manque pour columns × X, le grid replie tout seul
+  const minPerCol = columns >= 4 ? 200 : columns === 3 ? 240 : 280;
   return (
     <div
       ref={containerRef}
       style={{
         display: "grid",
-        gridTemplateColumns: `repeat(${columns}, 1fr)`,
+        gridTemplateColumns: `repeat(auto-fit, minmax(min(${minPerCol}px, 100%), 1fr))`,
         gap: 20,
       }}
     >
@@ -272,6 +276,16 @@ function HeroSection({ navigate }) {
   const heroDesign = window.CARTALIS_DATA.cardDesigns.find(d => d.id === "design-style-chinois") || window.CARTALIS_DATA.cardDesigns[0];
   const [step, setStep] = useStateL(0);
 
+  // Largeur viewport (pour adapter la carte du hero sur mobile)
+  const [vw, setVw] = useStateL(typeof window !== 'undefined' ? window.innerWidth : 1024);
+  useEffectL(() => {
+    const onResize = () => setVw(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  // Carte hero : 420px max, mais clamp à la viewport - marges sur mobile
+  const heroCardWidth = Math.min(420, Math.max(240, vw - 60));
+
   useEffectL(() => {
     let loaded = 0;
     const srcs = [heroDesign.front, heroDesign.back];
@@ -391,7 +405,7 @@ function HeroSection({ navigate }) {
               <Card3D
                 card={HERO_CARD}
                 design={heroDesign}
-                width={420}
+                width={heroCardWidth}
                 float={true}
                 showQR={false}
                 flipped={heroFlipped}

@@ -421,7 +421,7 @@ window.Card3D = Card3D;
 // ---------- Floating badge (used around hero card) ----------
 function FloatingBadge({ children, style, delay = 0 }) {
   return (
-    <div className="glass" style={{
+    <div className="glass floating-badge" style={{
       position: "absolute",
       padding: "10px 14px",
       borderRadius: 999,
