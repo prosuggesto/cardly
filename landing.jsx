@@ -630,124 +630,145 @@ function DashboardPreview() {
 
   if (isMobile) {
     const totalLeads = active.reduce((sum, c) => sum + (c.leads || 0), 0);
-    const topMember = active[0];
-    const pendingCount = pending.length; // vrai nombre, plus de "1" en dur
+    const monthLabel = "Avril";
+    const yDebut = "2026";
+
+    // FilterChip visuel : rendu comme un FilterSelect réel mais non-interactif
+    const FakeFilterChip = ({ children, minWidth }) => (
+      <span style={{
+        display: "inline-flex", alignItems: "center", justifyContent: "space-between", gap: 8,
+        padding: "9px 14px", borderRadius: 12, height: 40, minWidth: minWidth || "auto",
+        background: "rgba(255,255,255,0.55)",
+        backdropFilter: "blur(20px) saturate(180%)",
+        WebkitBackdropFilter: "blur(20px) saturate(180%)",
+        border: "1px solid rgba(255,255,255,0.65)",
+        boxShadow: "0 4px 24px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.8)",
+        fontSize: 13, fontWeight: 500, color: "var(--ink)", whiteSpace: "nowrap",
+      }}>
+        {children}
+        <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.45, flexShrink: 0 }}>
+          <path d="M6 9l6 6 6-6"/>
+        </svg>
+      </span>
+    );
+
+    // Composant Metric identique au vrai (app-pages.jsx)
+    const MetricCard = ({ label, value, delta, trend }) => (
+      <div className="card" style={{ padding: 20 }}>
+        <div className="dim" style={{ fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8 }}>{label}</div>
+        <div className="serif" style={{ fontSize: 28, lineHeight: 1.1, letterSpacing: "-0.02em" }}>{value}</div>
+        <div style={{ marginTop: 8, fontSize: 12, color: trend === "up" ? "var(--good,#2d7a4f)" : "var(--ink-3)" }}>
+          {trend === "up" && "↑ "}{delta}
+        </div>
+      </div>
+    );
+
     return (
       <section style={{ padding: "60px 0" }}>
-        <div className="container col gap-8">
-          <SectionHeader
-            eyebrow="Dashboard"
-            title="Suivez les performances de vos équipes."
-            subtitle="Visualisez les interactions générées par chaque collaborateur."
-          />
-          <div className="card" style={{ padding: 22, background: "linear-gradient(180deg, #fffdf6 0%, var(--surface) 100%)", display: "flex", flexDirection: "column", gap: 18 }}>
-            {/* Header titre */}
-            <div className="col gap-1">
-              <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-3)" }}>DASHBOARD · AVRIL 2026</div>
-              <div className="serif" style={{ fontSize: 20, letterSpacing: "-0.01em" }}>Performance des membres</div>
+        <div className="container col gap-6">
+          {/* Header — identique au vrai dashboard */}
+          <div className="col gap-2">
+            <div className="eyebrow">Dashboard · {monthLabel} {yDebut}</div>
+            <h1 className="serif" style={{ fontSize: "clamp(24px, 5vw, 32px)", margin: 0, letterSpacing: "-0.02em" }}>Performance des membres</h1>
+            <p className="muted" style={{ margin: 0, fontSize: 13.5 }}>Chaque clic sur « Enregistrer dans mes contacts » est comptabilisé comme un lead généré.</p>
+          </div>
+
+          {/* Filtres — même chips, même look */}
+          <div className="card" style={{ padding: 14, width: "fit-content", maxWidth: "100%" }}>
+            <div className="row gap-2" style={{ flexWrap: "wrap", alignItems: "center" }}>
+              <FakeFilterChip minWidth={92}>Janvier</FakeFilterChip>
+              <FakeFilterChip minWidth={70}>2026</FakeFilterChip>
+              <span className="dim" style={{ alignSelf: "center", fontSize: 13 }}>→</span>
+              <FakeFilterChip minWidth={92}>Avril</FakeFilterChip>
+              <FakeFilterChip minWidth={70}>2026</FakeFilterChip>
+              <FakeFilterChip>Tous les membres</FakeFilterChip>
+              <FakeFilterChip>Tous les événements</FakeFilterChip>
+              <button className="btn btn-primary btn-sm">Filtrer</button>
             </div>
+          </div>
 
-            {/* Tabs — switch entre les 3 vues */}
-            <div className="row gap-1" style={{ flexWrap: "wrap", background: "var(--surface-2)", padding: 4, borderRadius: 10 }}>
-              {SLIDES.map((label, i) => (
-                <button key={i} onClick={() => setSlide(i)} style={{
-                  flex: 1, minWidth: 0, padding: "7px 8px", borderRadius: 8, border: "none",
-                  background: slide === i ? "var(--ink)" : "transparent",
-                  color: slide === i ? "white" : "var(--ink-3)",
-                  fontSize: 11, fontWeight: slide === i ? 600 : 400,
-                  cursor: "pointer", transition: "all 180ms",
-                  whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-                }}>
-                  {label}
-                </button>
-              ))}
-            </div>
+          {/* Metrics — exactement la même grille auto-fit minmax(200px,1fr) que le vrai */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+            <MetricCard
+              label="Total leads ce mois"
+              value={String(totalLeads)}
+              delta={`${monthLabel} ${yDebut}`}
+              trend="up"
+            />
+            <MetricCard
+              label="Meilleur membre"
+              value={active[0] ? `${active[0].prenom} ${active[0].nom[0] || ''}.` : "—"}
+              delta={active[0] ? `${active[0].leads} leads` : "—"}
+              trend="neutral"
+            />
+            <MetricCard
+              label="Membres actifs"
+              value={String(active.length)}
+              delta={`sur ${collabs.length} membre${collabs.length > 1 ? "s" : ""}`}
+              trend="neutral"
+            />
+          </div>
 
-            {/* Contenu selon le slide */}
-            {slide === 0 && (
-              <>
-                {/* 3 KPIs */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
-                  {[
-                    { label: "Leads", value: totalLeads },
-                    { label: "Meilleur", value: (topMember?.prenom || "—").slice(0, 8) },
-                    { label: "Actifs", value: active.length + "/" + collabs.length },
-                  ].map((k, i) => (
-                    <div key={i} style={{ padding: "10px 8px", borderRadius: 10, background: "var(--surface)", border: "1px solid var(--line)", display: "flex", flexDirection: "column", gap: 3 }}>
-                      <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)" }}>{k.label}</div>
-                      <div className="serif" style={{ fontSize: 16, lineHeight: 1.1 }}>{k.value}</div>
-                    </div>
-                  ))}
-                </div>
-                {/* Top 3 leaderboard */}
-                <div className="col gap-2">
-                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-2)" }}>Top 3 du mois</div>
-                  {active.slice(0, 3).map((c, i) => (
-                    <div key={c.id} className="row gap-3" style={{ alignItems: "center", padding: "9px 10px", borderRadius: 10, background: i === 0 ? "linear-gradient(135deg, #fdf3df, #fffaf0)" : "var(--surface)", border: "1px solid var(--line)" }}>
-                      <div style={{
-                        width: 24, height: 24, borderRadius: "50%", flexShrink: 0,
-                        background: i === 0 ? "linear-gradient(135deg, var(--gold-2), var(--gold))" : "var(--surface-2)",
-                        color: i === 0 ? "white" : "var(--ink-3)",
-                        display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700,
-                      }}>{i + 1}</div>
-                      <div className="col" style={{ flex: 1, lineHeight: 1.2, minWidth: 0 }}>
-                        <div style={{ fontSize: 12, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.prenom} {c.nom}</div>
-                        <div className="dim" style={{ fontSize: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.poste}</div>
-                      </div>
-                      <div className="serif" style={{ fontSize: 15, color: "var(--gold-deep)" }}>{c.leads}</div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {slide === 1 && (
+          {/* Demandes en attente — uniquement si pending > 0 */}
+          {pending.length > 0 && (
+            <div className="card" style={{ padding: 20, border: "1px solid #ecd5a8", background: "linear-gradient(135deg, #fffdf7, #fdf5e4)" }}>
+              <div className="row" style={{ justifyContent: "space-between", marginBottom: 14 }}>
+                <div className="serif" style={{ fontSize: 16 }}>Demandes membres</div>
+                <span className="chip">{pending.length} en attente</span>
+              </div>
               <div className="col gap-2">
-                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-2)" }}>Membres ({collabs.length})</div>
-                {collabs.map(c => (
-                  <div key={c.id} className="row gap-3" style={{ alignItems: "center", padding: "9px 10px", borderRadius: 10, background: "var(--surface)", border: "1px solid var(--line)" }}>
-                    <div style={{ width: 24, height: 24, borderRadius: "50%", flexShrink: 0, background: "var(--surface-3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 600 }}>
-                      {c.prenom[0]}{c.nom[0]}
+                {pending.map(c => (
+                  <div key={c.id} className="row" style={{ justifyContent: "space-between", padding: "10px 12px", background: "rgba(255,255,255,0.7)", borderRadius: 10, flexWrap: "wrap", gap: 10 }}>
+                    <div className="row gap-2">
+                      <div style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--surface-3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 600 }}>
+                        {(c.prenom[0] || '?')}{(c.nom[0] || '?')}
+                      </div>
+                      <div className="col">
+                        <div style={{ fontWeight: 500, fontSize: 13 }}>{c.prenom} {c.nom}</div>
+                        <div className="dim" style={{ fontSize: 11 }}>{c.poste}</div>
+                      </div>
                     </div>
-                    <div className="col" style={{ flex: 1, lineHeight: 1.2, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.prenom} {c.nom}</div>
-                      <div className="dim" style={{ fontSize: 10 }}>{c.statut === "actif" ? c.poste : "En attente"}</div>
+                    <div className="row gap-2">
+                      <button className="btn btn-sm">Refuser</button>
+                      <button className="btn btn-primary btn-sm">Accepter</button>
                     </div>
-                    <div className="serif" style={{ fontSize: 13 }}>{c.leads}</div>
                   </div>
                 ))}
               </div>
-            )}
+            </div>
+          )}
 
-            {slide === 2 && topMember && (
-              <div className="col gap-3" style={{ padding: "14px 12px", borderRadius: 12, background: "var(--surface)", border: "1px solid var(--line)" }}>
-                <div className="col gap-1">
-                  <div className="serif" style={{ fontSize: 14 }}>Détail — {topMember.prenom} {topMember.nom}</div>
-                  <div className="dim" style={{ fontSize: 10 }}>{topMember.poste} · 30 derniers jours</div>
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                  <div style={{ padding: 8, borderRadius: 8, background: "var(--surface-2)" }}>
-                    <div className="dim" style={{ fontSize: 9 }}>LEADS</div>
-                    <div className="serif" style={{ fontSize: 14 }}>{topMember.leads}</div>
-                  </div>
-                  <div style={{ padding: 8, borderRadius: 8, background: "linear-gradient(135deg, #fdf3df, #fffaf0)" }}>
-                    <div className="dim" style={{ fontSize: 9 }}>SCANS</div>
-                    <div className="serif" style={{ fontSize: 14 }}>{Math.round(topMember.leads * 2.8) || 0}</div>
-                  </div>
-                </div>
+          {/* Top 3 — même structure que le vrai */}
+          {active.filter(c => c.leads > 0).length > 0 && (
+            <div className="card" style={{ padding: 20 }}>
+              <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                <div className="serif" style={{ fontSize: 16 }}>Top 3 du mois</div>
+                <div className="dim" style={{ fontSize: 11 }}>Classement des leads générés</div>
               </div>
-            )}
-
-            {/* Notif demandes en attente — VRAI compte, basé sur les données */}
-            {pendingCount > 0 && (
-              <div className="row gap-2" style={{ padding: "10px 12px", borderRadius: 10, background: "rgba(45,122,79,0.08)", border: "1px solid rgba(45,122,79,0.2)", fontSize: 12 }}>
-                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--good, #2d7a4f)", flexShrink: 0 }} />
-                <span style={{ color: "var(--ink-2)" }}>
-                  <strong style={{ color: "var(--good, #2d7a4f)" }}>{pendingCount}</strong> collaborateur{pendingCount > 1 ? "s" : ""} demande{pendingCount > 1 ? "nt" : ""} à rejoindre
-                </span>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10 }}>
+                {active.filter(c => c.leads > 0).slice(0, 3).map((c, i) => (
+                  <div key={c.id} className="col gap-2" style={{
+                    padding: 16,
+                    background: i === 0 ? "linear-gradient(180deg, #fffaf0, #f5edd9)" : "var(--surface-2)",
+                    border: i === 0 ? "1px solid #ecd5a8" : "1px solid var(--line)",
+                    borderRadius: 14, alignItems: "center", textAlign: "center",
+                  }}>
+                    <div style={{
+                      width: 36, height: 36, borderRadius: "50%",
+                      background: i === 0 ? "linear-gradient(135deg, var(--gold-2), var(--gold))" : i === 1 ? "var(--ink-4)" : "var(--surface-3)",
+                      color: i < 2 ? "white" : "var(--ink-3)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 12, fontWeight: 600,
+                    }}>{i === 0 ? <Icon.Crown size={14} /> : `#${i+1}`}</div>
+                    <div className="serif" style={{ fontSize: 15 }}>{c.prenom} {c.nom}</div>
+                    <div className="dim" style={{ fontSize: 11 }}>{c.poste}</div>
+                    <div className="serif" style={{ fontSize: 26, lineHeight: 1, color: i === 0 ? "var(--gold)" : "var(--ink)" }}>{c.leads}</div>
+                    <div className="dim" style={{ fontSize: 10 }}>leads ce mois</div>
+                  </div>
+                ))}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </section>
     );
