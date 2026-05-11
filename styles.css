@@ -416,9 +416,49 @@ img, video, svg { max-width: 100%; height: auto; }
 /* Card 3D : ne dépasse jamais le viewport */
 .card-3d { max-width: 100%; }
 
-/* Floating badges (autour du hero) : masquer sur mobile */
+/* Floating badges (autour du hero) : adapter au mobile sans les cacher */
 @media (max-width: 700px) {
-  .floating-badge { display: none !important; }
+  .floating-badge {
+    font-size: 10px !important;
+    padding: 5px 9px !important;
+    gap: 4px !important;
+  }
+  .floating-badge svg { width: 10px !important; height: 10px !important; }
+}
+
+/* ── Mockups landing : rétrécir l'ensemble (contenu + frame) sur mobile ── */
+/* On utilise transform: scale() + transform-origin: top center + une marge
+   négative pour compenser l'espace résiduel (scale ne réduit pas la box). */
+@media (max-width: 900px) {
+  .browser-mockup-wrap {
+    transform: scale(0.75);
+    transform-origin: top center;
+    margin-bottom: -180px;
+  }
+}
+@media (max-width: 600px) {
+  /* iPhone mockup : 290px de large + bordures ≈ 310px. À 60% ça tient. */
+  .phone-mockup-wrap {
+    transform: scale(0.7);
+    transform-origin: top center;
+    margin-bottom: -200px;
+  }
+  /* Browser mockup : on descend à 0.5 */
+  .browser-mockup-wrap {
+    transform: scale(0.5);
+    transform-origin: top center;
+    margin-bottom: -280px;
+  }
+}
+@media (max-width: 420px) {
+  .phone-mockup-wrap {
+    transform: scale(0.6);
+    margin-bottom: -240px;
+  }
+  .browser-mockup-wrap {
+    transform: scale(0.42);
+    margin-bottom: -320px;
+  }
 }
 
 /* ── Helpers d'affichage (déjà utilisés dans le JSX) ───────────────────── */
@@ -510,15 +550,10 @@ img, video, svg { max-width: 100%; height: auto; }
 @media (max-width: 600px) {
   .container, .container-wide, .container-narrow { padding: 0 16px; }
 
-  /* Card 3D adaptative (force override sur l'inline style des composants) */
-  .card-3d {
-    width: min(340px, calc(100vw - 64px)) !important;
-    height: calc(min(340px, calc(100vw - 64px)) * 0.63) !important;
-  }
-  .card-floater {
-    width: min(340px, calc(100vw - 64px)) !important;
-    height: calc(min(340px, calc(100vw - 64px)) * 0.63) !important;
-  }
+  /* Card 3D : ne JAMAIS dépasser le viewport (mais peut rester plus petit
+     que ça si le prop width est plus petit — pas d'override forcé) */
+  .card-3d { max-width: calc(100vw - 32px); }
+  .card-floater { max-width: calc(100vw - 32px); }
 
   /* Cards : padding allégé */
   .card { padding: 18px !important; }
@@ -579,14 +614,8 @@ img, video, svg { max-width: 100%; height: auto; }
 /* ════════════════════════════════════════════════════════════════════════ */
 @media (max-width: 420px) {
   .container, .container-wide, .container-narrow { padding: 0 12px; }
-  .card-3d {
-    width: calc(100vw - 40px) !important;
-    height: calc((100vw - 40px) * 0.63) !important;
-  }
-  .card-floater {
-    width: calc(100vw - 40px) !important;
-    height: calc((100vw - 40px) * 0.63) !important;
-  }
+  .card-3d { max-width: calc(100vw - 24px); }
+  .card-floater { max-width: calc(100vw - 24px); }
   .card { padding: 14px !important; }
   h1 { font-size: clamp(22px, 7vw, 28px) !important; }
   h2 { font-size: clamp(18px, 6vw, 24px) !important; }

@@ -217,7 +217,7 @@ function PublicHeader({ navigate }) {
           <a href="#faq" className="muted">FAQ</a>
         </nav>
         <div className="row gap-3">
-          <button className="btn btn-ghost btn-sm hide-md" onClick={() => navigate("/auth?mode=login")}>Se connecter</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => navigate("/auth?mode=login")}>Se connecter</button>
           <button className="btn btn-primary btn-sm" onClick={() => navigate("/auth?mode=signup")}>S'inscrire</button>
         </div>
       </div>
@@ -283,8 +283,13 @@ function HeroSection({ navigate }) {
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
-  // Carte hero : 420px max, mais clamp à la viewport - marges sur mobile
-  const heroCardWidth = Math.min(420, Math.max(240, vw - 60));
+  // Carte hero : 420px max desktop, rétrécit progressivement sur mobile pour
+  // laisser de la place aux badges flottants sur les côtés.
+  const heroCardWidth = vw >= 900
+    ? 420
+    : vw >= 600
+      ? Math.min(380, vw - 80)
+      : Math.min(280, vw - 80);
 
   useEffectL(() => {
     let loaded = 0;
@@ -859,7 +864,7 @@ function DashboardPreview() {
         />
 
         {/* ── Browser mockup ── */}
-        <div style={{ maxWidth: 980, margin: "0 auto", width: "100%", filter: "drop-shadow(0 24px 64px rgba(0,0,0,0.14))", borderRadius: "16px 16px 0 0", overflow: "hidden" }}>
+        <div className="browser-mockup-wrap" style={{ maxWidth: 980, margin: "0 auto", width: "100%", filter: "drop-shadow(0 24px 64px rgba(0,0,0,0.14))", borderRadius: "16px 16px 0 0", overflow: "hidden" }}>
           {/* App header */}
           <div style={{
             background: "rgba(251,250,247,0.95)", borderBottom: "1px solid var(--line)",
@@ -970,6 +975,7 @@ function DelayedPhoneAnimation({ scrollRef, scanFlipped, scanDesign }) {
   return (
     <div
       ref={ref}
+      className="phone-mockup-wrap"
       style={{
         display: "flex",
         justifyContent: "center",
