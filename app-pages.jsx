@@ -1219,15 +1219,58 @@ window.SubscriptionPage = SubscriptionPage;
 
 // ---------- Public scanned card page ----------
 function PublicCardPage({ navigate, params }) {
-  const cardId = params.get("id") || "card-001";
+  const cardId = params.get("id") || "";
   const inactive = params.get("inactive") === "1";
-  const card = window.CARTALIS_DATA.cards.find(c => c.id === cardId) || window.CARTALIS_DATA.cards[0];
-  const me = window.CARTALIS_DATA.profileMe;
-  const ent = window.CARTALIS_DATA.entreprise;
   const toast = useToast();
   const [savedCount, setSavedCount] = useStateD(0);
   const [flipped, setFlipped] = useStateD(false);
   const [crmModalOpen, setCrmModalOpen] = useStateD(false);
+  // État : on tente d'abord le cache local, puis un fetch frais depuis la DB
+  const [card, setCard] = useStateD(() =>
+    window.CARTALIS_DATA.cards.find(c => c.id === cardId) || null
+  );
+  const ent = window.CARTALIS_DATA.entreprise;
+
+  const { useEffect: useEffectPub } = React;
+  useEffectPub(() => {
+    if (!cardId || !window.CardlyAPI || !window.sb) return;
+    // Si la carte est déjà dans le cache (chargée via session), on l'utilise
+    const cached = window.CARTALIS_DATA.cards.find(c => c.id === cardId);
+    if (cached) { setCard(cached); return; }
+    // Sinon : fetch frais depuis la table cartes
+    (async () => {
+      try {
+        const { data: raw } = await window.CardlyAPI.getCarteByUuid(cardId);
+        if (!raw) return;
+        // Charger le profil du propriétaire de la carte
+        const { data: profile } = raw.collaborateur_id
+          ? await window.CardlyAPI.getProfile(raw.collaborateur_id)
+          : { data: null };
+        // Charger l'entreprise (avec website)
+        let entrepriseData = null;
+        if (raw.entreprise_id) {
+          const { data: ent } = await window.sb
+            .from('entreprises')
+            .select('id, nom_entreprise, plan, website')
+            .eq('id', raw.entreprise_id)
+            .single();
+          entrepriseData = ent;
+        }
+        const mapped = window.CardlyAPI.mapCarteFromDB(raw, profile, entrepriseData);
+        setCard(mapped);
+      } catch (err) {
+        console.error('[Cardly] PublicCardPage fetch failed:', err);
+      }
+    })();
+  }, [cardId]);
+
+  if (!card) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg)" }}>
+        <div className="dim" style={{ fontSize: 14 }}>Chargement de la carte…</div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: "100vh", position: "relative", overflow: "hidden", paddingBottom: 60 }}>

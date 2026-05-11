@@ -774,15 +774,15 @@ function CustomizePickerPage({ onPick, role, trialExpired, onUpgrade }) {
             return (
               <button
                 key={c.id}
-                onClick={() => onPick(c.id)}
+                onClick={() => { if (!locked) onPick(c.id); }}
                 className="card fade-up"
                 style={{
-                  padding: 22, textAlign: "left", cursor: "pointer",
+                  padding: 22, textAlign: "left", cursor: locked ? "default" : "pointer",
                   display: "flex", flexDirection: "column", gap: 16,
                   background: "linear-gradient(180deg, #fffdf6, #f7f2e6)",
                   transition: "transform 200ms, box-shadow 200ms",
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "var(--shadow-3)"; }}
+                onMouseEnter={(e) => { if (!locked) { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "var(--shadow-3)"; } }}
                 onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = ""; }}
               >
                 <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
@@ -806,9 +806,11 @@ function CustomizePickerPage({ onPick, role, trialExpired, onUpgrade }) {
                   ) : (
                     <span className="dim" style={{ fontSize: 12 }}>Cliquez pour personnaliser</span>
                   )}
-                  <span className="row gap-1" style={{ fontSize: 13, fontWeight: 500, color: "var(--gold-deep)" }}>
-                    <Icon.Brush size={13}/> Personnaliser <Icon.ArrowRight size={12}/>
-                  </span>
+                  {!locked && (
+                    <span className="row gap-1" style={{ fontSize: 13, fontWeight: 500, color: "var(--gold-deep)" }}>
+                      <Icon.Brush size={13}/> Personnaliser <Icon.ArrowRight size={12}/>
+                    </span>
+                  )}
                 </div>
               </button>
             );
