@@ -616,7 +616,7 @@ function DashboardPreview() {
   const pending = collabs.filter(c => c.statut === "en_attente");
   const [slide, setSlide] = useStateL(0);
   const [fading, setFading] = useStateL(false);
-  const SLIDES = ["Vue d'ensemble", "Tableau membres", "Détail canal"];
+  const SLIDES = ["Vue d'ensemble", "Tableau des membres", "Détail par canaux"];
 
   // Sur mobile : on shunte tout le mockup navigateur compliqué et on rend
   // une version épurée — un seul bloc clair, lisible, aéré.
@@ -687,88 +687,221 @@ function DashboardPreview() {
             </div>
           </div>
 
-          {/* Metrics — exactement la même grille auto-fit minmax(200px,1fr) que le vrai */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
-            <MetricCard
-              label="Total leads ce mois"
-              value={String(totalLeads)}
-              delta={`${monthLabel} ${yDebut}`}
-              trend="up"
-            />
-            <MetricCard
-              label="Meilleur membre"
-              value={active[0] ? `${active[0].prenom} ${active[0].nom[0] || ''}.` : "—"}
-              delta={active[0] ? `${active[0].leads} leads` : "—"}
-              trend="neutral"
-            />
-            <MetricCard
-              label="Membres actifs"
-              value={String(active.length)}
-              delta={`sur ${collabs.length} membre${collabs.length > 1 ? "s" : ""}`}
-              trend="neutral"
-            />
-          </div>
-
-          {/* Demandes en attente — uniquement si pending > 0 */}
-          {pending.length > 0 && (
-            <div className="card" style={{ padding: 20, border: "1px solid #ecd5a8", background: "linear-gradient(135deg, #fffdf7, #fdf5e4)" }}>
-              <div className="row" style={{ justifyContent: "space-between", marginBottom: 14 }}>
-                <div className="serif" style={{ fontSize: 16 }}>Demandes membres</div>
-                <span className="chip">{pending.length} en attente</span>
+          {/* ── SLIDE 0 : Vue d'ensemble (Metrics + Demandes + Top 3) ── */}
+          {slide === 0 && (
+            <>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+                <MetricCard
+                  label="Total leads ce mois"
+                  value={String(totalLeads)}
+                  delta={`${monthLabel} ${yDebut}`}
+                  trend="up"
+                />
+                <MetricCard
+                  label="Meilleur membre"
+                  value={active[0] ? `${active[0].prenom} ${active[0].nom[0] || ''}.` : "—"}
+                  delta={active[0] ? `${active[0].leads} leads` : "—"}
+                  trend="neutral"
+                />
+                <MetricCard
+                  label="Membres actifs"
+                  value={String(active.length)}
+                  delta={`sur ${collabs.length} membre${collabs.length > 1 ? "s" : ""}`}
+                  trend="neutral"
+                />
               </div>
-              <div className="col gap-2">
-                {pending.map(c => (
-                  <div key={c.id} className="row" style={{ justifyContent: "space-between", padding: "10px 12px", background: "rgba(255,255,255,0.7)", borderRadius: 10, flexWrap: "wrap", gap: 10 }}>
-                    <div className="row gap-2">
-                      <div style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--surface-3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 600 }}>
-                        {(c.prenom[0] || '?')}{(c.nom[0] || '?')}
+
+              {pending.length > 0 && (
+                <div className="card" style={{ padding: 20, border: "1px solid #ecd5a8", background: "linear-gradient(135deg, #fffdf7, #fdf5e4)" }}>
+                  <div className="row" style={{ justifyContent: "space-between", marginBottom: 14 }}>
+                    <div className="serif" style={{ fontSize: 16 }}>Demandes membres</div>
+                    <span className="chip">{pending.length} en attente</span>
+                  </div>
+                  <div className="col gap-2">
+                    {pending.map(c => (
+                      <div key={c.id} className="row" style={{ justifyContent: "space-between", padding: "10px 12px", background: "rgba(255,255,255,0.7)", borderRadius: 10, flexWrap: "wrap", gap: 10 }}>
+                        <div className="row gap-2">
+                          <div style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--surface-3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 600 }}>
+                            {(c.prenom[0] || '?')}{(c.nom[0] || '?')}
+                          </div>
+                          <div className="col">
+                            <div style={{ fontWeight: 500, fontSize: 13 }}>{c.prenom} {c.nom}</div>
+                            <div className="dim" style={{ fontSize: 11 }}>{c.poste}</div>
+                          </div>
+                        </div>
+                        <div className="row gap-2">
+                          <button className="btn btn-sm">Refuser</button>
+                          <button className="btn btn-primary btn-sm">Accepter</button>
+                        </div>
                       </div>
-                      <div className="col">
-                        <div style={{ fontWeight: 500, fontSize: 13 }}>{c.prenom} {c.nom}</div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {active.filter(c => c.leads > 0).length > 0 && (
+                <div className="card" style={{ padding: 20 }}>
+                  <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                    <div className="serif" style={{ fontSize: 16 }}>Top 3 du mois</div>
+                    <div className="dim" style={{ fontSize: 11 }}>Classement des leads générés</div>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10 }}>
+                    {active.filter(c => c.leads > 0).slice(0, 3).map((c, i) => (
+                      <div key={c.id} className="col gap-2" style={{
+                        padding: 16,
+                        background: i === 0 ? "linear-gradient(180deg, #fffaf0, #f5edd9)" : "var(--surface-2)",
+                        border: i === 0 ? "1px solid #ecd5a8" : "1px solid var(--line)",
+                        borderRadius: 14, alignItems: "center", textAlign: "center",
+                      }}>
+                        <div style={{
+                          width: 36, height: 36, borderRadius: "50%",
+                          background: i === 0 ? "linear-gradient(135deg, var(--gold-2), var(--gold))" : i === 1 ? "var(--ink-4)" : "var(--surface-3)",
+                          color: i < 2 ? "white" : "var(--ink-3)",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          fontSize: 12, fontWeight: 600,
+                        }}>{i === 0 ? <Icon.Crown size={14} /> : `#${i+1}`}</div>
+                        <div className="serif" style={{ fontSize: 15 }}>{c.prenom} {c.nom}</div>
                         <div className="dim" style={{ fontSize: 11 }}>{c.poste}</div>
+                        <div className="serif" style={{ fontSize: 26, lineHeight: 1, color: i === 0 ? "var(--gold)" : "var(--ink)" }}>{c.leads}</div>
+                        <div className="dim" style={{ fontSize: 10 }}>leads ce mois</div>
                       </div>
-                    </div>
-                    <div className="row gap-2">
-                      <button className="btn btn-sm">Refuser</button>
-                      <button className="btn btn-primary btn-sm">Accepter</button>
-                    </div>
+                    ))}
                   </div>
-                ))}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* ── SLIDE 1 : Tableau des membres ── */}
+          {slide === 1 && (
+            <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+              <div className="row" style={{ justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid var(--line)" }}>
+                <div className="serif" style={{ fontSize: 16 }}>Membres</div>
+                <span className="dim" style={{ fontSize: 12 }}>{collabs.length} membre{collabs.length > 1 ? "s" : ""}</span>
+              </div>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ background: "var(--surface-2)" }}>
+                      {["Membre", "Poste", "Rôle", "Leads"].map(h => (
+                        <th key={h} style={{ textAlign: "left", padding: "10px 14px", fontWeight: 500, color: "var(--ink-3)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {collabs.map(c => {
+                      const isResp = c.role_membre === "responsable" || c.role === "admin" || c.role === "manager";
+                      return (
+                        <tr key={c.id} style={{ borderTop: "1px solid var(--line)" }}>
+                          <td style={{ padding: "12px 14px", whiteSpace: "nowrap" }}>
+                            <div className="row gap-2">
+                              <div style={{ width: 26, height: 26, borderRadius: "50%", background: "var(--surface-3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 600 }}>
+                                {(c.prenom[0] || '?')}{(c.nom[0] || '?')}
+                              </div>
+                              <div className="col" style={{ lineHeight: 1.2 }}>
+                                <div style={{ fontWeight: 500, fontSize: 12.5 }}>{c.prenom} {c.nom}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td style={{ padding: "12px 14px", color: "var(--ink-3)", fontSize: 12, whiteSpace: "nowrap" }}>{c.poste || "—"}</td>
+                          <td style={{ padding: "12px 14px", whiteSpace: "nowrap" }}>
+                            <span className={`pill ${isResp ? "pill-good" : "pill-mute"}`} style={{ fontSize: 10 }}>
+                              {isResp ? <Icon.Crown size={9} /> : <Icon.User size={9} />}
+                              {isResp ? "Responsable" : "Collaborateur"}
+                            </span>
+                          </td>
+                          <td style={{ padding: "12px 14px" }}>
+                            <span className="serif" style={{ fontSize: 16 }}>{c.leads}</span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
 
-          {/* Top 3 — même structure que le vrai */}
-          {active.filter(c => c.leads > 0).length > 0 && (
-            <div className="card" style={{ padding: 20 }}>
-              <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                <div className="serif" style={{ fontSize: 16 }}>Top 3 du mois</div>
-                <div className="dim" style={{ fontSize: 11 }}>Classement des leads générés</div>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10 }}>
-                {active.filter(c => c.leads > 0).slice(0, 3).map((c, i) => (
-                  <div key={c.id} className="col gap-2" style={{
-                    padding: 16,
-                    background: i === 0 ? "linear-gradient(180deg, #fffaf0, #f5edd9)" : "var(--surface-2)",
-                    border: i === 0 ? "1px solid #ecd5a8" : "1px solid var(--line)",
-                    borderRadius: 14, alignItems: "center", textAlign: "center",
-                  }}>
-                    <div style={{
-                      width: 36, height: 36, borderRadius: "50%",
-                      background: i === 0 ? "linear-gradient(135deg, var(--gold-2), var(--gold))" : i === 1 ? "var(--ink-4)" : "var(--surface-3)",
-                      color: i < 2 ? "white" : "var(--ink-3)",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 12, fontWeight: 600,
-                    }}>{i === 0 ? <Icon.Crown size={14} /> : `#${i+1}`}</div>
-                    <div className="serif" style={{ fontSize: 15 }}>{c.prenom} {c.nom}</div>
-                    <div className="dim" style={{ fontSize: 11 }}>{c.poste}</div>
-                    <div className="serif" style={{ fontSize: 26, lineHeight: 1, color: i === 0 ? "var(--gold)" : "var(--ink)" }}>{c.leads}</div>
-                    <div className="dim" style={{ fontSize: 10 }}>leads ce mois</div>
+          {/* ── SLIDE 2 : Détail par canaux ── */}
+          {slide === 2 && (() => {
+            const top = active[0];
+            if (!top) return null;
+            // Données simulées de répartition canal (pour la démo)
+            const channels = [
+              { key: "scans",     label: "Scans",     icon: <Icon.QR size={12} />,        color: "#6b5b4f", clicks: Math.round(top.leads * 2.83),  isScans: true },
+              { key: "mail",      label: "Mail",      icon: <Icon.Mail size={12} />,      color: "#8a6d3b", clicks: Math.round(top.leads * 0.67) },
+              { key: "whatsapp",  label: "WhatsApp",  icon: <Icon.WhatsApp size={12} />,  color: "#25d366", clicks: Math.round(top.leads * 0.55) },
+              { key: "instagram", label: "Instagram", icon: <Icon.Instagram size={12} />, color: "#c13584", clicks: Math.round(top.leads * 0.45) },
+              { key: "linkedin",  label: "LinkedIn",  icon: <Icon.Linkedin size={12} />,  color: "#0a66c2", clicks: Math.round(top.leads * 0.29) },
+              { key: "website",   label: "Site web",  icon: <Icon.Globe size={12} />,     color: "#1a1815", clicks: Math.round(top.leads * 0.17) },
+              { key: "crm",       label: "CRM",       icon: <Icon.User size={12} />,      color: "#b8843e", clicks: Math.round(top.leads * 0.14) },
+            ];
+            const totalAddContact = Math.round(top.leads * 1.4);
+            const totalClicks = channels.filter(c => !c.isScans).reduce((sum, c) => sum + c.clicks, 0);
+            const max = Math.max(...channels.map(c => c.clicks), 1);
+            return (
+              <div className="card" style={{ padding: 20 }}>
+                <div className="col gap-1" style={{ marginBottom: 14 }}>
+                  <div className="serif" style={{ fontSize: 16 }}>Détail — {top.prenom} {top.nom}</div>
+                  <div className="dim" style={{ fontSize: 12 }}>{top.poste} · Période sélectionnée</div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
+                  <div className="card" style={{ padding: 10 }}>
+                    <div className="eyebrow" style={{ marginBottom: 3, fontSize: 9 }}>Leads</div>
+                    <div className="serif" style={{ fontSize: 18, lineHeight: 1, letterSpacing: "-0.02em" }}>{top.leads}</div>
                   </div>
-                ))}
+                  <div className="card" style={{ padding: 10, background: "linear-gradient(135deg, #fdf3df, #f1deb6)", borderColor: "var(--gold)" }}>
+                    <div className="eyebrow" style={{ marginBottom: 3, fontSize: 9 }}>Add contact</div>
+                    <div className="serif" style={{ fontSize: 18, lineHeight: 1, letterSpacing: "-0.02em" }}>{totalAddContact}</div>
+                  </div>
+                  <div className="card" style={{ padding: 10 }}>
+                    <div className="eyebrow" style={{ marginBottom: 3, fontSize: 9 }}>Clics canaux</div>
+                    <div className="serif" style={{ fontSize: 18, lineHeight: 1, letterSpacing: "-0.02em" }}>{totalClicks}</div>
+                  </div>
+                </div>
+                <div className="eyebrow" style={{ marginBottom: 10 }}>Détail par canal</div>
+                <div className="col gap-3">
+                  {channels.map(ch => (
+                    <div key={ch.key} className="col gap-1">
+                      <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+                        <div className="row gap-2" style={{ alignItems: "center" }}>
+                          <div style={{ width: 22, height: 22, borderRadius: 6, background: "var(--surface-2)", color: ch.color, display: "flex", alignItems: "center", justifyContent: "center" }}>{ch.icon}</div>
+                          <div style={{ fontSize: 12, fontWeight: 500 }}>{ch.label}</div>
+                        </div>
+                        <div className="row gap-2" style={{ alignItems: "baseline" }}>
+                          {!ch.isScans && totalClicks > 0 && <span className="dim" style={{ fontSize: 10 }}>{Math.round((ch.clicks / totalClicks) * 100)}%</span>}
+                          <span className="serif" style={{ fontSize: 14 }}>{ch.clicks}</span>
+                        </div>
+                      </div>
+                      <div style={{ height: 3, background: "var(--surface-2)", borderRadius: 999, overflow: "hidden" }}>
+                        <div style={{ height: "100%", width: `${(ch.clicks / max) * 100}%`, background: ch.color, borderRadius: 999, transition: "width 400ms" }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
+
+          {/* ── Tabs en bas pour switcher entre les 3 vues ── */}
+          <div className="row gap-2" style={{ justifyContent: "center", flexWrap: "wrap", marginTop: 8 }}>
+            {SLIDES.map((label, i) => (
+              <button key={i} onClick={() => setSlide(i)} style={{
+                display: "flex", alignItems: "center", gap: 7,
+                padding: "8px 16px", borderRadius: 999, border: "1px solid var(--line)",
+                background: slide === i ? "var(--ink)" : "var(--surface)",
+                color: slide === i ? "white" : "var(--ink-3)",
+                fontSize: 12, fontWeight: slide === i ? 600 : 400,
+                cursor: "pointer", transition: "all 200ms",
+              }}>
+                <div style={{
+                  width: 6, height: 6, borderRadius: "50%",
+                  background: slide === i ? "white" : "var(--ink-4)",
+                }}/>
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </section>
     );
