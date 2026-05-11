@@ -1393,10 +1393,7 @@ function DelayedPhoneAnimation({ scrollRef, scanFlipped, scanDesign }) {
               ].map(({ ic: Ic, t }, i) => (
                 <button key={i} className="btn btn-sm" style={{
                   justifyContent: "center", fontSize: 11,
-                  whiteSpace: Ic ? "nowrap" : "normal",
-                  textAlign: "center", lineHeight: 1.25,
-                  height: Ic ? undefined : "auto",
-                  minHeight: 36, padding: "6px 10px",
+                  whiteSpace: "nowrap", padding: "0 10px",
                 }}>
                   {Ic && <Ic size={16} />} {t}
                 </button>
