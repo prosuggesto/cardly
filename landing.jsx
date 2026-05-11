@@ -352,7 +352,7 @@ function HeroSection({ navigate }) {
             <p className="muted" style={{ fontSize: 18, lineHeight: 1.55, maxWidth: 520, margin: 0, textWrap: "pretty", ...fi(2) }}>
               Cartalis remplace la carte de visite papier par une carte digitale 3D, interactive et mesurable. Vos prospects scannent, enregistrent votre contact, et vous suivez les interactions générées par vos équipes.
             </p>
-            <div className="row gap-3" style={{ marginTop: 8 }}>
+            <div className="row gap-3 hero-cta" style={{ marginTop: 8 }}>
               <div style={fi(3)}>
                 <button className="btn btn-primary btn-lg" onClick={() => navigate("/auth?mode=signup")}>
                   Créer ma carte <Icon.ArrowRight size={16} />

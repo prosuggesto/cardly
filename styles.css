@@ -639,6 +639,9 @@ img, video, svg { max-width: 100%; height: auto; }
   .btn { min-height: 40px; }
   .btn-sm { min-height: 34px; padding-inline: 12px; }
 
+  /* Hero CTA : réduire les btn-lg pour qu'ils soient plus petits que le titre */
+  .hero-cta .btn-lg { height: 44px !important; padding: 0 20px !important; font-size: 14px !important; }
+
   /* Modales : ~94vw */
   .modal-content { max-width: 94vw !important; padding: 22px !important; }
 
