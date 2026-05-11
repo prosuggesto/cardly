@@ -453,7 +453,7 @@ img, video, svg { max-width: 100%; height: auto; }
    tienne dans sa bulle (le texte est long sans icône pour compenser). */
 .scan-share-btn { font-size: 10px; }
 @media (max-width: 700px) {
-  .scan-share-btn { font-size: 8.5px !important; }
+  .scan-share-btn { font-size: 9.5px !important; }
 }
 
 /* Grille 2-col compacte pour ConversionTimeline sur mobile */
