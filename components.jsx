@@ -43,9 +43,10 @@ window.Icon = Icon;
 // ---------- Logo ----------
 function Logo({ size = "md" }) {
   const px = size === "sm" ? 14 : size === "lg" ? 22 : 17;
+  const markPx = px * 1.6;
   return (
     <div className="row gap-2" style={{ alignItems: "center" }}>
-      <div className="logo-mark" style={{ width: px*1.6, height: px*1.6, fontSize: px*0.95 }}>C</div>
+      <img src="assets/logo-cartalis.png" alt="Cartalis" style={{ width: markPx, height: markPx, objectFit: "contain", display: "block", flexShrink: 0 }} />
       <div className="serif" style={{ fontSize: px*1.15, letterSpacing: "-0.01em", lineHeight: 1 }}>
         <span style={{ fontStyle: "italic" }}>Cartalis</span>
       </div>
