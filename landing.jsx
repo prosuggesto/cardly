@@ -499,6 +499,7 @@ function CarouselSection() {
           {doubled.map((d, i) => (
             <div
               key={i}
+              className="carousel-card"
               style={{
                 flexShrink: 0,
                 width: 300,
@@ -555,8 +556,8 @@ function WhySection() {
         />
         <AnimatedStaggerGroup columns={4}>
           {items.map((it, i) => (
-            <div key={i} className="card" style={{ padding: 28 }}>
-              <div className="serif" style={{ fontSize: 24, color: "var(--gold)", marginBottom: 12 }}>0{i+1}</div>
+            <div key={i} className="card why-card" style={{ padding: 28 }}>
+              <div className="serif why-num" style={{ fontSize: 24, color: "var(--gold)", marginBottom: 12 }}>0{i+1}</div>
               <h3 className="serif" style={{ fontSize: 20, margin: "0 0 10px", letterSpacing: "-0.01em" }}>{it.t}</h3>
               <p className="muted" style={{ margin: 0, fontSize: 14, lineHeight: 1.6, textWrap: "pretty" }}>{it.d}</p>
             </div>
@@ -630,6 +631,7 @@ function DashboardPreview() {
   if (isMobile) {
     const totalLeads = active.reduce((sum, c) => sum + (c.leads || 0), 0);
     const topMember = active[0];
+    const pendingCount = pending.length; // vrai nombre, plus de "1" en dur
     return (
       <section style={{ padding: "60px 0" }}>
         <div className="container col gap-8">
@@ -638,51 +640,111 @@ function DashboardPreview() {
             title="Suivez les performances de vos équipes."
             subtitle="Visualisez les interactions générées par chaque collaborateur."
           />
-          <div className="card" style={{ padding: 24, background: "linear-gradient(180deg, #fffdf6 0%, var(--surface) 100%)", display: "flex", flexDirection: "column", gap: 22 }}>
+          <div className="card" style={{ padding: 22, background: "linear-gradient(180deg, #fffdf6 0%, var(--surface) 100%)", display: "flex", flexDirection: "column", gap: 18 }}>
+            {/* Header titre */}
             <div className="col gap-1">
               <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-3)" }}>DASHBOARD · AVRIL 2026</div>
-              <div className="serif" style={{ fontSize: 22, letterSpacing: "-0.01em" }}>Performance des membres</div>
+              <div className="serif" style={{ fontSize: 20, letterSpacing: "-0.01em" }}>Performance des membres</div>
             </div>
 
-            {/* 3 KPIs */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-              {[
-                { label: "Leads ce mois", value: totalLeads, delta: "+24" },
-                { label: "Meilleur membre", value: topMember?.prenom || "—", delta: (topMember?.leads || 0) + " leads" },
-                { label: "Membres actifs", value: active.length, delta: "sur " + collabs.length },
-              ].map((k, i) => (
-                <div key={i} style={{ padding: "12px 10px", borderRadius: 12, background: "var(--surface)", border: "1px solid var(--line)", display: "flex", flexDirection: "column", gap: 4 }}>
-                  <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)" }}>{k.label}</div>
-                  <div className="serif" style={{ fontSize: 18, lineHeight: 1.1 }}>{k.value}</div>
-                  <div className="dim" style={{ fontSize: 10 }}>{k.delta}</div>
-                </div>
+            {/* Tabs — switch entre les 3 vues */}
+            <div className="row gap-1" style={{ flexWrap: "wrap", background: "var(--surface-2)", padding: 4, borderRadius: 10 }}>
+              {SLIDES.map((label, i) => (
+                <button key={i} onClick={() => setSlide(i)} style={{
+                  flex: 1, minWidth: 0, padding: "7px 8px", borderRadius: 8, border: "none",
+                  background: slide === i ? "var(--ink)" : "transparent",
+                  color: slide === i ? "white" : "var(--ink-3)",
+                  fontSize: 11, fontWeight: slide === i ? 600 : 400,
+                  cursor: "pointer", transition: "all 180ms",
+                  whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                }}>
+                  {label}
+                </button>
               ))}
             </div>
 
-            {/* Top 3 leaderboard */}
-            <div className="col gap-2">
-              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-2)" }}>Top 3 du mois</div>
-              {active.slice(0, 3).map((c, i) => (
-                <div key={c.id} className="row gap-3" style={{ alignItems: "center", padding: "10px 12px", borderRadius: 10, background: i === 0 ? "linear-gradient(135deg, #fdf3df, #fffaf0)" : "var(--surface)", border: "1px solid var(--line)" }}>
-                  <div style={{
-                    width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
-                    background: i === 0 ? "linear-gradient(135deg, var(--gold-2), var(--gold))" : "var(--surface-2)",
-                    color: i === 0 ? "white" : "var(--ink-3)",
-                    display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700,
-                  }}>{i + 1}</div>
-                  <div className="col" style={{ flex: 1, lineHeight: 1.2 }}>
-                    <div style={{ fontSize: 13, fontWeight: 500 }}>{c.prenom} {c.nom}</div>
-                    <div className="dim" style={{ fontSize: 10 }}>{c.poste}</div>
+            {/* Contenu selon le slide */}
+            {slide === 0 && (
+              <>
+                {/* 3 KPIs */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+                  {[
+                    { label: "Leads", value: totalLeads },
+                    { label: "Meilleur", value: (topMember?.prenom || "—").slice(0, 8) },
+                    { label: "Actifs", value: active.length + "/" + collabs.length },
+                  ].map((k, i) => (
+                    <div key={i} style={{ padding: "10px 8px", borderRadius: 10, background: "var(--surface)", border: "1px solid var(--line)", display: "flex", flexDirection: "column", gap: 3 }}>
+                      <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)" }}>{k.label}</div>
+                      <div className="serif" style={{ fontSize: 16, lineHeight: 1.1 }}>{k.value}</div>
+                    </div>
+                  ))}
+                </div>
+                {/* Top 3 leaderboard */}
+                <div className="col gap-2">
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-2)" }}>Top 3 du mois</div>
+                  {active.slice(0, 3).map((c, i) => (
+                    <div key={c.id} className="row gap-3" style={{ alignItems: "center", padding: "9px 10px", borderRadius: 10, background: i === 0 ? "linear-gradient(135deg, #fdf3df, #fffaf0)" : "var(--surface)", border: "1px solid var(--line)" }}>
+                      <div style={{
+                        width: 24, height: 24, borderRadius: "50%", flexShrink: 0,
+                        background: i === 0 ? "linear-gradient(135deg, var(--gold-2), var(--gold))" : "var(--surface-2)",
+                        color: i === 0 ? "white" : "var(--ink-3)",
+                        display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700,
+                      }}>{i + 1}</div>
+                      <div className="col" style={{ flex: 1, lineHeight: 1.2, minWidth: 0 }}>
+                        <div style={{ fontSize: 12, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.prenom} {c.nom}</div>
+                        <div className="dim" style={{ fontSize: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.poste}</div>
+                      </div>
+                      <div className="serif" style={{ fontSize: 15, color: "var(--gold-deep)" }}>{c.leads}</div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {slide === 1 && (
+              <div className="col gap-2">
+                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-2)" }}>Membres ({collabs.length})</div>
+                {collabs.map(c => (
+                  <div key={c.id} className="row gap-3" style={{ alignItems: "center", padding: "9px 10px", borderRadius: 10, background: "var(--surface)", border: "1px solid var(--line)" }}>
+                    <div style={{ width: 24, height: 24, borderRadius: "50%", flexShrink: 0, background: "var(--surface-3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 600 }}>
+                      {c.prenom[0]}{c.nom[0]}
+                    </div>
+                    <div className="col" style={{ flex: 1, lineHeight: 1.2, minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.prenom} {c.nom}</div>
+                      <div className="dim" style={{ fontSize: 10 }}>{c.statut === "actif" ? c.poste : "En attente"}</div>
+                    </div>
+                    <div className="serif" style={{ fontSize: 13 }}>{c.leads}</div>
                   </div>
-                  <div className="serif" style={{ fontSize: 16, color: "var(--gold-deep)" }}>{c.leads}</div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
 
-            {/* Demandes pendantes */}
-            {pending.length > 0 && (
-              <div style={{ padding: "10px 12px", borderRadius: 10, background: "rgba(45,122,79,0.06)", border: "1px solid rgba(45,122,79,0.2)", fontSize: 12, color: "var(--ink-2)" }}>
-                <strong style={{ color: "var(--good, #2d7a4f)" }}>{pending.length}</strong> demande{pending.length > 1 ? "s" : ""} en attente
+            {slide === 2 && topMember && (
+              <div className="col gap-3" style={{ padding: "14px 12px", borderRadius: 12, background: "var(--surface)", border: "1px solid var(--line)" }}>
+                <div className="col gap-1">
+                  <div className="serif" style={{ fontSize: 14 }}>Détail — {topMember.prenom} {topMember.nom}</div>
+                  <div className="dim" style={{ fontSize: 10 }}>{topMember.poste} · 30 derniers jours</div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                  <div style={{ padding: 8, borderRadius: 8, background: "var(--surface-2)" }}>
+                    <div className="dim" style={{ fontSize: 9 }}>LEADS</div>
+                    <div className="serif" style={{ fontSize: 14 }}>{topMember.leads}</div>
+                  </div>
+                  <div style={{ padding: 8, borderRadius: 8, background: "linear-gradient(135deg, #fdf3df, #fffaf0)" }}>
+                    <div className="dim" style={{ fontSize: 9 }}>SCANS</div>
+                    <div className="serif" style={{ fontSize: 14 }}>{Math.round(topMember.leads * 2.8) || 0}</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Notif demandes en attente — VRAI compte, basé sur les données */}
+            {pendingCount > 0 && (
+              <div className="row gap-2" style={{ padding: "10px 12px", borderRadius: 10, background: "rgba(45,122,79,0.08)", border: "1px solid rgba(45,122,79,0.2)", fontSize: 12 }}>
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--good, #2d7a4f)", flexShrink: 0 }} />
+                <span style={{ color: "var(--ink-2)" }}>
+                  <strong style={{ color: "var(--good, #2d7a4f)" }}>{pendingCount}</strong> collaborateur{pendingCount > 1 ? "s" : ""} demande{pendingCount > 1 ? "nt" : ""} à rejoindre
+                </span>
               </div>
             )}
           </div>

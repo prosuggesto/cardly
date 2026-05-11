@@ -217,14 +217,27 @@ function DashboardPage({ role, trialExpired, onUpgrade }) {
   const [mFin, setMFin] = useStateD(String(now.getMonth() + 1).padStart(2, "0"));
   const [yFin, setYFin] = useStateD(String(now.getFullYear()));
   const [fMembre, setFMembre] = useStateD("all");
+  const [fEvent, setFEvent] = useStateD("all");
+  const [events, setEvents] = useStateD([]);
 
-  const loadData = async (mois, annee) => {
+  // Charge la liste des événements de l'entreprise (pour le filtre)
+  React.useEffect(() => {
+    if (!window.CardlyAPI || !entrepriseId) return;
+    (async () => {
+      try {
+        const { data } = await window.CardlyAPI.getEvenements(entrepriseId);
+        setEvents(data || []);
+      } catch (_) {}
+    })();
+  }, [entrepriseId]);
+
+  const loadData = async (mois, annee, evenementUuid) => {
     if (!window.CardlyAPI || !entrepriseId) { setLoading(false); return; }
     setLoading(true);
     try {
       const [{ data: members }, { data: logs }] = await Promise.all([
         window.CardlyAPI.getMembers(entrepriseId),
-        window.CardlyAPI.getLogsLeads(entrepriseId, { mois, annee }),
+        window.CardlyAPI.getLogsLeads(entrepriseId, { mois, annee, evenementUuid: evenementUuid && evenementUuid !== 'all' ? evenementUuid : undefined }),
       ]);
       // Agrège les leads par user
       const lMap = {};
@@ -328,7 +341,15 @@ function DashboardPage({ role, trialExpired, onUpgrade }) {
               options={[{ value: "all", label: "Tous les membres" }, ...active.map(c => ({ value: c.id, label: `${c.prenom} ${c.nom}` }))]}
             />
           )}
-          <button className="btn btn-primary btn-sm" onClick={() => loadData(mDebut, yDebut)}>
+          <FilterSelect
+            value={fEvent}
+            onChange={setFEvent}
+            options={[
+              { value: "all", label: "Tous les événements" },
+              ...events.map(ev => ({ value: ev.evenement_uuid, label: ev.evenement_name })),
+            ]}
+          />
+          <button className="btn btn-primary btn-sm" onClick={() => loadData(mDebut, yDebut, fEvent)}>
             {loading ? "…" : "Filtrer"}
           </button>
         </div>

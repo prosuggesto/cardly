@@ -436,41 +436,80 @@ img, video, svg { max-width: 100%; height: auto; }
 }
 
 /* ── Auto-scroll fluide du mockup téléphone (section "Expérience prospect") ── */
+/* On scroll juste assez pour révéler les icônes Insta/LinkedIn, pas plus. */
 @keyframes phone-mock-scroll {
-  0%, 8%     { transform: translateY(0); }
-  48%, 58%   { transform: translateY(-260px); }
-  98%, 100%  { transform: translateY(0); }
+  0%, 10%    { transform: translateY(0); }
+  50%, 60%   { transform: translateY(-180px); }
+  100%       { transform: translateY(0); }
 }
 .phone-mock-scroll {
   animation: phone-mock-scroll 10s ease-in-out infinite;
   will-change: transform;
 }
 
-/* ── Pricing cards : zoom global pour tout réduire proportionnellement ── */
+/* ── Pricing cards : on RÉDUIT le block (max-width + padding) sur mobile ── */
 @media (max-width: 700px) {
-  .pricing-card { zoom: 0.85; }
-}
-@media (max-width: 600px) {
-  .pricing-card { zoom: 0.75; }
+  .pricing-card {
+    max-width: 360px !important;
+    margin: 0 auto !important;
+    padding: 20px !important;
+    width: 100%;
+  }
+  /* Réduit le titre du plan (Solo / Team / Enterprise) */
+  .pricing-card > .col:first-of-type > .serif { font-size: 17px !important; }
+  /* Réduit le gros prix (44px desktop) */
+  .pricing-card .row > .serif { font-size: 30px !important; }
+  /* Texte secondaire */
+  .pricing-card .dim { font-size: 11.5px !important; }
+  .pricing-card ul li { font-size: 13px !important; }
+  /* Bouton CTA en bas */
+  .pricing-card .btn { padding: 10px 14px !important; font-size: 13px !important; }
 }
 @media (max-width: 420px) {
-  .pricing-card { zoom: 0.68; }
+  .pricing-card {
+    max-width: 320px !important;
+    padding: 16px !important;
+  }
+  .pricing-card .row > .serif { font-size: 26px !important; }
+  .pricing-card ul li { font-size: 12.5px !important; }
 }
 
-/* ── Auth signup : la carte garde sa taille, on rétrécit le CONTENU ─── */
+/* ── Pourquoi Cartalis : réduire les cartes sur mobile ────────────────── */
 @media (max-width: 700px) {
+  .why-card { padding: 18px !important; }
+  .why-card .why-num { font-size: 18px !important; margin-bottom: 6px !important; }
+  .why-card h3 { font-size: 16px !important; margin-bottom: 6px !important; }
+  .why-card p { font-size: 12.5px !important; line-height: 1.5 !important; }
+}
+
+/* ── Carousel cards : réduire la largeur sur mobile ───────────────────── */
+@media (max-width: 700px) {
+  .carousel-card { width: 200px !important; }
+}
+@media (max-width: 420px) {
+  .carousel-card { width: 170px !important; }
+}
+
+/* ── Auth signup : carte garde sa taille, contenu réduit + scroll mobile ─ */
+@media (max-width: 700px) {
+  /* Permettre le scroll tactile fluide dans la face arrière */
+  .auth-3d-card .card-face-back > div {
+    padding: 14px 16px !important;
+    overflow: auto !important;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    overscroll-behavior: contain;
+  }
   /* Tous les éléments du formulaire passent en mode compact */
-  .auth-3d-card .field { gap: 4px !important; }
+  .auth-3d-card .field { gap: 4px !important; margin: 0 0 6px !important; }
   .auth-3d-card .input,
-  .auth-3d-card input { padding: 8px 10px !important; font-size: 12.5px !important; }
+  .auth-3d-card input,
+  .auth-3d-card textarea { padding: 8px 10px !important; font-size: 12.5px !important; height: auto !important; min-height: 0 !important; }
   .auth-3d-card label,
-  .auth-3d-card .field > div:first-child { font-size: 10.5px !important; }
+  .auth-3d-card .field > label { font-size: 10.5px !important; }
   .auth-3d-card .serif { font-size: 18px !important; }
   .auth-3d-card .btn { padding: 8px 12px !important; font-size: 12px !important; min-height: 32px !important; }
   .auth-3d-card .col.gap-3 { gap: 8px !important; }
-  /* La zone scrollable de la face arrière */
-  .auth-3d-card .card-face-back > div { padding: 14px 16px !important; overscroll-behavior: contain; }
-  /* Texte de description sous les boutons rôle */
   .auth-3d-card .dim { font-size: 11px !important; }
 }
 @media (max-width: 420px) {

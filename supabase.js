@@ -180,11 +180,12 @@
 
       // ── Logs Leads ───────────────────────────────────────────────────────
       // Retourne les lignes agrégées (1 par user/mois/event)
-      async getLogsLeads(entrepriseId, { mois, annee, userId } = {}) {
+      async getLogsLeads(entrepriseId, { mois, annee, userId, evenementUuid } = {}) {
         let q = window.sb.from('logs_leads').select('*').eq('entreprise_id', entrepriseId);
         if (mois)   q = q.eq('mois', parseInt(mois, 10));
         if (annee)  q = q.eq('annee', parseInt(annee, 10));
         if (userId) q = q.eq('user_id', userId);
+        if (evenementUuid) q = q.eq('evenement_uuid', evenementUuid);
         return q;
       },
 
