@@ -442,18 +442,11 @@ img, video, svg { max-width: 100%; height: auto; }
 .scan-action-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 6px;
+  gap: 4px;
 }
 .scan-action-grid .btn {
   min-width: 0;
   /* pas d'overflow:hidden — ça cliperait les icônes SVG */
-}
-/* Le bouton "Partager mes infos" n'a pas d'icône — on lui met la même taille
-   que les autres sur desktop, mais on réduit encore sur mobile pour qu'il
-   tienne dans sa bulle (le texte est long sans icône pour compenser). */
-.scan-share-btn { font-size: 10px; }
-@media (max-width: 700px) {
-  .scan-share-btn { font-size: 9.5px !important; }
 }
 
 /* Grille 2-col compacte pour ConversionTimeline sur mobile */
