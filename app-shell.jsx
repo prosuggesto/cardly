@@ -919,6 +919,9 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
   const [sizeDrafts, setSizeDrafts] = useStateP({});
   const [logoSizeRectoDraft, setLogoSizeRectoDraft] = useStateP(undefined);
   const [logoSizeVersoDraft, setLogoSizeVersoDraft] = useStateP(undefined);
+  // Ces hooks doivent rester ici (avant tout return conditionnel) — règles des hooks React
+  const cardPreviewRef = useRefP(null);
+  const [downloading, setDownloading] = useStateP(false);
 
   // Toujours rafraîchir depuis la DB — évite les données obsolètes après navigation
   useEffectP(() => {
@@ -985,9 +988,6 @@ function CustomizationPage({ cardId, role, plan, trialExpired, onUpgrade, onBack
 
   const isAdminOnEnterprise = card.type === "entreprise" && role === "collaborator";
   const editable = !isAdminOnEnterprise;
-
-  const cardPreviewRef = useRefP(null);
-  const [downloading, setDownloading] = useStateP(false);
 
   const downloadFace = async (side) => {
     const container = cardPreviewRef.current;
