@@ -77,8 +77,8 @@ function FilterSelect({ value, onChange, options, btnStyle }) {
 // ---------- CRM ----------
 function CrmPage({ role }) {
   const [allContacts, setAllContacts] = useStateD([]);
+  const [members, setMembers] = useStateD([]); // vrais membres depuis Supabase (profils réels)
   const [loading, setLoading] = useStateD(true);
-  const collabs = (window.CARTALIS_DATA.collaborators || []).filter(c => c.statut === "actif");
   const entrepriseId = window.CARTALIS_DATA?.entreprise?.id;
   const toast = useToast();
 
@@ -98,10 +98,11 @@ function CrmPage({ role }) {
     if (!window.CardlyAPI || !entrepriseId) { setLoading(false); return; }
     (async () => {
       try {
-        // Deux requêtes parallèles : contacts + événements (pas de FK déclarée)
-        const [contactsRes, eventsRes] = await Promise.all([
+        // Trois requêtes parallèles : contacts + événements + membres réels
+        const [contactsRes, eventsRes, membersRes] = await Promise.all([
           window.CardlyAPI.getCRMContacts(entrepriseId),
           window.CardlyAPI.getEvenements(entrepriseId),
+          window.CardlyAPI.getMembers(entrepriseId),
         ]);
         if (contactsRes.error) throw contactsRes.error;
 
@@ -111,18 +112,27 @@ function CrmPage({ role }) {
           if (ev.evenement_uuid) eventMap[ev.evenement_uuid] = ev.evenement_name;
         });
 
+        // Map userId (= collaborateur_id) → nom complet depuis les vrais profils Supabase
+        const memberMap = {};
+        (membersRes.data || []).forEach(m => {
+          if (m.user_id && m.profiles) {
+            const fullName = `${m.profiles.prenom || ''} ${m.profiles.nom || ''}`.trim()
+              || m.profiles.email || '—';
+            memberMap[m.user_id] = { nom: fullName, id: m.user_id };
+          }
+        });
+        setMembers(Object.values(memberMap));
+
         const formatDate = (iso) => {
           if (!iso) return '—';
           const d = new Date(iso);
           return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
         };
 
-        // Cherche le nom du membre dans la liste cached des collaborateurs
+        // Résout collaborateur_id → nom depuis les vrais profils (jamais les mock data)
         const getMembreInfo = (collaborateurId) => {
           if (!collaborateurId) return { nom: '—', id: null };
-          const collab = (window.CARTALIS_DATA.collaborators || []).find(c => c.id === collaborateurId);
-          if (!collab) return { nom: '—', id: collaborateurId };
-          return { nom: `${collab.prenom || ''} ${collab.nom || ''}`.trim() || '—', id: collaborateurId };
+          return memberMap[collaborateurId] || { nom: '—', id: collaborateurId };
         };
 
         const mapped = (contactsRes.data || []).map(c => {
@@ -173,7 +183,7 @@ function CrmPage({ role }) {
   const membreScores = {};
   allContacts.forEach(c => { if (c.membre_id) membreScores[c.membre_id] = (membreScores[c.membre_id] || 0) + 1; });
   const topMembreId = Object.keys(membreScores).sort((a, b) => membreScores[b] - membreScores[a])[0];
-  const topMembre = collabs.find(c => c.id === topMembreId);
+  const topMembre = members.find(m => m.id === topMembreId);
 
   const exportCSV = () => {
     const headers = ["Prénom", "Nom", "Email", "Téléphone", "Entreprise", "Membre", "Événement", "Date"];
@@ -208,7 +218,7 @@ function CrmPage({ role }) {
           <FilterSelect
             value={filterMembre}
             onChange={setFilterMembre}
-            options={[{ value: "all", label: "Tous les membres" }, ...collabs.map(c => ({ value: c.id, label: `${c.prenom} ${c.nom}` }))]}
+            options={[{ value: "all", label: "Tous les membres" }, ...members.map(m => ({ value: m.id, label: m.nom }))]}
           />
         )}
         <FilterSelect
@@ -225,7 +235,7 @@ function CrmPage({ role }) {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 14 }}>
         <Metric label="Total contacts" value={loading ? "…" : String(allContacts.length)} delta={`${filtered.length} affiché${filtered.length > 1 ? "s" : ""}`} trend="neutral" />
         <Metric label="Ce mois" value={loading ? "…" : String(thisMonthCount)} delta={`${currentMonthLabel} ${currentYear}`} trend={thisMonthCount > 0 ? "up" : "neutral"} />
-        {canManage && <Metric label="Top membre" value={topMembre ? `${topMembre.prenom} ${topMembre.nom[0]}.` : "—"} delta={topMembreId ? `${membreScores[topMembreId]} contact${membreScores[topMembreId] > 1 ? "s" : ""}` : "Aucun contact"} trend="neutral" />}
+        {canManage && <Metric label="Top membre" value={topMembre ? topMembre.nom : "—"} delta={topMembreId ? `${membreScores[topMembreId]} contact${membreScores[topMembreId] > 1 ? "s" : ""}` : "Aucun contact"} trend="neutral" />}
       </div>
 
       {/* Table */}
@@ -1856,7 +1866,6 @@ function CardPicker({ value, onChange, options, placeholder = "Sélectionner…"
 function NFCSupportPage() {
   const { useState: useStateN, useEffect: useEffectN } = React;
   const [copied, setCopied] = useStateN(false);
-  const [showRegenerateConfirm, setShowRegenerateConfirm] = useStateN(false);
   const [nfcRow, setNfcRow] = useStateN(null);    // ligne nfc_cards en DB
   const [loading, setLoading] = useStateN(true);
   const [linking, setLinking] = useStateN(false);
@@ -1907,21 +1916,6 @@ function NFCSupportPage() {
       setNfcRow(prev);
       toast.push("Erreur : " + (err.message || "impossible d'associer la carte"));
     } finally { setLinking(false); }
-  };
-
-  const regenerate = async () => {
-    if (!nfcRow?.id) return;
-    try {
-      // Régénère le short_code NFC (le lien copié changera, l'ancien ne fonctionnera plus).
-      const { data: newCode, error } = await window.CardlyAPI.regenerateNFCShortCode(nfcRow.id);
-      if (error) throw error;
-      setNfcRow({ ...nfcRow, short_code: newCode });
-      setShowRegenerateConfirm(false);
-      toast.push("Lien régénéré");
-    } catch (err) {
-      console.error('[Cardly] regenerateNFCShortCode failed:', err);
-      toast.push("Erreur : " + (err.message || "impossible de régénérer"));
-    }
   };
 
   const copyLink = () => {
@@ -1992,17 +1986,6 @@ function NFCSupportPage() {
             <button className="btn btn-sm row gap-2" disabled={!nfcLink} onClick={() => { if (nfcLink) window.open(nfcLink, "_blank"); }}>
               <Icon.ArrowRight size={13} /> Ouvrir le lien
             </button>
-            {!showRegenerateConfirm ? (
-              <button className="btn btn-ghost btn-sm row gap-2" style={{ marginLeft: "auto", color: "var(--ink-3)", fontSize: 12 }} onClick={() => setShowRegenerateConfirm(true)} disabled={!nfcRow}>
-                <Icon.Refresh size={12} /> Régénérer
-              </button>
-            ) : (
-              <div className="row gap-2" style={{ marginLeft: "auto", alignItems: "center" }}>
-                <span style={{ fontSize: 12, color: "var(--ink-3)" }}>L'ancien lien ne fonctionnera plus.</span>
-                <button className="btn btn-sm" style={{ fontSize: 12, background: "#c0392b", color: "white", border: "none" }} onClick={regenerate}>Confirmer</button>
-                <button className="btn btn-ghost btn-sm" style={{ fontSize: 12 }} onClick={() => setShowRegenerateConfirm(false)}>Annuler</button>
-              </div>
-            )}
           </div>
         </div>
       </div>
