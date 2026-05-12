@@ -137,6 +137,11 @@ a { color: inherit; text-decoration: none; }
   background: var(--surface-2);
   border: 1px solid var(--line);
   color: var(--ink-3);
+  /* Empêche le texte du chip de se casser en plusieurs lignes quand la
+     cellule parente est étroite (ex. CRM table sur mobile : "Salon
+     Immobilier 2026" se cassait en 3 lignes dans le chip). Le chip
+     s'étend horizontalement, le scroll-x de la table fait le reste. */
+  white-space: nowrap;
 }
 .chip-gold { background: linear-gradient(135deg, #fdf3df, #f1deb6); color: #8b6722; border-color: #ecd5a8; }
 .chip-jade { background: #e7efe9; color: #3f6c4d; border-color: #cfdcd4; }

@@ -1176,8 +1176,8 @@ function FeedbackPage() {
                 <div style={{ fontWeight: 600, fontSize: 14 }}>Cartalis</div>
                 <div className="dim" style={{ fontSize: 12 }}>Équipe produit · répond sous 48h</div>
               </div>
-              <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--good, #2d7a4f)" }}>
-                <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--good, #2d7a4f)", display: "inline-block" }} />
+              <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--good, #2d7a4f)", flexShrink: 0, whiteSpace: "nowrap" }}>
+                <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--good, #2d7a4f)", display: "inline-block", flexShrink: 0 }} />
                 En ligne
               </div>
             </div>
