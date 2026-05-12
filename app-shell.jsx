@@ -749,7 +749,7 @@ function FakeQR({ seed = "x", size = 180 }) {
 
 function AddCardTile({ onClick }) {
   return (
-    <button onClick={onClick} className="card" style={{
+    <button onClick={onClick} className="card add-card-tile" style={{
       padding: 24, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
       gap: 14, minHeight: 460, border: "1.5px dashed var(--line-2)",
       background: "transparent", cursor: "pointer", transition: "all 200ms",

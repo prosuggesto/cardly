@@ -806,6 +806,25 @@ img, video, svg { max-width: 100%; height: auto; }
     padding: 0 12px;
     min-width: 0 !important;
   }
+
+  /* "Ajouter une carte" : avant 460px de haut (inline) → trop grand sur
+     mobile. On la ramène à ~la même taille qu'une tuile carte créée. */
+  .add-card-tile {
+    min-height: 280px !important;
+    padding: 24px 18px !important;
+    gap: 12px !important;
+  }
+  .add-card-tile .serif { font-size: 16px !important; }
+  .add-card-tile .dim   { font-size: 12px !important; max-width: 220px !important; }
+  /* L'icône + dans son carré gris */
+  .add-card-tile > div:first-of-type {
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 12px !important;
+  }
+}
+@media (max-width: 420px) {
+  .add-card-tile { min-height: 240px !important; }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
