@@ -543,26 +543,38 @@ function CardListItem({ card, onCustomize, onShare, onDelete, role }) {
 }
 
 function CardStatsModal({ open, onClose, card }) {
-  if (!open) return null;
-  // Deterministic-ish numbers per card so it feels real
-  const seed = (card.id || "x").split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-  const rng = (n, mod) => ((seed * 9301 + n * 49297) % mod);
-  const saves = (card.leads != null ? card.leads : 32) + 10 + rng(1, 18);
-  const scans = Math.round(saves * 1.2);
-  const channels = [
-    { key: "scans", label: "Scans", icon: <Icon.QR size={14} />, color: "#6b5b4f", clicks: scans },
-    { key: "mail", label: "Mail", icon: <Icon.Mail size={14} />, color: "#8a6d3b", clicks: 18 + rng(2, 30) },
-    { key: "whatsapp", label: "WhatsApp", icon: <Icon.WhatsApp size={14} />, color: "#25d366", clicks: 14 + rng(3, 28) },
-    { key: "instagram", label: "Instagram", icon: <Icon.Instagram size={14} />, color: "#c13584", clicks: 9 + rng(4, 22) },
-    { key: "linkedin", label: "LinkedIn", icon: <Icon.Linkedin size={14} />, color: "#0a66c2", clicks: 6 + rng(5, 18) },
-    { key: "website", label: "Site web", icon: <Icon.Globe size={14} />, color: "#1a1815", clicks: 4 + rng(6, 16) },
-    { key: "crm", label: "CRM", icon: <Icon.User size={14} />, color: "#b8843e", clicks: 5 + rng(7, 14) },
-  ];
-  const totalClicks = channels.reduce((s, c) => s + c.clicks, 0);
-  const max = Math.max(...channels.map(c => c.clicks));
+  // Stats : on part de card.stats (déjà mappé via mapCarteFromDB), puis on
+  // re-fetch fresh dès que le modal s'ouvre pour avoir les compteurs à jour
+  // (un scan ou un clic ailleurs ne ferait pas re-render la liste sinon).
+  const [stats, setStats] = useStateP(card?.stats || null);
+  useEffectP(() => {
+    if (!open || !card?.id || !window.CardlyAPI?.getCardStats) return;
+    window.CardlyAPI.getCardStats(card.id)
+      .then(({ data }) => { if (data) setStats(data); })
+      .catch(() => {});
+  }, [open, card?.id]);
 
   const vw = useViewportWidth();
   const isMobile = vw < 700;
+
+  if (!open) return null;
+
+  const s = stats || { scans: 0, add_contact: 0, whatsapp: 0, mail: 0, instagram: 0, linkedin: 0, site_web: 0, crm: 0 };
+  // "Enregistrements" : nb de fois où un visiteur a cliqué "Enregistrer
+  // dans mes contacts" sur cette carte (téléchargement vCard).
+  const saves = s.add_contact;
+  const channels = [
+    { key: "scans",     label: "Scans",     icon: <Icon.QR size={14} />,        color: "#6b5b4f", clicks: s.scans     },
+    { key: "mail",      label: "Mail",      icon: <Icon.Mail size={14} />,      color: "#8a6d3b", clicks: s.mail      },
+    { key: "whatsapp",  label: "WhatsApp",  icon: <Icon.WhatsApp size={14} />,  color: "#25d366", clicks: s.whatsapp  },
+    { key: "instagram", label: "Instagram", icon: <Icon.Instagram size={14} />, color: "#c13584", clicks: s.instagram },
+    { key: "linkedin",  label: "LinkedIn",  icon: <Icon.Linkedin size={14} />,  color: "#0a66c2", clicks: s.linkedin  },
+    { key: "website",   label: "Site web",  icon: <Icon.Globe size={14} />,     color: "#1a1815", clicks: s.site_web  },
+    { key: "crm",       label: "CRM",       icon: <Icon.User size={14} />,      color: "#b8843e", clicks: s.crm       },
+  ];
+  // Clics totaux : tous les canaux SAUF scans (scans ≠ clic d'action).
+  const totalClicks = s.mail + s.whatsapp + s.instagram + s.linkedin + s.site_web + s.crm;
+  const max = Math.max(...channels.map(c => c.clicks), 1);
 
   return (
     <div className="stats-modal-bg" onClick={onClose}>

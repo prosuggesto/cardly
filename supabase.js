@@ -256,7 +256,31 @@
         } catch (_) { /* non-bloquant */ }
       },
 
-      async saveCRMContact(carteUuid, { nom, prenom, mail, tel, prospect_entreprise_nom } = {}) {
+      // Récupère les stats par-carte fraîches (table cartes, colonnes
+    // stat_clic_*). Le RPC track_card_action les incrémente directement.
+    async getCardStats(carteUuid) {
+      const { data, error } = await window.sb
+        .from('cartes')
+        .select('stat_clic_scans, stat_clic_add_contact, stat_clic_whatsapp, stat_clic_mail, stat_clic_instagram, stat_clic_linkedin, stat_clic_site_web, stat_clic_crm')
+        .eq('carte_uuid', carteUuid)
+        .single();
+      if (error || !data) return { data: null, error };
+      return {
+        data: {
+          scans:       +(data.stat_clic_scans       || 0),
+          add_contact: +(data.stat_clic_add_contact || 0),
+          whatsapp:    +(data.stat_clic_whatsapp    || 0),
+          mail:        +(data.stat_clic_mail        || 0),
+          instagram:   +(data.stat_clic_instagram   || 0),
+          linkedin:    +(data.stat_clic_linkedin    || 0),
+          site_web:    +(data.stat_clic_site_web    || 0),
+          crm:         +(data.stat_clic_crm         || 0),
+        },
+        error: null,
+      };
+    },
+
+    async saveCRMContact(carteUuid, { nom, prenom, mail, tel, prospect_entreprise_nom } = {}) {
         const { data: { session } } = await window.sb.auth.getSession();
         const res = await fetch(FN_URL + '/save-crm-contact', {
           method: 'POST',
@@ -373,6 +397,18 @@
           },
           statut:     c.statut || 'active',
           is_default: false,
+          // Stats par-carte alimentées par le RPC track_card_action.
+          // Lecture seule depuis la table cartes.stat_clic_*.
+          stats: {
+            scans:       +(c.stat_clic_scans       || 0),
+            add_contact: +(c.stat_clic_add_contact || 0),
+            whatsapp:    +(c.stat_clic_whatsapp    || 0),
+            mail:        +(c.stat_clic_mail        || 0),
+            instagram:   +(c.stat_clic_instagram   || 0),
+            linkedin:    +(c.stat_clic_linkedin    || 0),
+            site_web:    +(c.stat_clic_site_web    || 0),
+            crm:         +(c.stat_clic_crm         || 0),
+          },
         };
       },
 

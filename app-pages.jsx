@@ -1422,6 +1422,7 @@ function PublicCardPage({ navigate, params }) {
   const ent = window.CARTALIS_DATA.entreprise;
 
   const { useEffect: useEffectPub } = React;
+  const scanTrackedRef = React.useRef(false);
   useEffectPub(() => {
     if (!window.CardlyAPI || !window.sb) return;
     if (!cardId && !nfcUuid) return;
@@ -1459,6 +1460,14 @@ function PublicCardPage({ navigate, params }) {
         }
         const mapped = window.CardlyAPI.mapCarteFromDB(raw, profile, entrepriseData);
         setCard(mapped);
+
+        // SCAN tracking : dès que la page publique a chargé une carte
+        // valide, on incrémente +1 scan (une seule fois par mount, garde
+        // contre les re-runs de useEffect en strict mode / hot reload).
+        if (!scanTrackedRef.current && mapped?.id && !inactive) {
+          scanTrackedRef.current = true;
+          window.CardlyAPI.trackAction(mapped.id, 'scan');
+        }
       } catch (err) {
         console.error('[Cardly] PublicCardPage fetch failed:', err);
       }
@@ -1510,7 +1519,7 @@ function PublicCardPage({ navigate, params }) {
             onClick={() => {
               downloadVCard(card);
               setSavedCount(savedCount + 1);
-              if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.id, 'add_contact');
+              if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.id, 'clic_add_contact');
               toast.push("Contact ajouté à votre carnet");
             }}
           >
@@ -1526,7 +1535,7 @@ function PublicCardPage({ navigate, params }) {
                 if (!phone) { toast.push("Numéro non disponible"); return; }
                 // window.location.href (not window.open _blank) → no leftover
                 // about:blank tab on iOS when WhatsApp app intercepts the URL.
-                if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.id, 'whatsapp');
+                if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.id, 'clic_whatsapp');
                 window.location.href = `https://wa.me/${phone}?text=${encodeURIComponent(PUBLIC_WA_MESSAGE)}`;
               }}
             >
@@ -1538,8 +1547,8 @@ function PublicCardPage({ navigate, params }) {
               style={{ flex: 1, minWidth: 110, justifyContent: "center" }}
               onClick={() => {
                 if (!card.email_affiche) { toast.push("Email non disponible"); return; }
+                if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.id, 'clic_mail');
                 window.location.href = `mailto:${encodeURIComponent(card.email_affiche)}?subject=${encodeURIComponent(PUBLIC_MAIL_SUBJECT)}&body=${encodeURIComponent(PUBLIC_MAIL_BODY)}`;
-                if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.id, 'mail');
               }}
             >
               <Icon.Mail size={13} /> Email
@@ -1554,8 +1563,8 @@ function PublicCardPage({ navigate, params }) {
               onClick={() => {
                 if (!card.site_web) { toast.push("Site non disponible"); return; }
                 const url = card.site_web.startsWith('http') ? card.site_web : 'https://' + card.site_web;
+                if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.id, 'clic_site_web');
                 window.open(url, "_blank");
-                if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.id, 'site_web');
               }}
             >
               <Icon.Globe size={13} /> Site web
@@ -1573,7 +1582,7 @@ function PublicCardPage({ navigate, params }) {
               rel="noopener noreferrer"
               onClick={(e) => {
                 if (inactive || !card.instagram_url) { e.preventDefault(); if (!card.instagram_url) toast.push("Instagram non renseigné"); return; }
-                if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.id, 'instagram');
+                if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.id, 'clic_instagram');
               }}
               style={{ opacity: inactive || !card.instagram_url ? 0.4 : 1, pointerEvents: inactive ? "none" : "auto", display: "flex", cursor: card.instagram_url ? "pointer" : "default" }}
               title="Instagram"
@@ -1586,7 +1595,7 @@ function PublicCardPage({ navigate, params }) {
               rel="noopener noreferrer"
               onClick={(e) => {
                 if (inactive || !card.linkedin_url) { e.preventDefault(); if (!card.linkedin_url) toast.push("LinkedIn non renseigné"); return; }
-                if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.id, 'linkedin');
+                if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.id, 'clic_linkedin');
               }}
               style={{ opacity: inactive || !card.linkedin_url ? 0.4 : 1, pointerEvents: inactive ? "none" : "auto", display: "flex", cursor: card.linkedin_url ? "pointer" : "default" }}
               title="LinkedIn"
@@ -1622,7 +1631,7 @@ function PublicCardPage({ navigate, params }) {
                   prospect_entreprise_nom: data.societe,
                 });
               }
-              if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.id, 'crm');
+              if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.id, 'clic_crm');
             } catch (err) {
               console.error('[Cardly] saveCRMContact failed:', err);
               toast.push("Erreur d'envoi — réessayez");
