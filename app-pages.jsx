@@ -1517,9 +1517,14 @@ function PublicCardPage({ navigate, params }) {
             className="btn btn-primary btn-lg"
             style={{ width: "100%", justifyContent: "center", marginBottom: 10 }}
             onClick={() => {
+              // Fire the trackAction BEFORE triggering the vCard download.
+              // On iOS the .vcf download hands off to the Contacts app and
+              // suspends the browser tab → a pending fetch can get killed.
+              // (Combined with keepalive:true in CardlyAPI.trackAction this
+              //  is a belt-and-suspenders fix.)
+              if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.id, 'clic_add_contact');
               downloadVCard(card);
               setSavedCount(savedCount + 1);
-              if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.id, 'clic_add_contact');
               toast.push("Contact ajouté à votre carnet");
             }}
           >

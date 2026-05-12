@@ -244,8 +244,12 @@
       async trackAction(carteUuid, action) {
         try {
           const { data: { session } } = await window.sb.auth.getSession();
+          // keepalive:true → la requête termine même si la page est en
+          // train d'être unload/suspendue (mailto:, wa.me deep link,
+          // download .vcf qui passe la main à l'app Contacts, etc.).
           await fetch(FN_URL + '/track-action', {
             method: 'POST',
+            keepalive: true,
             headers: {
               'Content-Type': 'application/json',
               'apikey': SUPABASE_ANON_KEY,
