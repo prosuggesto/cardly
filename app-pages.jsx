@@ -98,8 +98,18 @@ function CrmPage({ role }) {
     if (!window.CardlyAPI || !entrepriseId) { setLoading(false); return; }
     (async () => {
       try {
-        const { data, error } = await window.CardlyAPI.getCRMContacts(entrepriseId);
-        if (error) throw error;
+        // Deux requêtes parallèles : contacts + événements (pas de FK déclarée)
+        const [contactsRes, eventsRes] = await Promise.all([
+          window.CardlyAPI.getCRMContacts(entrepriseId),
+          window.CardlyAPI.getEvenements(entrepriseId),
+        ]);
+        if (contactsRes.error) throw contactsRes.error;
+
+        // Map uuid → nom de l'événement
+        const eventMap = {};
+        (eventsRes.data || []).forEach(ev => {
+          if (ev.evenement_uuid) eventMap[ev.evenement_uuid] = ev.evenement_name;
+        });
 
         const formatDate = (iso) => {
           if (!iso) return '—';
@@ -115,9 +125,7 @@ function CrmPage({ role }) {
           return { nom: `${collab.prenom || ''} ${collab.nom || ''}`.trim() || '—', id: collaborateurId };
         };
 
-        const mapped = (data || []).map(c => {
-          // La jointure evenements retourne l'objet ou null selon la FK
-          const ev = Array.isArray(c.evenements) ? c.evenements[0] : c.evenements;
+        const mapped = (contactsRes.data || []).map(c => {
           const membre = getMembreInfo(c.collaborateur_id);
           return {
             id: c.id,
@@ -128,7 +136,7 @@ function CrmPage({ role }) {
             entreprise: c.prospect_entreprise_nom || '—',
             membre: membre.nom,
             membre_id: membre.id,
-            event: ev?.evenement_name || '—',
+            event: (c.evenement_uuid && eventMap[c.evenement_uuid]) || '—',
             date: formatDate(c.created_at),
             created_at: c.created_at,
           };

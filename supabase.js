@@ -191,9 +191,9 @@
 
       // ── CRM Contacts ─────────────────────────────────────────────────────
       async getCRMContacts(entrepriseId) {
+        // Pas de FK déclarée entre crm_contacts et evenements → select simple
         return window.sb.from('crm_contacts')
-          // Join evenements via evenement_uuid pour récupérer le nom de l'événement
-          .select('*, evenements!evenement_uuid(evenement_name)')
+          .select('*')
           .eq('entreprise_id', entrepriseId)
           .order('created_at', { ascending: false });
       },
