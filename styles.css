@@ -776,6 +776,90 @@ img, video, svg { max-width: 100%; height: auto; }
 }
 
 /* ════════════════════════════════════════════════════════════════════════ */
+/*  App "Mes cartes" — responsive mobile (preview, présent. modal, stats)   */
+/* ════════════════════════════════════════════════════════════════════════ */
+
+/* — Aperçu carte dans la liste "Mes cartes" ─────────────────────────────
+   Le <Card3D width={320}/> a une largeur fixe en inline. Sur écrans
+   étroits (<360px utiles dans le .card parent), il déborde à droite.
+   On rend la 3D fluide tout en gardant le ratio carte (100:63). */
+@media (max-width: 700px) {
+  .card-preview-tile .card-3d,
+  .card-preview-tile .card-floater {
+    width: 100% !important;
+    max-width: 320px !important;
+    height: auto !important;
+    aspect-ratio: 100 / 63;
+  }
+}
+
+/* — Modal "Présenter au client" ─────────────────────────────────────────
+   Inline `padding: 40`, grille `1.2fr 1fr`, et <Card3D width={420}/>
+   débordent largement sur mobile. La grille s'écroule déjà à 1 col
+   ≤900px (règle inline 2-col globale), il reste à compacter padding,
+   gap, taille de la carte 3D et du QR, plus permettre le scroll. */
+@media (max-width: 700px) {
+  .present-modal-bg { padding: 12px !important; }
+  .present-modal {
+    padding: 22px 18px !important;
+    gap: 18px !important;
+    max-height: calc(100vh - 24px) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  .present-modal .card-3d,
+  .present-modal .card-floater {
+    width: 100% !important;
+    max-width: 340px !important;
+    height: auto !important;
+    aspect-ratio: 100 / 63;
+  }
+  /* Titre du nom de carte plus contenu */
+  .present-modal .serif { font-size: 20px !important; }
+  /* QR un peu plus petit */
+  .present-modal svg[width="180"] {
+    width: 150px !important;
+    height: 150px !important;
+  }
+}
+@media (max-width: 420px) {
+  .present-modal { padding: 18px 14px !important; }
+  .present-modal svg[width="180"] {
+    width: 130px !important;
+    height: 130px !important;
+  }
+}
+
+/* — Modal générique <Modal/> (utilisé par CardStatsModal, etc.) ─────────
+   Pas de max-height par défaut → le contenu déborde verticalement et se
+   fait couper en bas de l'écran. On ajoute scroll interne + compactage
+   du titre et des gros chiffres serif. */
+@media (max-width: 700px) {
+  .modal {
+    max-height: calc(100vh - 24px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 22px !important;
+  }
+  .modal h3.serif {
+    font-size: 18px !important;
+    word-break: break-word;
+    line-height: 1.2;
+  }
+  /* Boîtes "Enregistrements" / "Clics totaux" : gros nombres compactés */
+  .modal .serif[style*="font-size: 32"] {
+    font-size: 26px !important;
+  }
+}
+@media (max-width: 420px) {
+  .modal { padding: 18px !important; }
+  .modal h3.serif { font-size: 17px !important; }
+  .modal .serif[style*="font-size: 32"] {
+    font-size: 22px !important;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════════ */
 /* Tap target accessibility — au minimum 40px en hauteur sur mobile         */
 /* ════════════════════════════════════════════════════════════════════════ */
 @media (pointer: coarse) {

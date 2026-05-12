@@ -497,6 +497,7 @@ function CardListItem({ card, onCustomize, onShare, onDelete, role }) {
 
       <button
         onClick={() => setPresenting(true)}
+        className="card-preview-tile"
         style={{ display: "flex", justifyContent: "center", padding: "8px 0", background: "transparent", border: 0, cursor: "pointer" }}
         title="Présenter au client"
       >
@@ -629,6 +630,7 @@ function PresentCardModal({ card, onClose }) {
 
   return (
     <div
+      className="present-modal-bg"
       onClick={onClose}
       style={{
         position: "fixed", inset: 0, zIndex: 1000,
@@ -639,7 +641,7 @@ function PresentCardModal({ card, onClose }) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="card"
+        className="card present-modal"
         style={{
           maxWidth: 880, width: "100%", padding: 40,
           display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 36,
