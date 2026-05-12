@@ -758,7 +758,7 @@ function PresentCardModal({ card, onClose }) {
           </div>
 
           <div className="present-modal-qr">
-            <FakeQR seed={card.id} size={qrSize} />
+            <RealQR url={window.location.origin + window.location.pathname + '#/card?id=' + card.id} size={qrSize} />
           </div>
 
           <div className="row gap-2 present-modal-nfc" style={{ alignItems: "center" }}>
@@ -791,32 +791,29 @@ function PresentCardModal({ card, onClose }) {
   );
 }
 
-function FakeQR({ seed = "x", size = 180 }) {
-  // deterministic pseudo-QR pattern
-  const N = 21;
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
-  const rand = () => { h = (h * 1664525 + 1013904223) >>> 0; return h / 0xffffffff; };
-  const cells = [];
-  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-    const isFinder = (x < 7 && y < 7) || (x >= N - 7 && y < 7) || (x < 7 && y >= N - 7);
-    if (isFinder) continue;
-    if (rand() > 0.52) cells.push(<rect key={`${x}-${y}`} x={x} y={y} width="1" height="1" fill="#1a1815"/>);
-  }
-  const Finder = ({ tx, ty }) => (
-    <g transform={`translate(${tx},${ty})`}>
-      <rect x="0" y="0" width="7" height="7" fill="#1a1815"/>
-      <rect x="1" y="1" width="5" height="5" fill="white"/>
-      <rect x="2" y="2" width="3" height="3" fill="#1a1815"/>
-    </g>
-  );
+function RealQR({ url, size = 180 }) {
+  const canvasRef = React.useRef(null);
+  React.useEffect(() => {
+    if (!canvasRef.current || !url) return;
+    if (!window.QRCode) {
+      console.error('[Cardly] qrcode.js non chargé');
+      return;
+    }
+    window.QRCode.toCanvas(canvasRef.current, url, {
+      width: size,
+      margin: 2,
+      color: { dark: '#1a1815', light: '#ffffff' },
+    }, (err) => {
+      if (err) console.error('[Cardly] QR generation failed:', err);
+    });
+  }, [url, size]);
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${N} ${N}`} shapeRendering="crispEdges">
-      {cells}
-      <Finder tx={0} ty={0} />
-      <Finder tx={N - 7} ty={0} />
-      <Finder tx={0} ty={N - 7} />
-    </svg>
+    <canvas
+      ref={canvasRef}
+      width={size}
+      height={size}
+      style={{ borderRadius: 10, display: 'block' }}
+    />
   );
 }
 

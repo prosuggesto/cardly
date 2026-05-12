@@ -1574,8 +1574,8 @@ function PublicCardPage({ navigate, params }) {
             >
               <Icon.Globe size={13} /> Site web
             </button>
-            {card.rdv_actif && card.rdv_url && (
-              <button disabled={inactive} className="btn btn-sm" style={{ flex: 1, minWidth: 130, justifyContent: "center" }} onClick={() => { window.open(card.rdv_url, "_blank"); toast.push("Calendrier ouvert"); }}>
+            {card.scanButtons?.rdv && card.rdvUrl && (
+              <button disabled={inactive} className="btn btn-sm" style={{ flex: 1, minWidth: 130, justifyContent: "center" }} onClick={() => { window.open(card.rdvUrl, "_blank"); toast.push("Calendrier ouvert"); }}>
                 <Icon.Calendar size={13} /> Prendre RDV
               </button>
             )}
