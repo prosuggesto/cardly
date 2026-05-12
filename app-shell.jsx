@@ -463,7 +463,7 @@ function CardListItem({ card, onCustomize, onShare, onDelete, role }) {
   };
 
   return (
-    <div className="card fade-up" style={{ padding: 24, display: "flex", flexDirection: "column", gap: 18 }}>
+    <div className="card card-list-item fade-up" style={{ padding: 24, display: "flex", flexDirection: "column", gap: 18 }}>
       <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
         <div className="col gap-1">
           <div className="row gap-2" style={{ alignItems: "center", flexWrap: "wrap" }}>
@@ -520,7 +520,7 @@ function CardListItem({ card, onCustomize, onShare, onDelete, role }) {
       </div>
 
       {presenting && ReactDOM.createPortal(<PresentCardModal card={card} onClose={() => setPresenting(false)} />, document.body)}
-      <CardStatsModal open={showStats} onClose={() => setShowStats(false)} card={card} />
+      {showStats && ReactDOM.createPortal(<CardStatsModal open={showStats} onClose={() => setShowStats(false)} card={card} />, document.body)}
     </div>
   );
 }
@@ -545,46 +545,49 @@ function CardStatsModal({ open, onClose, card }) {
   const max = Math.max(...channels.map(c => c.clicks));
 
   return (
-    <Modal open={open} onClose={onClose} title={`Statistiques — ${card.nom_carte}`}>
-      <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>Performance des 30 derniers jours.</p>
+    <div className="fullscreen-page stats-page">
+      <button className="fullscreen-close" onClick={onClose} aria-label="Fermer">
+        <Icon.X size={20} />
+      </button>
+      <div className="fullscreen-page-content stats-page-content">
+        <div className="eyebrow">Statistiques de carte</div>
+        <h1 className="serif stats-title">{card.nom_carte}</h1>
+        <p className="muted stats-desc">Performance des 30 derniers jours.</p>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 8 }}>
-        <div className="card" style={{ padding: 16, background: "linear-gradient(135deg, #fdf3df, #f1deb6)", borderColor: "var(--gold)" }}>
-          <div className="eyebrow" style={{ marginBottom: 6 }}>Enregistrements</div>
-          <div className="serif" style={{ fontSize: 32, lineHeight: 1, letterSpacing: "-0.02em" }}>{saves}</div>
-          <div className="dim" style={{ fontSize: 11, marginTop: 4 }}>contacts ajoutés au répertoire</div>
+        <div className="stats-cards-grid">
+          <div className="card stats-big-card stats-big-card-gold">
+            <div className="eyebrow">Enregistrements</div>
+            <div className="serif stats-big-number">{saves}</div>
+            <div className="dim stats-big-caption">contacts ajoutés au répertoire</div>
+          </div>
+          <div className="card stats-big-card">
+            <div className="eyebrow">Clics totaux</div>
+            <div className="serif stats-big-number">{totalClicks}</div>
+            <div className="dim stats-big-caption">tous canaux confondus</div>
+          </div>
         </div>
-        <div className="card" style={{ padding: 16 }}>
-          <div className="eyebrow" style={{ marginBottom: 6 }}>Clics totaux</div>
-          <div className="serif" style={{ fontSize: 32, lineHeight: 1, letterSpacing: "-0.02em" }}>{totalClicks}</div>
-          <div className="dim" style={{ fontSize: 11, marginTop: 4 }}>tous canaux confondus</div>
-        </div>
-      </div>
 
-      <div className="col gap-2" style={{ marginTop: 18 }}>
-        <div className="eyebrow">Détail par canal</div>
-        <div className="col gap-3" style={{ marginTop: 4 }}>
-          {channels.map(ch => (
-            <div key={ch.key} className="col gap-1">
-              <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-                <div className="row gap-2" style={{ alignItems: "center" }}>
-                  <div style={{ width: 26, height: 26, borderRadius: 7, background: "var(--surface-2)", color: ch.color, display: "flex", alignItems: "center", justifyContent: "center" }}>{ch.icon}</div>
-                  <div style={{ fontSize: 13, fontWeight: 500 }}>{ch.label}</div>
+        <div className="stats-channels">
+          <div className="eyebrow">Détail par canal</div>
+          <div className="col gap-3" style={{ marginTop: 8 }}>
+            {channels.map(ch => (
+              <div key={ch.key} className="col gap-1">
+                <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+                  <div className="row gap-2" style={{ alignItems: "center" }}>
+                    <div className="stats-channel-icon" style={{ color: ch.color }}>{ch.icon}</div>
+                    <div className="stats-channel-label">{ch.label}</div>
+                  </div>
+                  <div className="serif stats-channel-num">{ch.clicks}</div>
                 </div>
-                <div className="serif" style={{ fontSize: 18 }}>{ch.clicks}</div>
+                <div className="stats-bar-track">
+                  <div className="stats-bar-fill" style={{ width: `${(ch.clicks / max) * 100}%`, background: ch.color }} />
+                </div>
               </div>
-              <div style={{ height: 4, background: "var(--surface-2)", borderRadius: 999, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${(ch.clicks / max) * 100}%`, background: ch.color, borderRadius: 999, transition: "width 400ms" }} />
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
-
-      <div className="row gap-3" style={{ justifyContent: "flex-end", marginTop: 20 }}>
-        <button className="btn btn-sm" onClick={onClose}>Fermer</button>
-      </div>
-    </Modal>
+    </div>
   );
 }
 
@@ -629,83 +632,45 @@ function PresentCardModal({ card, onClose }) {
   };
 
   return (
-    <div
-      className="present-modal-bg"
-      onClick={onClose}
-      style={{
-        position: "fixed", inset: 0, zIndex: 1000,
-        background: "rgba(20, 18, 14, 0.78)", backdropFilter: "blur(14px)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        padding: 24, animation: "fade-in 200ms ease",
-      }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="card present-modal"
-        style={{
-          maxWidth: 880, width: "100%", padding: 40,
-          display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 36,
-          background: "linear-gradient(180deg, #fffdf6, #f6efde)",
-          position: "relative", animation: "fade-up 280ms cubic-bezier(.2,.8,.2,1) both",
-        }}
-      >
-        <button
-          onClick={onClose}
-          className="btn btn-ghost btn-sm"
-          style={{ position: "absolute", top: 16, right: 16, padding: 6 }}
-          title="Fermer"
-        ><Icon.X size={16} /></button>
+    <div className="fullscreen-page present-page">
+      <button className="fullscreen-close" onClick={onClose} aria-label="Fermer">
+        <Icon.X size={20} />
+      </button>
+      <div className="fullscreen-page-content present-page-content">
+        <div className="eyebrow">Présenter à votre client</div>
+        <h1 className="serif present-title">{card.nom_carte}</h1>
+        <p className="muted present-desc">Approchez l'écran de votre client. Il scanne le QR ou tient son téléphone près de la carte.</p>
 
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div onClick={() => setFlipped(f => !f)} style={{ cursor: "pointer", display: "inline-block" }}>
-            <Card3D card={card} width={420} float={true} flipped={flipped} frontImageUrl={card.frontImageUrl} backImageUrl={card.backImageUrl} />
+        <div className="present-card-wrap" onClick={() => setFlipped(f => !f)}>
+          <Card3D card={card} width={320} float={true} flipped={flipped} frontImageUrl={card.frontImageUrl} backImageUrl={card.backImageUrl} />
+        </div>
+
+        <div className="present-qr-wrap">
+          <FakeQR seed={card.id} size={200} />
+        </div>
+
+        <div className="present-nfc">
+          <div className="present-nfc-icon">
+            <Icon.Sparkle size={16} />
+          </div>
+          <div className="col" style={{ gap: 2, textAlign: "left" }}>
+            <div style={{ fontSize: 14, fontWeight: 500 }}>NFC actif</div>
+            <div className="dim" style={{ fontSize: 12 }}>Le client peut aussi approcher son téléphone de votre carte physique.</div>
           </div>
         </div>
 
-        <div className="col gap-4" style={{ justifyContent: "center" }}>
-          <div className="col gap-1">
-            <div className="eyebrow">Présenter à votre client</div>
-            <div className="serif" style={{ fontSize: 26, letterSpacing: "-0.02em", lineHeight: 1.1 }}>{card.nom_carte}</div>
-            <div className="dim" style={{ fontSize: 13 }}>Approchez l'écran de votre client. Il scanne le QR ou tient son téléphone près de la carte.</div>
-          </div>
-
-          <div style={{
-            background: "white", padding: 16, borderRadius: 16,
-            border: "1px solid var(--line)", boxShadow: "var(--shadow-1)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            alignSelf: "flex-start",
-          }}>
-            <FakeQR seed={card.id} size={180} />
-          </div>
-
-          <div className="row gap-2" style={{ alignItems: "center" }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: 10,
-              background: "var(--gold-3)", display: "flex",
-              alignItems: "center", justifyContent: "center",
-            }}>
-              <Icon.Sparkle size={16} />
-            </div>
-            <div className="col" style={{ gap: 2 }}>
-              <div style={{ fontSize: 13, fontWeight: 500 }}>NFC actif</div>
-              <div className="dim" style={{ fontSize: 12 }}>Le client peut aussi approcher son téléphone de votre carte physique.</div>
-            </div>
-          </div>
-
-          {/* Share + Download */}
-          <div className="row gap-2" style={{ marginTop: 4 }}>
-            <button className="btn btn-sm" style={{ flex: 1, justifyContent: "center" }} onClick={shareLink}>
-              <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-                <path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/>
-              </svg>
-              Partager le lien
-            </button>
-            <button className="btn btn-sm" style={{ flex: 1, justifyContent: "center" }} onClick={downloadJpeg}>
-              <Icon.Download size={13} />
-              Télécharger JPEG
-            </button>
-          </div>
+        <div className="present-actions">
+          <button className="btn" onClick={shareLink}>
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+              <path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/>
+            </svg>
+            Partager le lien
+          </button>
+          <button className="btn" onClick={downloadJpeg}>
+            <Icon.Download size={14} />
+            Télécharger JPEG
+          </button>
         </div>
       </div>
     </div>

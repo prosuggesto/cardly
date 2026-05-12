@@ -776,64 +776,271 @@ img, video, svg { max-width: 100%; height: auto; }
 }
 
 /* ════════════════════════════════════════════════════════════════════════ */
-/*  App "Mes cartes" — responsive mobile (preview, présent. modal, stats)   */
+/*  App "Mes cartes" — tuile compacte + pages fullscreen (présent + stats)  */
 /* ════════════════════════════════════════════════════════════════════════ */
 
-/* — Aperçu carte dans la liste "Mes cartes" ─────────────────────────────
-   Le <Card3D width={320}/> a une largeur fixe en inline. Sur écrans
-   étroits (<360px utiles dans le .card parent), il déborde à droite.
-   On rend la 3D fluide tout en gardant le ratio carte (100:63). */
+/* — Tuile CardListItem : compactage de TOUT le bloc sur mobile ────────── */
 @media (max-width: 700px) {
+  .card-list-item {
+    padding: 14px !important;
+    gap: 10px !important;
+  }
+  /* Header : titre + chips */
+  .card-list-item > .row .serif {
+    font-size: 16px !important;
+  }
+  .card-list-item > .row .dim {
+    font-size: 11px !important;
+  }
+  .card-list-item .chip {
+    height: 22px;
+    padding: 0 9px;
+    font-size: 11px;
+  }
+  /* Boutons icônes du header (Brush, QR, X) */
+  .card-list-item .btn-ghost.btn-sm {
+    height: 30px;
+    padding: 0 8px;
+  }
+  /* Card3D : plus petite et fluide */
+  .card-preview-tile {
+    padding: 2px 0 !important;
+  }
   .card-preview-tile .card-3d,
   .card-preview-tile .card-floater {
     width: 100% !important;
-    max-width: 320px !important;
+    max-width: 200px !important;
     height: auto !important;
     aspect-ratio: 100 / 63;
+  }
+  /* Boutons "Présenter au client" / "Stats" : plus compacts */
+  .card-list-item > .row.gap-2 .btn {
+    height: 36px;
+    font-size: 12px;
+    padding: 0 12px;
+    min-width: 0 !important;
   }
 }
 
-/* — Modal "Présenter au client" ─────────────────────────────────────────
-   Inline `padding: 40`, grille `1.2fr 1fr`, et <Card3D width={420}/>
-   débordent largement sur mobile. La grille s'écroule déjà à 1 col
-   ≤900px (règle inline 2-col globale), il reste à compacter padding,
-   gap, taille de la carte 3D et du QR, plus permettre le scroll. */
+/* — Page fullscreen générique (Présenter + Stats) ───────────────────────
+   Vraie sous-page : prend tout l'écran, scroll vertical, ferme via la
+   croix rouge fixe en haut à droite. */
+.fullscreen-page {
+  position: fixed; inset: 0; z-index: 1000;
+  background: var(--bg);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  animation: fade-in 200ms ease;
+}
+.fullscreen-page-content {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 60px 28px 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  text-align: center;
+}
+.fullscreen-close {
+  position: fixed;
+  top: 16px; right: 16px;
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: #c0392b;
+  color: #fff;
+  border: none;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(192, 57, 43, 0.35);
+  transition: background 150ms, transform 150ms;
+  z-index: 1010;
+}
+.fullscreen-close:hover {
+  background: #a03328;
+  transform: scale(1.05);
+}
 @media (max-width: 700px) {
-  .present-modal-bg { padding: 12px !important; }
-  .present-modal {
-    padding: 22px 18px !important;
-    gap: 18px !important;
-    max-height: calc(100vh - 24px) !important;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch;
+  .fullscreen-page-content {
+    padding: 70px 16px 48px;
+    gap: 16px;
   }
-  .present-modal .card-3d,
-  .present-modal .card-floater {
+  .fullscreen-close {
+    width: 42px; height: 42px;
+    top: 12px; right: 12px;
+  }
+}
+
+/* — Page "Présenter au client" ────────────────────────────────────────── */
+.present-page {
+  background: linear-gradient(180deg, #fffdf6, #f6efde);
+}
+.present-title {
+  font-size: clamp(26px, 5vw, 36px);
+  margin: 0;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.present-desc {
+  font-size: 14px;
+  margin: 0;
+  max-width: 480px;
+}
+.present-card-wrap {
+  cursor: pointer;
+  display: flex; justify-content: center;
+  width: 100%;
+}
+.present-qr-wrap {
+  background: white;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-1);
+  display: flex; align-items: center; justify-content: center;
+}
+.present-nfc {
+  display: flex; align-items: center; gap: 12px;
+  background: rgba(255,255,255,0.55);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 16px;
+  max-width: 480px;
+  width: 100%;
+}
+.present-nfc-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: var(--gold-3);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.present-actions {
+  display: flex; gap: 12px;
+  width: 100%; max-width: 480px;
+  margin-top: 4px;
+  justify-content: center;
+}
+.present-actions .btn { flex: 1; justify-content: center; }
+
+@media (max-width: 700px) {
+  .present-title { font-size: 22px !important; }
+  .present-desc { font-size: 13px !important; }
+  .present-card-wrap .card-3d,
+  .present-card-wrap .card-floater {
     width: 100% !important;
-    max-width: 340px !important;
+    max-width: 280px !important;
     height: auto !important;
     aspect-ratio: 100 / 63;
   }
-  /* Titre du nom de carte plus contenu */
-  .present-modal .serif { font-size: 20px !important; }
-  /* QR un peu plus petit */
-  .present-modal svg[width="180"] {
-    width: 150px !important;
-    height: 150px !important;
+  .present-qr-wrap svg {
+    width: 170px !important;
+    height: 170px !important;
   }
 }
 @media (max-width: 420px) {
-  .present-modal { padding: 18px 14px !important; }
-  .present-modal svg[width="180"] {
-    width: 130px !important;
-    height: 130px !important;
+  .present-title { font-size: 20px !important; }
+  .present-card-wrap .card-3d,
+  .present-card-wrap .card-floater {
+    max-width: 240px !important;
+  }
+  .present-qr-wrap svg {
+    width: 150px !important;
+    height: 150px !important;
+  }
+  .present-actions { flex-direction: column; }
+}
+
+/* — Page "Statistiques" ───────────────────────────────────────────────── */
+.stats-title {
+  font-size: clamp(26px, 5vw, 36px);
+  margin: 0;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.stats-desc {
+  font-size: 14px;
+  margin: 0;
+}
+.stats-cards-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  width: 100%;
+}
+.stats-big-card {
+  padding: 18px !important;
+  display: flex; flex-direction: column; gap: 2px;
+  text-align: left;
+}
+.stats-big-card-gold {
+  background: linear-gradient(135deg, #fdf3df, #f1deb6);
+  border-color: var(--gold);
+}
+.stats-big-number {
+  font-size: 32px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  margin-top: 4px;
+}
+.stats-big-caption {
+  font-size: 11px;
+  margin-top: 4px;
+}
+.stats-channels {
+  width: 100%;
+  text-align: left;
+  margin-top: 8px;
+}
+.stats-channel-icon {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  display: flex; align-items: center; justify-content: center;
+}
+.stats-channel-label {
+  font-size: 14px;
+  font-weight: 500;
+}
+.stats-channel-num {
+  font-size: 18px;
+}
+.stats-bar-track {
+  height: 4px;
+  background: var(--surface-2);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.stats-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 400ms;
+}
+
+@media (max-width: 700px) {
+  .stats-title { font-size: 22px !important; }
+  .stats-desc { font-size: 13px !important; }
+  .stats-cards-grid { gap: 10px; }
+  .stats-big-card { padding: 14px !important; }
+  .stats-big-number { font-size: 24px !important; }
+  .stats-big-caption { font-size: 10.5px !important; }
+  .stats-channel-icon { width: 28px; height: 28px; }
+  .stats-channel-label { font-size: 13px; }
+  .stats-channel-num { font-size: 16px; }
+}
+@media (max-width: 420px) {
+  .stats-big-card { padding: 12px !important; }
+  .stats-big-number { font-size: 22px !important; }
+}
+
+/* Override la règle globale qui force 2-col → 1-col ≤600px : on garde
+   2 colonnes pour les stats car les cartes y sont compactes par design */
+@media (max-width: 600px) {
+  .stats-cards-grid {
+    grid-template-columns: 1fr 1fr !important;
   }
 }
 
-/* — Modal générique <Modal/> (utilisé par CardStatsModal, etc.) ─────────
-   Pas de max-height par défaut → le contenu déborde verticalement et se
-   fait couper en bas de l'écran. On ajoute scroll interne + compactage
-   du titre et des gros chiffres serif. */
+/* — Modal générique <Modal/> reste utilisé par d'autres modals ────────── */
 @media (max-width: 700px) {
   .modal {
     max-height: calc(100vh - 24px);
@@ -846,17 +1053,10 @@ img, video, svg { max-width: 100%; height: auto; }
     word-break: break-word;
     line-height: 1.2;
   }
-  /* Boîtes "Enregistrements" / "Clics totaux" : gros nombres compactés */
-  .modal .serif[style*="font-size: 32"] {
-    font-size: 26px !important;
-  }
 }
 @media (max-width: 420px) {
   .modal { padding: 18px !important; }
   .modal h3.serif { font-size: 17px !important; }
-  .modal .serif[style*="font-size: 32"] {
-    font-size: 22px !important;
-  }
 }
 
 /* ════════════════════════════════════════════════════════════════════════ */
