@@ -19,9 +19,16 @@ function useViewportWidth() {
 // ---------- App shell ----------
 function AppLayout({ navigate, params, children, tab, setTab, role, plan, trialExpired, onLogout, onUpgrade }) {
   const [menuOpen, setMenuOpen] = useStateP(false);
+  const toast = useToast();
+  const vw = useViewportWidth();
+  // L'éditeur de personnalisation carte est trop dense pour le mobile (sliders,
+  // drag de logo, etc.) → on le verrouille sous 700px. L'utilisateur voit
+  // l'entrée dans le menu avec un cadenas + icône ordinateur, et un clic
+  // affiche un message au lieu de naviguer vers une page cassée.
+  const isMobile = vw < 700;
   const tabs = [
     { id: "cards", label: "Mes cartes", icon: <Icon.Card size={16} /> },
-    { id: "customize", label: "Personnalisation carte", icon: <Icon.Brush size={16} /> },
+    { id: "customize", label: "Personnalisation carte", icon: <Icon.Brush size={16} />, desktopOnly: true },
     { id: "dashboard", label: "Dashboard", icon: <Icon.Chart size={16} /> },
     { id: "crm", label: "CRM", icon: <Icon.Database size={16} /> },
     { id: "secret", label: "Mon compte", icon: <Icon.User size={16} /> },
@@ -106,17 +113,43 @@ function AppLayout({ navigate, params, children, tab, setTab, role, plan, trialE
               </div>
             </div>
             <nav className="col gap-1" style={{ flex: 1 }}>
-              {visibleTabs.map(t => (
-                <button key={t.id} onClick={() => { setTab(t.id); setMenuOpen(false); }} style={{
-                  display: "flex", gap: 12, alignItems: "center", padding: "12px 14px",
-                  borderRadius: 10, fontSize: 14, textAlign: "left",
-                  background: tab === t.id ? "var(--surface-2)" : "transparent",
-                  fontWeight: tab === t.id ? 500 : 400,
-                  color: tab === t.id ? "var(--ink)" : "var(--ink-3)",
-                }}>
-                  {t.icon} {t.label}
-                </button>
-              ))}
+              {visibleTabs.map(t => {
+                const locked = isMobile && t.desktopOnly;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => {
+                      if (locked) {
+                        toast.push("Cette option est disponible uniquement sur ordinateur");
+                        return;
+                      }
+                      setTab(t.id);
+                      setMenuOpen(false);
+                    }}
+                    style={{
+                      display: "flex", gap: 12, alignItems: "center", padding: "12px 14px",
+                      borderRadius: 10, fontSize: 14, textAlign: "left",
+                      background: tab === t.id ? "var(--surface-2)" : "transparent",
+                      fontWeight: tab === t.id ? 500 : 400,
+                      color: locked ? "var(--ink-4)" : (tab === t.id ? "var(--ink)" : "var(--ink-3)"),
+                    }}
+                  >
+                    {t.icon}
+                    <span style={{ flex: 1 }}>{t.label}</span>
+                    {locked && (
+                      <span className="row" style={{ gap: 6, color: "var(--ink-4)", flexShrink: 0 }} aria-label="Disponible uniquement sur ordinateur">
+                        <Icon.Lock size={13} />
+                        {/* monitor icon (inline SVG — no Icon.Monitor in the set) */}
+                        <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="2" y="4" width="20" height="13" rx="2"/>
+                          <line x1="8" y1="21" x2="16" y2="21"/>
+                          <line x1="12" y1="17" x2="12" y2="21"/>
+                        </svg>
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </nav>
             <button className="btn btn-ghost" onClick={onLogout} style={{ justifyContent: "flex-start" }}>
               <Icon.Logout size={16} /> Déconnexion
