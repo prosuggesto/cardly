@@ -505,6 +505,9 @@ function CardListItem({ card, onCustomize, onShare, onDelete, role }) {
   const vw = useViewportWidth();
   // Card3D inline width drives internal logo/text sizing → smaller on mobile.
   const previewW = vw < 480 ? 220 : 320;
+  // Personnalisation carte = éditeur trop dense pour mobile → on bloque
+  // l'icône pinceau aussi (le menu burger affiche déjà un cadenas).
+  const customizeLocked = vw < 700;
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -525,7 +528,32 @@ function CardListItem({ card, onCustomize, onShare, onDelete, role }) {
         </div>
         <div className="row gap-1">
           {!isLocked && (
-            <button className="btn btn-ghost btn-sm" onClick={() => onCustomize(card.id)} title="Personnaliser"><Icon.Brush size={14} /></button>
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => {
+                if (customizeLocked) {
+                  toast.push("Cette option est disponible uniquement sur ordinateur");
+                  return;
+                }
+                onCustomize(card.id);
+              }}
+              title={customizeLocked ? "Disponible uniquement sur ordinateur" : "Personnaliser"}
+              style={customizeLocked ? { color: "var(--ink-4)", position: "relative" } : undefined}
+            >
+              <Icon.Brush size={14} />
+              {customizeLocked && (
+                /* mini cadenas superposé en bas-droite pour signaler le verrouillage */
+                <span style={{
+                  position: "absolute", right: 2, bottom: 2,
+                  width: 12, height: 12, borderRadius: "50%",
+                  background: "var(--surface)", color: "var(--ink-3)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  border: "1px solid var(--line)",
+                }}>
+                  <Icon.Lock size={8} />
+                </span>
+              )}
+            </button>
           )}
           <button className="btn btn-ghost btn-sm" onClick={() => onShare(card.id)} title="Aperçu public"><Icon.QR size={14} /></button>
           {!isLocked && (
