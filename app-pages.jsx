@@ -1524,8 +1524,10 @@ function PublicCardPage({ navigate, params }) {
               onClick={() => {
                 const phone = normalizePhoneForWA(card.telephone_affiche);
                 if (!phone) { toast.push("Numéro non disponible"); return; }
-                window.open(`https://wa.me/${phone}?text=${encodeURIComponent(PUBLIC_WA_MESSAGE)}`, "_blank");
+                // window.location.href (not window.open _blank) → no leftover
+                // about:blank tab on iOS when WhatsApp app intercepts the URL.
                 if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.id, 'whatsapp');
+                window.location.href = `https://wa.me/${phone}?text=${encodeURIComponent(PUBLIC_WA_MESSAGE)}`;
               }}
             >
               <Icon.WhatsApp size={13} /> WhatsApp
@@ -1603,26 +1605,29 @@ function PublicCardPage({ navigate, params }) {
         open={crmModalOpen}
         onClose={() => setCrmModalOpen(false)}
         fields={card.crmFields || { nom: true, prenom: true, societe: true, mail: true, tel: true }}
-        onSubmit={async (data) => {
-          // Push to the card owner's CRM backend
-          try {
-            if (window.CardlyAPI?.saveCRMContact) {
-              await window.CardlyAPI.saveCRMContact(card.id, {
-                nom: data.nom,
-                prenom: data.prenom,
-                mail: data.mail,
-                tel: data.tel,
-                prospect_entreprise_nom: data.societe,
-              });
+        onSubmit={(data) => {
+          // Instantaneous UX: close modal + toast immediately, then fire the
+          // CRM save in the background. Double-submit is already blocked by
+          // CrmShareModal's internal submittingRef guard.
+          setCrmModalOpen(false);
+          toast.push("Vos infos ont été envoyées");
+          (async () => {
+            try {
+              if (window.CardlyAPI?.saveCRMContact) {
+                await window.CardlyAPI.saveCRMContact(card.id, {
+                  nom: data.nom,
+                  prenom: data.prenom,
+                  mail: data.mail,
+                  tel: data.tel,
+                  prospect_entreprise_nom: data.societe,
+                });
+              }
+              if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.id, 'crm');
+            } catch (err) {
+              console.error('[Cardly] saveCRMContact failed:', err);
+              toast.push("Erreur d'envoi — réessayez");
             }
-            if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.id, 'crm');
-            toast.push("Vos infos ont été envoyées");
-          } catch (err) {
-            console.error('[Cardly] saveCRMContact failed:', err);
-            toast.push("Erreur d'envoi — réessayez");
-          } finally {
-            setCrmModalOpen(false);
-          }
+          })();
         }}
         recipientName={`${card.prenom_affiche} ${card.nom_affiche}`}
       />

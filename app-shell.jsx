@@ -1986,6 +1986,14 @@ window.ScanCustomizationPage = ScanCustomizationPage;
 
 function CrmShareModal({ open, onClose, fields, onSubmit, recipientName }) {
   const [data, setData] = useStateP({});
+  // Guards against double-submit (rapid double tap on "Envoyer" produced
+  // duplicate CRM rows). Ref because we need the latest value synchronously
+  // inside the form handler — state would lag one render.
+  const submittingRef = useRefP(false);
+  // Reset both the form and the guard whenever the modal toggles open.
+  useEffectP(() => {
+    if (open) { setData({}); submittingRef.current = false; }
+  }, [open]);
   const set = (k) => (e) => setData(d => ({ ...d, [k]: e.target.value }));
   const fieldList = [
     ["prenom", "Prénom", "text", "Lucas"],
@@ -1994,10 +2002,16 @@ function CrmShareModal({ open, onClose, fields, onSubmit, recipientName }) {
     ["mail", "Email", "email", "vous@exemple.com"],
     ["tel", "Téléphone", "tel", "06 12 34 56 78"],
   ].filter(([k]) => fields[k]);
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (submittingRef.current) return;   // ignore second rapid click
+    submittingRef.current = true;
+    onSubmit && onSubmit(data);
+  };
   return (
     <Modal open={open} onClose={onClose} title="Partager mes infos">
       <p className="muted" style={{ marginTop: 0, fontSize: 14 }}>Renseignez vos coordonnées pour les transmettre à {recipientName || "votre interlocuteur"}.</p>
-      <form onSubmit={(e) => { e.preventDefault(); onSubmit && onSubmit(data); }} className="col gap-3" style={{ marginTop: 12 }}>
+      <form onSubmit={handleSubmit} className="col gap-3" style={{ marginTop: 12 }}>
         {fieldList.map(([k, label, type, placeholder]) => (
           <div key={k} className="col gap-1">
             <label style={{ fontSize: 12, color: "var(--ink-3)", letterSpacing: "0.04em", textTransform: "uppercase" }}>{label}</label>
