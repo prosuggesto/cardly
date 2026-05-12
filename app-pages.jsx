@@ -1693,14 +1693,18 @@ function PublicCardPage({ navigate, params }) {
               <Icon.Globe size={13} /> Site web
             </button>
             {card.scanButtons?.rdv && card.rdvUrl && (
-              <button disabled={inactive} className="btn btn-sm" style={{ flex: 1, minWidth: 130, justifyContent: "center" }} onClick={() => { window.open(card.rdvUrl, "_blank"); toast.push("Calendrier ouvert"); }}>
+              <button disabled={inactive} className="btn btn-sm" style={{ flex: 1, minWidth: 130, justifyContent: "center" }} onClick={() => {
+                if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.shortCode, 'clic_site_web');
+                const u = card.rdvUrl.startsWith('http') ? card.rdvUrl : 'https://' + card.rdvUrl;
+                window.location.href = u;
+              }}>
                 <Icon.Calendar size={13} /> Prendre RDV
               </button>
             )}
           </div>
           <div className="row gap-3" style={{ justifyContent: "center", marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--line)" }}>
             <a
-              href={card.instagram_url ? (card.instagram_url.startsWith('http') ? card.instagram_url : 'https://' + card.instagram_url) : '#'}
+              href={card.instagram_url ? card.instagram_url : '#'}
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => {
@@ -1713,7 +1717,7 @@ function PublicCardPage({ navigate, params }) {
               <Icon.Instagram size={46} />
             </a>
             <a
-              href={card.linkedin_url ? (card.linkedin_url.startsWith('http') ? card.linkedin_url : 'https://' + card.linkedin_url) : '#'}
+              href={card.linkedin_url ? card.linkedin_url : '#'}
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => {
