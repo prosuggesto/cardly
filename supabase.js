@@ -236,13 +236,25 @@
           .update({ nfc_uuid: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : null })
           .eq('id', nfcId).select().single();
       },
+      // Génère un nouveau short_code pour la ligne NFC (ex: bouton "Régénérer").
+      // Utilise la fonction SECURITY DEFINER pour garantir l'unicité côté serveur.
+      async regenerateNFCShortCode(nfcId) {
+        return window.sb.rpc('regenerate_nfc_short_code', { p_nfc_id: nfcId });
+      },
       // Résout un nfc_uuid en carte_uuid via la fonction publique resolve_nfc (SECURITY DEFINER).
       async resolveNFC(nfcUuid) {
         return window.sb.rpc('resolve_nfc', { p_nfc_uuid: nfcUuid });
       },
+      // Résout un short_code (carte ou NFC) en carte_uuid (SECURITY DEFINER).
+      // Ne jamais exposer le résultat dans des URLs ou des logs côté client.
+      async resolveShortCode(code) {
+        return window.sb.rpc('resolve_short_code', { p_code: code.toUpperCase() });
+      },
 
       // ── Edge Functions ───────────────────────────────────────────────────
-      async trackAction(carteUuid, action) {
+      // shortCode = card.shortCode (jamais le carte_uuid — UUID ne doit pas voyager côté client)
+      async trackAction(shortCode, action) {
+        if (!shortCode) return; // pas de shortCode → pas de tracking (silencieux)
         try {
           const { data: { session } } = await window.sb.auth.getSession();
           // keepalive:true → la requête termine même si la page est en
@@ -256,7 +268,7 @@
               'apikey': SUPABASE_ANON_KEY,
               ...(session ? { 'Authorization': 'Bearer ' + session.access_token } : {}),
             },
-            body: JSON.stringify({ carte_uuid: carteUuid, action }),
+            body: JSON.stringify({ short_code: shortCode, action }),
           });
         } catch (_) { /* non-bloquant */ }
       },
@@ -285,7 +297,7 @@
       };
     },
 
-    async saveCRMContact(carteUuid, { nom, prenom, mail, tel, prospect_entreprise_nom } = {}) {
+    async saveCRMContact(shortCode, { nom, prenom, mail, tel, prospect_entreprise_nom } = {}) {
         const { data: { session } } = await window.sb.auth.getSession();
         const res = await fetch(FN_URL + '/save-crm-contact', {
           method: 'POST',
@@ -294,7 +306,7 @@
             'apikey': SUPABASE_ANON_KEY,
             ...(session ? { 'Authorization': 'Bearer ' + session.access_token } : {}),
           },
-          body: JSON.stringify({ carte_uuid: carteUuid, nom, prenom, mail, tel, prospect_entreprise_nom }),
+          body: JSON.stringify({ short_code: shortCode, nom, prenom, mail, tel, prospect_entreprise_nom }),
         });
         return res.json();
       },
@@ -400,6 +412,7 @@
             mail:    c.crm_champ_mail    ?? true,
             tel:     c.crm_champ_tel     ?? true,
           },
+          shortCode:  c.short_code || null,
           statut:     c.statut || 'active',
           is_default: false,
           // Stats par-carte alimentées par le RPC track_card_action.

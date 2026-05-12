@@ -707,7 +707,8 @@ function PresentCardModal({ card, onClose }) {
   }, [card.id]);
 
   const shareLink = () => {
-    const url = window.location.origin + window.location.pathname + `#/card?id=${card.id}`;
+    const code = card.shortCode || card.id; // shortCode prioritaire ; fallback legacy
+    const url = window.location.origin + window.location.pathname + `#/card?c=${code}`;
     if (navigator.share) {
       navigator.share({ title: card.nom_carte, url });
     } else {
@@ -775,7 +776,7 @@ function PresentCardModal({ card, onClose }) {
           </div>
 
           <div className="present-modal-qr">
-            <RealQR url={window.location.origin + window.location.pathname + '#/card?id=' + card.id} size={qrSize} />
+            <RealQR url={window.location.origin + window.location.pathname + '#/card?c=' + (card.shortCode || card.id)} size={qrSize} />
           </div>
 
           {nfcActive && (

@@ -1502,8 +1502,9 @@ const PUBLIC_MAIL_SUBJECT = "Contact suite à notre échange";
 const PUBLIC_MAIL_BODY    = "Bonjour,\n\nJ'ai bien pris votre contact et je serais ravi(e) que vous me recontactiez.\n\nMerci !";
 
 function PublicCardPage({ navigate, params }) {
-  const cardId = params.get("id") || "";
-  const nfcUuid = params.get("nfc") || "";
+  const cardId   = params.get("id")  || "";
+  const nfcUuid  = params.get("nfc") || "";
+  const shortCode = params.get("c")  || ""; // code court (QR + NFC) — jamais un UUID dans l'URL
   const inactive = params.get("inactive") === "1";
   const toast = useToast();
   const [savedCount, setSavedCount] = useStateD(0);
@@ -1519,14 +1520,27 @@ function PublicCardPage({ navigate, params }) {
   const scanTrackedRef = React.useRef(false);
   useEffectPub(() => {
     if (!window.CardlyAPI || !window.sb) return;
-    if (!cardId && !nfcUuid) return;
+    if (!cardId && !nfcUuid && !shortCode) return;
     // Toujours faire un fetch frais : c'est une page publique, on veut
     // les dernières infos (notamment entreprise.website qui peut avoir
     // été oublié dans le cache du LoginForm).
     (async () => {
       try {
-        // Si on a un nfc_uuid : on le résout d'abord en carte_uuid via la fonction publique.
         let effectiveCardId = cardId;
+
+        // Priorité 1 : code court (?c=XXXXXX) — QR codes et NFC utilisent ce format.
+        // resolve_short_code résout aussi bien les codes de cartes que les codes NFC.
+        // L'UUID résolu reste côté serveur, il ne revient jamais dans l'URL.
+        if (!effectiveCardId && shortCode) {
+          const { data: resolved, error: resErr } = await window.CardlyAPI.resolveShortCode(shortCode);
+          if (resErr || !resolved) {
+            console.error('[Cardly] resolveShortCode failed:', resErr);
+            return;
+          }
+          effectiveCardId = resolved;
+        }
+
+        // Priorité 2 : nfc_uuid legacy (?nfc=...) — rétrocompatibilité uniquement.
         if (!effectiveCardId && nfcUuid) {
           const { data: resolved, error: resErr } = await window.CardlyAPI.resolveNFC(nfcUuid);
           if (resErr || !resolved) {
@@ -1535,6 +1549,7 @@ function PublicCardPage({ navigate, params }) {
           }
           effectiveCardId = resolved;
         }
+
         if (!effectiveCardId) return;
         const { data: raw } = await window.CardlyAPI.getCarteByUuid(effectiveCardId);
         if (!raw) return;
@@ -1555,18 +1570,17 @@ function PublicCardPage({ navigate, params }) {
         const mapped = window.CardlyAPI.mapCarteFromDB(raw, profile, entrepriseData);
         setCard(mapped);
 
-        // SCAN tracking : dès que la page publique a chargé une carte
-        // valide, on incrémente +1 scan (une seule fois par mount, garde
-        // contre les re-runs de useEffect en strict mode / hot reload).
-        if (!scanTrackedRef.current && mapped?.id && !inactive) {
+        // SCAN tracking : dès que la page publique a chargé une carte valide,
+        // on envoie le short_code (jamais le carte_uuid) à l'edge function.
+        if (!scanTrackedRef.current && mapped?.shortCode && !inactive) {
           scanTrackedRef.current = true;
-          window.CardlyAPI.trackAction(mapped.id, 'scan');
+          window.CardlyAPI.trackAction(mapped.shortCode, 'scan');
         }
       } catch (err) {
         console.error('[Cardly] PublicCardPage fetch failed:', err);
       }
     })();
-  }, [cardId, nfcUuid]);
+  }, [cardId, nfcUuid, shortCode]);
 
   if (!card) {
     return (
@@ -1616,7 +1630,7 @@ function PublicCardPage({ navigate, params }) {
               // suspends the browser tab → a pending fetch can get killed.
               // (Combined with keepalive:true in CardlyAPI.trackAction this
               //  is a belt-and-suspenders fix.)
-              if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.id, 'clic_add_contact');
+              if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.shortCode, 'clic_add_contact');
               downloadVCard(card);
               setSavedCount(savedCount + 1);
               toast.push("Contact ajouté à votre carnet");
@@ -1634,7 +1648,7 @@ function PublicCardPage({ navigate, params }) {
                 if (!phone) { toast.push("Numéro non disponible"); return; }
                 // window.location.href (not window.open _blank) → no leftover
                 // about:blank tab on iOS when WhatsApp app intercepts the URL.
-                if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.id, 'clic_whatsapp');
+                if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.shortCode, 'clic_whatsapp');
                 window.location.href = `https://wa.me/${phone}?text=${encodeURIComponent(PUBLIC_WA_MESSAGE)}`;
               }}
             >
@@ -1646,7 +1660,7 @@ function PublicCardPage({ navigate, params }) {
               style={{ flex: 1, minWidth: 110, justifyContent: "center" }}
               onClick={() => {
                 if (!card.email_affiche) { toast.push("Email non disponible"); return; }
-                if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.id, 'clic_mail');
+                if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.shortCode, 'clic_mail');
                 window.location.href = `mailto:${encodeURIComponent(card.email_affiche)}?subject=${encodeURIComponent(PUBLIC_MAIL_SUBJECT)}&body=${encodeURIComponent(PUBLIC_MAIL_BODY)}`;
               }}
             >
@@ -1662,7 +1676,7 @@ function PublicCardPage({ navigate, params }) {
               onClick={() => {
                 if (!card.site_web) { toast.push("Site non disponible"); return; }
                 const url = card.site_web.startsWith('http') ? card.site_web : 'https://' + card.site_web;
-                if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.id, 'clic_site_web');
+                if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.shortCode, 'clic_site_web');
                 window.open(url, "_blank");
               }}
             >
@@ -1681,7 +1695,7 @@ function PublicCardPage({ navigate, params }) {
               rel="noopener noreferrer"
               onClick={(e) => {
                 if (inactive || !card.instagram_url) { e.preventDefault(); if (!card.instagram_url) toast.push("Instagram non renseigné"); return; }
-                if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.id, 'clic_instagram');
+                if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.shortCode, 'clic_instagram');
               }}
               style={{ opacity: inactive || !card.instagram_url ? 0.4 : 1, pointerEvents: inactive ? "none" : "auto", display: "flex", cursor: card.instagram_url ? "pointer" : "default" }}
               title="Instagram"
@@ -1694,7 +1708,7 @@ function PublicCardPage({ navigate, params }) {
               rel="noopener noreferrer"
               onClick={(e) => {
                 if (inactive || !card.linkedin_url) { e.preventDefault(); if (!card.linkedin_url) toast.push("LinkedIn non renseigné"); return; }
-                if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.id, 'clic_linkedin');
+                if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.shortCode, 'clic_linkedin');
               }}
               style={{ opacity: inactive || !card.linkedin_url ? 0.4 : 1, pointerEvents: inactive ? "none" : "auto", display: "flex", cursor: card.linkedin_url ? "pointer" : "default" }}
               title="LinkedIn"
@@ -1722,7 +1736,7 @@ function PublicCardPage({ navigate, params }) {
           (async () => {
             try {
               if (window.CardlyAPI?.saveCRMContact) {
-                await window.CardlyAPI.saveCRMContact(card.id, {
+                await window.CardlyAPI.saveCRMContact(card.shortCode, {
                   nom: data.nom,
                   prenom: data.prenom,
                   mail: data.mail,
@@ -1730,7 +1744,7 @@ function PublicCardPage({ navigate, params }) {
                   prospect_entreprise_nom: data.societe,
                 });
               }
-              if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.id, 'clic_crm');
+              if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.shortCode, 'clic_crm');
             } catch (err) {
               console.error('[Cardly] saveCRMContact failed:', err);
               toast.push("Erreur d'envoi — réessayez");
@@ -1851,9 +1865,9 @@ function NFCSupportPage() {
   const me = window.CARTALIS_DATA.profileMe;
   const ent = window.CARTALIS_DATA.entreprise;
 
-  // Construit le lien NFC depuis l'origine actuelle (Vercel) + nfc_uuid
-  const nfcLink = nfcRow?.nfc_uuid
-    ? `${window.location.origin}${window.location.pathname}#/card?nfc=${nfcRow.nfc_uuid}`
+  // Construit le lien NFC depuis l'origine actuelle + short_code (jamais le nfc_uuid dans l'URL)
+  const nfcLink = nfcRow?.short_code
+    ? `${window.location.origin}${window.location.pathname}#/card?c=${nfcRow.short_code}`
     : "";
   const selectedCard = nfcRow?.carte_uuid || (cards[0] && cards[0].id) || "";
 
@@ -1898,13 +1912,14 @@ function NFCSupportPage() {
   const regenerate = async () => {
     if (!nfcRow?.id) return;
     try {
-      const { data, error } = await window.CardlyAPI.regenerateNFCCard(nfcRow.id);
+      // Régénère le short_code NFC (le lien copié changera, l'ancien ne fonctionnera plus).
+      const { data: newCode, error } = await window.CardlyAPI.regenerateNFCShortCode(nfcRow.id);
       if (error) throw error;
-      setNfcRow(data);
+      setNfcRow({ ...nfcRow, short_code: newCode });
       setShowRegenerateConfirm(false);
       toast.push("Lien régénéré");
     } catch (err) {
-      console.error('[Cardly] regenerateNFCCard failed:', err);
+      console.error('[Cardly] regenerateNFCShortCode failed:', err);
       toast.push("Erreur : " + (err.message || "impossible de régénérer"));
     }
   };
