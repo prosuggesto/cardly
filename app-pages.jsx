@@ -1367,6 +1367,46 @@ function SubscriptionPage({ plan, onSetPlan }) {
 window.SubscriptionPage = SubscriptionPage;
 
 // ---------- Public scanned card page ----------
+// ── Helpers pour la page publique (vCard, normalisation tel, messages) ──
+function normalizePhoneForWA(phone) {
+  if (!phone) return '';
+  // Strip spaces, dashes, parens, dots; keep digits and leading "+"
+  let p = phone.replace(/[\s\-\(\)\.]/g, '');
+  if (p.startsWith('+')) p = p.slice(1);
+  else if (p.startsWith('00')) p = p.slice(2);
+  else if (p.startsWith('0')) p = '33' + p.slice(1); // assume French local format
+  return p.replace(/\D/g, ''); // any remaining non-digits gone
+}
+
+function downloadVCard(card) {
+  const esc = (s) => String(s || '').replace(/([,;\\])/g, '\\$1');
+  const lines = [
+    'BEGIN:VCARD',
+    'VERSION:3.0',
+    `FN:${esc((card.prenom_affiche || '') + ' ' + (card.nom_affiche || '')).trim()}`,
+    `N:${esc(card.nom_affiche)};${esc(card.prenom_affiche)};;;`,
+    card.entreprise_affiche ? `ORG:${esc(card.entreprise_affiche)}` : null,
+    card.poste_affiche ? `TITLE:${esc(card.poste_affiche)}` : null,
+    card.telephone_affiche ? `TEL;TYPE=CELL:${esc(card.telephone_affiche)}` : null,
+    card.email_affiche ? `EMAIL;TYPE=INTERNET:${esc(card.email_affiche)}` : null,
+    card.site_web ? `URL:${esc(card.site_web.startsWith('http') ? card.site_web : 'https://' + card.site_web)}` : null,
+    'END:VCARD',
+  ].filter(Boolean).join('\r\n');
+  const blob = new Blob([lines], { type: 'text/vcard;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${(card.prenom_affiche || 'contact')}-${(card.nom_affiche || '')}.vcf`.replace(/\s+/g, '_');
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+const PUBLIC_WA_MESSAGE  = "Bonjour, j'ai bien pris votre contact et je serais ravi(e) que vous me recontactiez. Merci !";
+const PUBLIC_MAIL_SUBJECT = "Contact suite à notre échange";
+const PUBLIC_MAIL_BODY    = "Bonjour,\n\nJ'ai bien pris votre contact et je serais ravi(e) que vous me recontactiez.\n\nMerci !";
+
 function PublicCardPage({ navigate, params }) {
   const cardId = params.get("id") || "";
   const nfcUuid = params.get("nfc") || "";
@@ -1467,29 +1507,55 @@ function PublicCardPage({ navigate, params }) {
             disabled={inactive}
             className="btn btn-primary btn-lg"
             style={{ width: "100%", justifyContent: "center", marginBottom: 10 }}
-            onClick={() => { setSavedCount(savedCount + 1); toast.push("Contact prêt à être enregistré."); }}
+            onClick={() => {
+              downloadVCard(card);
+              setSavedCount(savedCount + 1);
+              if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.id, 'add_contact');
+              toast.push("Contact ajouté à votre carnet");
+            }}
           >
             <Icon.User size={14} /> Enregistrer dans mes contacts
           </button>
           <div className="row gap-2" style={{ flexWrap: "wrap" }}>
             <button
-              disabled={inactive}
+              disabled={inactive || !card.telephone_affiche}
               className="btn btn-sm"
               style={{ flex: 1, minWidth: 130, justifyContent: "center" }}
               onClick={() => {
-                window.open(`https://wa.me/?text=${encodeURIComponent("Bonjour, voici mon contact suite à notre échange.")}`, "_blank");
-                toast.push("WhatsApp ouvert", { icon: <Icon.WhatsApp size={13}/> });
+                const phone = normalizePhoneForWA(card.telephone_affiche);
+                if (!phone) { toast.push("Numéro non disponible"); return; }
+                window.open(`https://wa.me/${phone}?text=${encodeURIComponent(PUBLIC_WA_MESSAGE)}`, "_blank");
+                if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.id, 'whatsapp');
               }}
             >
               <Icon.WhatsApp size={13} /> WhatsApp
             </button>
-            <button disabled={inactive} className="btn btn-sm" style={{ flex: 1, minWidth: 110, justifyContent: "center" }} onClick={() => toast.push("Email préparé")}>
+            <button
+              disabled={inactive || !card.email_affiche}
+              className="btn btn-sm"
+              style={{ flex: 1, minWidth: 110, justifyContent: "center" }}
+              onClick={() => {
+                if (!card.email_affiche) { toast.push("Email non disponible"); return; }
+                window.location.href = `mailto:${encodeURIComponent(card.email_affiche)}?subject=${encodeURIComponent(PUBLIC_MAIL_SUBJECT)}&body=${encodeURIComponent(PUBLIC_MAIL_BODY)}`;
+                if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.id, 'mail');
+              }}
+            >
               <Icon.Mail size={13} /> Email
             </button>
             <button disabled={inactive} className="btn btn-sm" style={{ flex: 1, minWidth: 140, justifyContent: "center" }} onClick={() => setCrmModalOpen(true)}>
               <Icon.User size={13} /> Partager mes infos
             </button>
-            <button disabled={inactive} className="btn btn-sm" style={{ flex: 1, minWidth: 110, justifyContent: "center" }} onClick={() => toast.push("Site ouvert")}>
+            <button
+              disabled={inactive || !card.site_web}
+              className="btn btn-sm"
+              style={{ flex: 1, minWidth: 110, justifyContent: "center" }}
+              onClick={() => {
+                if (!card.site_web) { toast.push("Site non disponible"); return; }
+                const url = card.site_web.startsWith('http') ? card.site_web : 'https://' + card.site_web;
+                window.open(url, "_blank");
+                if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.id, 'site_web');
+              }}
+            >
               <Icon.Globe size={13} /> Site web
             </button>
             {card.rdv_actif && card.rdv_url && (
@@ -1499,10 +1565,30 @@ function PublicCardPage({ navigate, params }) {
             )}
           </div>
           <div className="row gap-3" style={{ justifyContent: "center", marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--line)" }}>
-            <a href="#" onClick={(e) => { e.preventDefault(); if (!inactive) toast.push("Instagram ouvert"); }} style={{ opacity: inactive ? 0.4 : 1, pointerEvents: inactive ? "none" : "auto", display: "flex", cursor: "pointer" }} title="Instagram">
+            <a
+              href={card.instagram_url ? (card.instagram_url.startsWith('http') ? card.instagram_url : 'https://' + card.instagram_url) : '#'}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => {
+                if (inactive || !card.instagram_url) { e.preventDefault(); if (!card.instagram_url) toast.push("Instagram non renseigné"); return; }
+                if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.id, 'instagram');
+              }}
+              style={{ opacity: inactive || !card.instagram_url ? 0.4 : 1, pointerEvents: inactive ? "none" : "auto", display: "flex", cursor: card.instagram_url ? "pointer" : "default" }}
+              title="Instagram"
+            >
               <Icon.Instagram size={46} />
             </a>
-            <a href="#" onClick={(e) => { e.preventDefault(); if (!inactive) toast.push("LinkedIn ouvert"); }} style={{ opacity: inactive ? 0.4 : 1, pointerEvents: inactive ? "none" : "auto", display: "flex", cursor: "pointer" }} title="LinkedIn">
+            <a
+              href={card.linkedin_url ? (card.linkedin_url.startsWith('http') ? card.linkedin_url : 'https://' + card.linkedin_url) : '#'}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => {
+                if (inactive || !card.linkedin_url) { e.preventDefault(); if (!card.linkedin_url) toast.push("LinkedIn non renseigné"); return; }
+                if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.id, 'linkedin');
+              }}
+              style={{ opacity: inactive || !card.linkedin_url ? 0.4 : 1, pointerEvents: inactive ? "none" : "auto", display: "flex", cursor: card.linkedin_url ? "pointer" : "default" }}
+              title="LinkedIn"
+            >
               <Icon.Linkedin size={46} />
             </a>
           </div>
@@ -1516,8 +1602,28 @@ function PublicCardPage({ navigate, params }) {
       <CrmShareModal
         open={crmModalOpen}
         onClose={() => setCrmModalOpen(false)}
-        fields={{ nom: true, prenom: true, societe: true, mail: true, tel: true }}
-        onSubmit={() => { setCrmModalOpen(false); toast.push("Vos infos ont été envoyées"); }}
+        fields={card.crmFields || { nom: true, prenom: true, societe: true, mail: true, tel: true }}
+        onSubmit={async (data) => {
+          // Push to the card owner's CRM backend
+          try {
+            if (window.CardlyAPI?.saveCRMContact) {
+              await window.CardlyAPI.saveCRMContact(card.id, {
+                nom: data.nom,
+                prenom: data.prenom,
+                mail: data.mail,
+                tel: data.tel,
+                prospect_entreprise_nom: data.societe,
+              });
+            }
+            if (window.CardlyAPI?.trackAction) window.CardlyAPI.trackAction(card.id, 'crm');
+            toast.push("Vos infos ont été envoyées");
+          } catch (err) {
+            console.error('[Cardly] saveCRMContact failed:', err);
+            toast.push("Erreur d'envoi — réessayez");
+          } finally {
+            setCrmModalOpen(false);
+          }
+        }}
         recipientName={`${card.prenom_affiche} ${card.nom_affiche}`}
       />
     </div>

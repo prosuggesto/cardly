@@ -285,6 +285,8 @@
           poste_affiche:      profile?.poste          || '',
           telephone_affiche:  profile?.telephone      || '',
           email_affiche:      profile?.email          || '',
+          instagram_url:      profile?.instagram      || '',
+          linkedin_url:       profile?.linkedin       || '',
           // Site web : TOUJOURS celui de l'entreprise (pour carte perso comme entreprise).
           // Le profil personnel ne sert plus pour le site web affiché sur la carte.
           site_web:           entreprise?.website || '',
