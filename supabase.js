@@ -192,8 +192,8 @@
       // ── CRM Contacts ─────────────────────────────────────────────────────
       async getCRMContacts(entrepriseId) {
         return window.sb.from('crm_contacts')
-          // Join cartes pour récupérer le membre (collaborateur_id) et l'événement
-          .select('*, cartes!carte_uuid(collaborateur_id, evenement_name, card_name)')
+          // Join evenements via evenement_uuid pour récupérer le nom de l'événement
+          .select('*, evenements!evenement_uuid(evenement_name)')
           .eq('entreprise_id', entrepriseId)
           .order('created_at', { ascending: false });
       },

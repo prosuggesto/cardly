@@ -116,9 +116,9 @@ function CrmPage({ role }) {
         };
 
         const mapped = (data || []).map(c => {
-          // La jointure cartes peut être un objet unique ou null selon la FK
-          const carte = Array.isArray(c.cartes) ? c.cartes[0] : c.cartes;
-          const membre = getMembreInfo(carte?.collaborateur_id || c.collaborateur_id);
+          // La jointure evenements retourne l'objet ou null selon la FK
+          const ev = Array.isArray(c.evenements) ? c.evenements[0] : c.evenements;
+          const membre = getMembreInfo(c.collaborateur_id);
           return {
             id: c.id,
             prenom: c.prenom || '—',
@@ -128,7 +128,7 @@ function CrmPage({ role }) {
             entreprise: c.prospect_entreprise_nom || '—',
             membre: membre.nom,
             membre_id: membre.id,
-            event: carte?.evenement_name || c.evenement_name || '—',
+            event: ev?.evenement_name || '—',
             date: formatDate(c.created_at),
             created_at: c.created_at,
           };
