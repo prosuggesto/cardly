@@ -792,28 +792,50 @@ function PresentCardModal({ card, onClose }) {
 }
 
 function RealQR({ url, size = 180 }) {
-  const canvasRef = React.useRef(null);
+  const [src, setSrc] = React.useState(null);
+  const attemptsRef = React.useRef(0);
+
   React.useEffect(() => {
-    if (!canvasRef.current || !url) return;
-    if (!window.QRCode) {
-      console.error('[Cardly] qrcode.js non chargé');
-      return;
-    }
-    window.QRCode.toCanvas(canvasRef.current, url, {
-      width: size,
-      margin: 2,
-      color: { dark: '#1a1815', light: '#ffffff' },
-    }, (err) => {
-      if (err) console.error('[Cardly] QR generation failed:', err);
-    });
+    if (!url) return;
+    setSrc(null);
+    attemptsRef.current = 0;
+
+    const tryGenerate = () => {
+      if (window.QRCode && typeof window.QRCode.toDataURL === 'function') {
+        window.QRCode.toDataURL(url, {
+          width: size,
+          margin: 2,
+          color: { dark: '#1a1815', light: '#ffffff' },
+          errorCorrectionLevel: 'M',
+        }).then(setSrc).catch(err => console.error('[Cardly] QR generation failed:', err));
+      } else if (attemptsRef.current < 30) {
+        // lib pas encore chargée → retry toutes les 100 ms (max 3 s)
+        attemptsRef.current++;
+        setTimeout(tryGenerate, 100);
+      } else {
+        console.error('[Cardly] qrcode.js introuvable après 3 s');
+      }
+    };
+
+    tryGenerate();
   }, [url, size]);
-  return (
-    <canvas
-      ref={canvasRef}
+
+  return src ? (
+    <img
+      src={src}
       width={size}
       height={size}
-      style={{ borderRadius: 10, display: 'block' }}
+      alt="QR Code"
+      style={{ borderRadius: 10, display: 'block', imageRendering: 'pixelated' }}
     />
+  ) : (
+    <div style={{
+      width: size, height: size, borderRadius: 10,
+      background: 'var(--surface-2)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <div className="dim" style={{ fontSize: 11 }}>QR…</div>
+    </div>
   );
 }
 
