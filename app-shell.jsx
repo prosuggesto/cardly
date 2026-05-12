@@ -792,49 +792,55 @@ function PresentCardModal({ card, onClose }) {
 }
 
 function RealQR({ url, size = 180 }) {
-  const [src, setSrc] = React.useState(null);
-  const attemptsRef = React.useRef(0);
+  // QR Server API — aucune lib JS, simple balise <img>
+  // Génère un vrai QR code scannable côté serveur et le retourne en PNG.
+  const [loaded, setLoaded] = React.useState(false);
+  const [errored, setErrored] = React.useState(false);
 
-  React.useEffect(() => {
-    if (!url) return;
-    setSrc(null);
-    attemptsRef.current = 0;
+  const apiUrl = url
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(url)}&margin=10&ecc=M&format=png`
+    : null;
 
-    const tryGenerate = () => {
-      if (window.QRCode && typeof window.QRCode.toDataURL === 'function') {
-        window.QRCode.toDataURL(url, {
-          width: size,
-          margin: 2,
-          color: { dark: '#1a1815', light: '#ffffff' },
-          errorCorrectionLevel: 'M',
-        }).then(setSrc).catch(err => console.error('[Cardly] QR generation failed:', err));
-      } else if (attemptsRef.current < 30) {
-        // lib pas encore chargée → retry toutes les 100 ms (max 3 s)
-        attemptsRef.current++;
-        setTimeout(tryGenerate, 100);
-      } else {
-        console.error('[Cardly] qrcode.js introuvable après 3 s');
-      }
-    };
+  // Reset si l'URL change
+  React.useEffect(() => { setLoaded(false); setErrored(false); }, [url]);
 
-    tryGenerate();
-  }, [url, size]);
+  if (!apiUrl) return (
+    <div style={{ width: size, height: size, borderRadius: 10, background: 'var(--surface-2)' }} />
+  );
 
-  return src ? (
-    <img
-      src={src}
-      width={size}
-      height={size}
-      alt="QR Code"
-      style={{ borderRadius: 10, display: 'block', imageRendering: 'pixelated' }}
-    />
-  ) : (
-    <div style={{
-      width: size, height: size, borderRadius: 10,
-      background: 'var(--surface-2)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }}>
-      <div className="dim" style={{ fontSize: 11 }}>QR…</div>
+  return (
+    <div style={{ position: 'relative', width: size, height: size }}>
+      {!loaded && !errored && (
+        <div style={{
+          position: 'absolute', inset: 0, borderRadius: 10,
+          background: 'var(--surface-2)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div className="dim" style={{ fontSize: 11 }}>Génération…</div>
+        </div>
+      )}
+      {errored ? (
+        <div style={{
+          width: size, height: size, borderRadius: 10,
+          background: 'var(--surface-2)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 11, color: 'var(--ink-4)',
+        }}>QR indisponible</div>
+      ) : (
+        <img
+          src={apiUrl}
+          width={size}
+          height={size}
+          alt="QR Code"
+          onLoad={() => setLoaded(true)}
+          onError={() => setErrored(true)}
+          style={{
+            borderRadius: 10, display: 'block',
+            opacity: loaded ? 1 : 0,
+            transition: 'opacity 200ms',
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -191,9 +191,10 @@
 
       // ── CRM Contacts ─────────────────────────────────────────────────────
       async getCRMContacts(entrepriseId) {
-        return window.sb.from('crm_contacts').select('*')
+        return window.sb.from('crm_contacts')
+          // Join cartes pour récupérer le membre (collaborateur_id) et l'événement
+          .select('*, cartes!carte_uuid(collaborateur_id, evenement_name, card_name)')
           .eq('entreprise_id', entrepriseId)
-          .gt('expires_at', new Date().toISOString())
           .order('created_at', { ascending: false });
       },
       async deleteCRMContact(contactId) {

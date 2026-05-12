@@ -76,14 +76,75 @@ function FilterSelect({ value, onChange, options, btnStyle }) {
 
 // ---------- CRM ----------
 function CrmPage({ role }) {
-  const allContacts = window.CARTALIS_DATA.crmContacts || [];
-  const collabs = window.CARTALIS_DATA.collaborators.filter(c => c.statut === "actif");
+  const [allContacts, setAllContacts] = useStateD([]);
+  const [loading, setLoading] = useStateD(true);
+  const collabs = (window.CARTALIS_DATA.collaborators || []).filter(c => c.statut === "actif");
+  const entrepriseId = window.CARTALIS_DATA?.entreprise?.id;
+  const toast = useToast();
+
   const [filterMembre, setFilterMembre] = useStateD("all");
   const [filterEvent, setFilterEvent] = useStateD("all");
   const [search, setSearch] = useStateD("");
 
   const canManage = role === "admin" || role === "manager";
-  const events = [...new Set(allContacts.map(c => c.event))];
+
+  const MONTHS_FR = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+  const now = new Date();
+  const currentMonthLabel = MONTHS_FR[now.getMonth()];
+  const currentYear = now.getFullYear();
+
+  // Charge les vrais contacts depuis Supabase
+  React.useEffect(() => {
+    if (!window.CardlyAPI || !entrepriseId) { setLoading(false); return; }
+    (async () => {
+      try {
+        const { data, error } = await window.CardlyAPI.getCRMContacts(entrepriseId);
+        if (error) throw error;
+
+        const formatDate = (iso) => {
+          if (!iso) return '—';
+          const d = new Date(iso);
+          return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+        };
+
+        // Cherche le nom du membre dans la liste cached des collaborateurs
+        const getMembreInfo = (collaborateurId) => {
+          if (!collaborateurId) return { nom: '—', id: null };
+          const collab = (window.CARTALIS_DATA.collaborators || []).find(c => c.id === collaborateurId);
+          if (!collab) return { nom: '—', id: collaborateurId };
+          return { nom: `${collab.prenom || ''} ${collab.nom || ''}`.trim() || '—', id: collaborateurId };
+        };
+
+        const mapped = (data || []).map(c => {
+          // La jointure cartes peut être un objet unique ou null selon la FK
+          const carte = Array.isArray(c.cartes) ? c.cartes[0] : c.cartes;
+          const membre = getMembreInfo(carte?.collaborateur_id || c.collaborateur_id);
+          return {
+            id: c.id,
+            prenom: c.prenom || '—',
+            nom: c.nom || '—',
+            email: c.mail || c.email || '—',
+            tel: c.tel || '—',
+            entreprise: c.prospect_entreprise_nom || '—',
+            membre: membre.nom,
+            membre_id: membre.id,
+            event: carte?.evenement_name || c.evenement_name || '—',
+            date: formatDate(c.created_at),
+            created_at: c.created_at,
+          };
+        });
+
+        setAllContacts(mapped);
+      } catch (err) {
+        console.error('[CRM] fetch failed:', err);
+        toast.push("Erreur de chargement des contacts");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [entrepriseId]);
+
+  const events = [...new Set(allContacts.map(c => c.event).filter(e => e && e !== '—'))];
 
   const filtered = allContacts.filter(c => {
     const matchMembre = filterMembre === "all" || c.membre_id === filterMembre;
@@ -92,6 +153,19 @@ function CrmPage({ role }) {
     const matchSearch = !q || [c.nom, c.prenom, c.email, c.entreprise, c.membre].some(f => f && f.toLowerCase().includes(q));
     return matchMembre && matchEvent && matchSearch;
   });
+
+  // Contacts du mois en cours
+  const thisMonthCount = allContacts.filter(c => {
+    if (!c.created_at) return false;
+    const d = new Date(c.created_at);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  }).length;
+
+  // Meilleur membre (par nombre de contacts dans ce CRM)
+  const membreScores = {};
+  allContacts.forEach(c => { if (c.membre_id) membreScores[c.membre_id] = (membreScores[c.membre_id] || 0) + 1; });
+  const topMembreId = Object.keys(membreScores).sort((a, b) => membreScores[b] - membreScores[a])[0];
+  const topMembre = collabs.find(c => c.id === topMembreId);
 
   const exportCSV = () => {
     const headers = ["Prénom", "Nom", "Email", "Téléphone", "Entreprise", "Membre", "Événement", "Date"];
@@ -108,7 +182,7 @@ function CrmPage({ role }) {
   return (
     <div className="col gap-6">
       <div className="col gap-2">
-        <div className="eyebrow">CRM · Avril 2026</div>
+        <div className="eyebrow">CRM · {currentMonthLabel} {currentYear}</div>
         <h1 className="serif" style={{ fontSize: "clamp(28px,4vw,40px)", margin: 0, letterSpacing: "-0.02em" }}>Contacts</h1>
         <p className="muted" style={{ margin: 0, fontSize: 15 }}>Leads collectés via le bouton « Partager mes infos » sur les cartes scannées.</p>
       </div>
@@ -141,9 +215,9 @@ function CrmPage({ role }) {
 
       {/* Stats strip */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 14 }}>
-        <Metric label="Total contacts" value={String(allContacts.length)} delta={`${filtered.length} affiché${filtered.length > 1 ? "s" : ""}`} trend="neutral" />
-        <Metric label="Ce mois" value={String(allContacts.filter(c => c.date.includes("/04/2026")).length)} delta="Avril 2026" trend="up" />
-        {canManage && <Metric label="Meilleur membre" value={collabs[0] ? `${collabs[0].prenom} ${collabs[0].nom[0]}.` : "—"} delta={`${collabs[0]?.leads || 0} leads`} trend="neutral" />}
+        <Metric label="Total contacts" value={loading ? "…" : String(allContacts.length)} delta={`${filtered.length} affiché${filtered.length > 1 ? "s" : ""}`} trend="neutral" />
+        <Metric label="Ce mois" value={loading ? "…" : String(thisMonthCount)} delta={`${currentMonthLabel} ${currentYear}`} trend={thisMonthCount > 0 ? "up" : "neutral"} />
+        {canManage && <Metric label="Top membre" value={topMembre ? `${topMembre.prenom} ${topMembre.nom[0]}.` : "—"} delta={topMembreId ? `${membreScores[topMembreId]} contact${membreScores[topMembreId] > 1 ? "s" : ""}` : "Aucun contact"} trend="neutral" />}
       </div>
 
       {/* Table */}
@@ -152,46 +226,58 @@ function CrmPage({ role }) {
           <div className="serif" style={{ fontSize: 16 }}>Tous les contacts</div>
           <span className="dim" style={{ fontSize: 12 }}>{filtered.length} entrée{filtered.length > 1 ? "s" : ""}</span>
         </div>
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13.5 }}>
-            <thead>
-              <tr style={{ background: "var(--surface-2)" }}>
-                {COLS.map(h => (
-                  <th key={h} style={{ textAlign: "left", padding: "11px 20px", fontWeight: 500, color: "var(--ink-3)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 ? (
-                <tr><td colSpan={COLS.length} style={{ padding: "32px 20px", textAlign: "center", color: "var(--ink-4)", fontSize: 13 }}>Aucun contact trouvé.</td></tr>
-              ) : filtered.map(c => (
-                <tr key={c.id} style={{ borderTop: "1px solid var(--line)" }}>
-                  <td style={{ padding: "13px 20px", fontWeight: 500 }}>{c.prenom}</td>
-                  <td style={{ padding: "13px 20px", fontWeight: 500 }}>{c.nom}</td>
-                  <td style={{ padding: "13px 20px" }}>
-                    <a href={`mailto:${c.email}`} style={{ color: "var(--ink)", textDecoration: "none", borderBottom: "1px dashed var(--line-2)" }}>{c.email}</a>
-                  </td>
-                  <td style={{ padding: "13px 20px", color: "var(--ink-3)" }}>{c.tel}</td>
-                  <td style={{ padding: "13px 20px", color: "var(--ink-3)" }}>{c.entreprise}</td>
-                  {canManage && (
-                    <td style={{ padding: "13px 20px" }}>
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12 }}>
-                        <span style={{ width: 22, height: 22, borderRadius: "50%", background: "var(--surface-3)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 600 }}>
-                          {c.membre.split(" ").map(w => w[0]).join("")}
-                        </span>
-                        {c.membre}
-                      </span>
-                    </td>
-                  )}
-                  <td style={{ padding: "13px 20px" }}>
-                    <span className="chip" style={{ fontSize: 11, padding: "3px 8px" }}>{c.event}</span>
-                  </td>
-                  <td style={{ padding: "13px 20px", color: "var(--ink-4)", fontSize: 12 }}>{c.date}</td>
+        {loading ? (
+          <div className="col" style={{ alignItems: "center", padding: "48px 24px" }}>
+            <div className="dim" style={{ fontSize: 14 }}>Chargement des contacts…</div>
+          </div>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13.5 }}>
+              <thead>
+                <tr style={{ background: "var(--surface-2)" }}>
+                  {COLS.map(h => (
+                    <th key={h} style={{ textAlign: "left", padding: "11px 20px", fontWeight: 500, color: "var(--ink-3)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>{h}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {filtered.length === 0 ? (
+                  <tr><td colSpan={COLS.length} style={{ padding: "32px 20px", textAlign: "center", color: "var(--ink-4)", fontSize: 13 }}>
+                    {allContacts.length === 0 ? "Aucun contact reçu pour l'instant — les prospects verront ce CRM après avoir cliqué « Partager mes infos »." : "Aucun contact correspond à vos filtres."}
+                  </td></tr>
+                ) : filtered.map(c => (
+                  <tr key={c.id} style={{ borderTop: "1px solid var(--line)" }}>
+                    <td style={{ padding: "13px 20px", fontWeight: 500 }}>{c.prenom}</td>
+                    <td style={{ padding: "13px 20px", fontWeight: 500 }}>{c.nom}</td>
+                    <td style={{ padding: "13px 20px" }}>
+                      {c.email !== '—'
+                        ? <a href={`mailto:${c.email}`} style={{ color: "var(--ink)", textDecoration: "none", borderBottom: "1px dashed var(--line-2)" }}>{c.email}</a>
+                        : <span className="dim">—</span>}
+                    </td>
+                    <td style={{ padding: "13px 20px", color: "var(--ink-3)" }}>{c.tel}</td>
+                    <td style={{ padding: "13px 20px", color: "var(--ink-3)" }}>{c.entreprise}</td>
+                    {canManage && (
+                      <td style={{ padding: "13px 20px" }}>
+                        {c.membre !== '—' ? (
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12 }}>
+                            <span style={{ width: 22, height: 22, borderRadius: "50%", background: "var(--surface-3)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 600 }}>
+                              {c.membre.split(" ").filter(Boolean).map(w => w[0]).join("").slice(0,2)}
+                            </span>
+                            {c.membre}
+                          </span>
+                        ) : <span className="dim">—</span>}
+                      </td>
+                    )}
+                    <td style={{ padding: "13px 20px" }}>
+                      <span className="chip" style={{ fontSize: 11, padding: "3px 8px" }}>{c.event}</span>
+                    </td>
+                    <td style={{ padding: "13px 20px", color: "var(--ink-4)", fontSize: 12 }}>{c.date}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
