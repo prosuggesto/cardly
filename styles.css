@@ -776,44 +776,30 @@ img, video, svg { max-width: 100%; height: auto; }
 }
 
 /* ════════════════════════════════════════════════════════════════════════ */
-/*  App "Mes cartes" — tuile compacte + pages fullscreen (présent + stats)  */
+/*  App "Mes cartes" — tuile compacte + popups (desktop) ⇆ fullscreen (mob) */
 /* ════════════════════════════════════════════════════════════════════════ */
 
-/* — Tuile CardListItem : compactage de TOUT le bloc sur mobile ────────── */
+/* — Tuile CardListItem : compactage du bloc entier sur mobile ─────────── */
 @media (max-width: 700px) {
   .card-list-item {
     padding: 14px !important;
     gap: 10px !important;
   }
-  /* Header : titre + chips */
-  .card-list-item > .row .serif {
-    font-size: 16px !important;
-  }
-  .card-list-item > .row .dim {
-    font-size: 11px !important;
-  }
+  .card-list-item > .row .serif { font-size: 16px !important; }
+  .card-list-item > .row .dim   { font-size: 11px !important; }
   .card-list-item .chip {
     height: 22px;
     padding: 0 9px;
     font-size: 11px;
   }
-  /* Boutons icônes du header (Brush, QR, X) */
+  /* Icônes header (Brush, QR aperçu, Supprimer) compactes */
   .card-list-item .btn-ghost.btn-sm {
     height: 30px;
     padding: 0 8px;
   }
-  /* Card3D : plus petite et fluide */
-  .card-preview-tile {
-    padding: 2px 0 !important;
-  }
-  .card-preview-tile .card-3d,
-  .card-preview-tile .card-floater {
-    width: 100% !important;
-    max-width: 200px !important;
-    height: auto !important;
-    aspect-ratio: 100 / 63;
-  }
-  /* Boutons "Présenter au client" / "Stats" : plus compacts */
+  /* Wrapper du Card3D : padding réduit, plein largeur (centrage flex) */
+  .card-preview-tile { padding: 2px 0 !important; }
+  /* Boutons "Présenter au client" / "Stats" plus compacts */
   .card-list-item > .row.gap-2 .btn {
     height: 36px;
     font-size: 12px;
@@ -822,221 +808,206 @@ img, video, svg { max-width: 100%; height: auto; }
   }
 }
 
-/* — Page fullscreen générique (Présenter + Stats) ───────────────────────
-   Vraie sous-page : prend tout l'écran, scroll vertical, ferme via la
-   croix rouge fixe en haut à droite. */
-.fullscreen-page {
+/* ─────────────────────────────────────────────────────────────────────────
+   PresentCardModal — popup desktop par défaut, fullscreen sur mobile
+   ───────────────────────────────────────────────────────────────────── */
+
+/* Fond + centrage (DESKTOP) */
+.present-modal-bg {
   position: fixed; inset: 0; z-index: 1000;
-  background: var(--bg);
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  background: rgba(20, 18, 14, 0.78);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
   animation: fade-in 200ms ease;
 }
-.fullscreen-page-content {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 60px 28px 60px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 22px;
-  text-align: center;
+/* La carte popup (DESKTOP) */
+.present-modal {
+  max-width: 880px; width: 100%; padding: 40px;
+  display: grid; grid-template-columns: 1.2fr 1fr; gap: 36px;
+  background: linear-gradient(180deg, #fffdf6, #f6efde);
+  position: relative;
+  animation: fade-up 280ms cubic-bezier(.2,.8,.2,1) both;
 }
-.fullscreen-close {
-  position: fixed;
-  top: 16px; right: 16px;
-  width: 44px; height: 44px;
-  border-radius: 12px;
-  background: #c0392b;
-  color: #fff;
+/* Bouton fermer (DESKTOP : transparent en haut à droite) */
+.present-modal-close {
+  position: absolute; top: 16px; right: 16px;
+  width: 32px; height: 32px;
+  border-radius: 10px;
+  background: transparent; color: var(--ink-3);
   border: none;
   display: flex; align-items: center; justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 4px 16px rgba(192, 57, 43, 0.35);
-  transition: background 150ms, transform 150ms;
-  z-index: 1010;
+  cursor: pointer; z-index: 2;
+  transition: background 150ms, color 150ms;
 }
-.fullscreen-close:hover {
-  background: #a03328;
-  transform: scale(1.05);
-}
-@media (max-width: 700px) {
-  .fullscreen-page-content {
-    padding: 70px 16px 48px;
-    gap: 16px;
-  }
-  .fullscreen-close {
-    width: 42px; height: 42px;
-    top: 12px; right: 12px;
-  }
-}
+.present-modal-close:hover { background: var(--surface-2); color: var(--ink); }
 
-/* — Page "Présenter au client" ────────────────────────────────────────── */
-.present-page {
-  background: linear-gradient(180deg, #fffdf6, #f6efde);
+.present-card-side {
+  display: flex; align-items: center; justify-content: center;
 }
-.present-title {
-  font-size: clamp(26px, 5vw, 36px);
-  margin: 0;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-}
-.present-desc {
-  font-size: 14px;
-  margin: 0;
-  max-width: 480px;
-}
-.present-card-wrap {
-  cursor: pointer;
-  display: flex; justify-content: center;
-  width: 100%;
-}
-.present-qr-wrap {
+.present-info-side { /* la 2e colonne avec eyebrow/titre/QR/NFC/btn */ }
+.present-modal-qr {
   background: white;
-  padding: 16px;
-  border-radius: 18px;
+  padding: 16px; border-radius: 16px;
   border: 1px solid var(--line);
   box-shadow: var(--shadow-1);
   display: flex; align-items: center; justify-content: center;
+  align-self: flex-start;
 }
-.present-nfc {
-  display: flex; align-items: center; gap: 12px;
-  background: rgba(255,255,255,0.55);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 12px 16px;
-  max-width: 480px;
-  width: 100%;
-}
-.present-nfc-icon {
-  width: 36px; height: 36px; border-radius: 10px;
-  background: var(--gold-3);
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-.present-actions {
-  display: flex; gap: 12px;
-  width: 100%; max-width: 480px;
-  margin-top: 4px;
-  justify-content: center;
-}
-.present-actions .btn { flex: 1; justify-content: center; }
 
+/* MOBILE : on transforme le popup en sous-page fullscreen ─────────────── */
 @media (max-width: 700px) {
-  .present-title { font-size: 22px !important; }
-  .present-desc { font-size: 13px !important; }
-  .present-card-wrap .card-3d,
-  .present-card-wrap .card-floater {
+  .present-modal-bg {
+    background: linear-gradient(180deg, #fffdf6, #f6efde) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    padding: 0 !important;
+    display: block !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  .present-modal {
+    max-width: 100% !important;
     width: 100% !important;
-    max-width: 280px !important;
-    height: auto !important;
-    aspect-ratio: 100 / 63;
+    min-height: 100vh !important;
+    padding: 64px 18px 32px !important;
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    text-align: center;
   }
-  .present-qr-wrap svg {
-    width: 170px !important;
-    height: 170px !important;
+  .present-modal-close {
+    position: fixed !important;
+    top: 12px !important; right: 12px !important;
+    width: 44px !important; height: 44px !important;
+    border-radius: 12px !important;
+    background: #c0392b !important;
+    color: #fff !important;
+    box-shadow: 0 4px 16px rgba(192, 57, 43, 0.35);
+    z-index: 1010;
+  }
+  .present-modal-close:hover { background: #a03328 !important; color: #fff !important; }
+  /* Tout centrer */
+  .present-info-side {
+    align-items: center;
+    gap: 18px !important;
+  }
+  .present-info-side .eyebrow,
+  .present-modal-title,
+  .present-modal-desc {
+    text-align: center;
+  }
+  .present-modal-title { font-size: 22px !important; }
+  .present-modal-desc  { font-size: 13px !important; max-width: 420px; }
+  .present-modal-qr {
+    align-self: center !important;
+    padding: 14px !important;
+  }
+  /* NFC info centré dans une carte légère */
+  .present-modal-nfc {
+    background: rgba(255,255,255,0.55);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 12px 14px;
+    text-align: left;
   }
 }
 @media (max-width: 420px) {
-  .present-title { font-size: 20px !important; }
-  .present-card-wrap .card-3d,
-  .present-card-wrap .card-floater {
-    max-width: 240px !important;
-  }
-  .present-qr-wrap svg {
-    width: 150px !important;
-    height: 150px !important;
-  }
-  .present-actions { flex-direction: column; }
+  .present-modal { padding: 60px 14px 28px !important; }
+  .present-modal-title { font-size: 20px !important; }
 }
 
-/* — Page "Statistiques" ───────────────────────────────────────────────── */
-.stats-title {
-  font-size: clamp(26px, 5vw, 36px);
-  margin: 0;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-}
-.stats-desc {
-  font-size: 14px;
-  margin: 0;
-}
-.stats-cards-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  width: 100%;
-}
-.stats-big-card {
-  padding: 18px !important;
-  display: flex; flex-direction: column; gap: 2px;
-  text-align: left;
-}
-.stats-big-card-gold {
-  background: linear-gradient(135deg, #fdf3df, #f1deb6);
-  border-color: var(--gold);
-}
-.stats-big-number {
-  font-size: 32px;
-  line-height: 1;
-  letter-spacing: -0.02em;
-  margin-top: 4px;
-}
-.stats-big-caption {
-  font-size: 11px;
-  margin-top: 4px;
-}
-.stats-channels {
-  width: 100%;
-  text-align: left;
-  margin-top: 8px;
-}
-.stats-channel-icon {
-  width: 30px; height: 30px;
-  border-radius: 8px;
-  background: var(--surface-2);
+/* ─────────────────────────────────────────────────────────────────────────
+   CardStatsModal — popup desktop par défaut, fullscreen sur mobile
+   ───────────────────────────────────────────────────────────────────── */
+
+.stats-modal-bg {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(20, 16, 8, 0.32);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  animation: fade-in 200ms ease;
 }
-.stats-channel-label {
-  font-size: 14px;
-  font-weight: 500;
+.stats-modal-content {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-3);
+  max-width: 600px; width: 100%;
+  max-height: calc(100vh - 48px);
+  padding: 32px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  animation: fade-up 300ms ease;
 }
-.stats-channel-num {
-  font-size: 18px;
+.stats-modal-close {
+  position: absolute; top: 16px; right: 16px;
+  width: 32px; height: 32px;
+  border-radius: 10px;
+  background: transparent; color: var(--ink-3);
+  border: none;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; z-index: 2;
+  transition: background 150ms, color 150ms;
 }
-.stats-bar-track {
-  height: 4px;
-  background: var(--surface-2);
-  border-radius: 999px;
-  overflow: hidden;
-}
-.stats-bar-fill {
-  height: 100%;
-  border-radius: 999px;
-  transition: width 400ms;
-}
+.stats-modal-close:hover { background: var(--surface-2); color: var(--ink); }
 
+/* MOBILE : fullscreen + close rouge */
 @media (max-width: 700px) {
-  .stats-title { font-size: 22px !important; }
-  .stats-desc { font-size: 13px !important; }
-  .stats-cards-grid { gap: 10px; }
-  .stats-big-card { padding: 14px !important; }
+  .stats-modal-bg {
+    background: var(--bg) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    padding: 0 !important;
+    display: block !important;
+    overflow-y: auto !important;
+  }
+  .stats-modal-content {
+    max-width: 100% !important;
+    width: 100% !important;
+    min-height: 100vh !important;
+    max-height: none !important;
+    border-radius: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 64px 16px 32px !important;
+  }
+  .stats-modal-close {
+    position: fixed !important;
+    top: 12px !important; right: 12px !important;
+    width: 44px !important; height: 44px !important;
+    border-radius: 12px !important;
+    background: #c0392b !important;
+    color: #fff !important;
+    box-shadow: 0 4px 16px rgba(192, 57, 43, 0.35);
+    z-index: 1010;
+  }
+  .stats-modal-close:hover { background: #a03328 !important; color: #fff !important; }
+  /* Titre + chiffres compactés */
+  .stats-modal-title { font-size: 20px !important; word-break: break-word; line-height: 1.2; }
   .stats-big-number { font-size: 24px !important; }
-  .stats-big-caption { font-size: 10.5px !important; }
-  .stats-channel-icon { width: 28px; height: 28px; }
-  .stats-channel-label { font-size: 13px; }
-  .stats-channel-num { font-size: 16px; }
+  .stats-big-card { padding: 14px !important; }
 }
 @media (max-width: 420px) {
-  .stats-big-card { padding: 12px !important; }
+  .stats-modal-content { padding: 60px 14px 28px !important; }
+  .stats-modal-title { font-size: 18px !important; }
   .stats-big-number { font-size: 22px !important; }
+  .stats-big-card { padding: 12px !important; }
 }
 
-/* Override la règle globale qui force 2-col → 1-col ≤600px : on garde
-   2 colonnes pour les stats car les cartes y sont compactes par design */
+/* Garder 2 colonnes pour les Stats sur mobile (sinon le rule global
+   "1fr 1fr → 1fr ≤600px" les empile, ce qui prend trop de place) */
 @media (max-width: 600px) {
   .stats-cards-grid {
     grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
   }
 }
 
