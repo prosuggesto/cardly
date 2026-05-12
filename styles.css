@@ -780,147 +780,60 @@ img, video, svg { max-width: 100%; height: auto; }
 /* ════════════════════════════════════════════════════════════════════════ */
 
 /* — Aperçu carte dans la liste "Mes cartes" ─────────────────────────────
-   Le <Card3D width={320}/> + padding + gaps rendaient la tuile de carte
-   très épaisse sur mobile. On compacte drastiquement : padding 12px,
-   gaps 10px, Card3D max-width 240px pour que la tuile ne prenne plus
-   de 50% de l'écran. */
+   Le <Card3D width={320}/> a une largeur fixe en inline. Sur écrans
+   étroits (<360px utiles dans le .card parent), il déborde à droite.
+   On rend la 3D fluide tout en gardant le ratio carte (100:63). */
 @media (max-width: 700px) {
-  .card-list-item {
-    padding: 12px !important;
-    gap: 10px !important;
-  }
-  .card-preview-tile {
-    padding: 4px 0 !important;
-  }
   .card-preview-tile .card-3d,
   .card-preview-tile .card-floater {
     width: 100% !important;
-    max-width: 240px !important;
+    max-width: 320px !important;
     height: auto !important;
     aspect-ratio: 100 / 63;
   }
 }
 
 /* — Modal "Présenter au client" ─────────────────────────────────────────
-   Réduction DRASTIQUE : le modal ne doit pas prendre tout l'écran.
-   Passer de 340px → 300px max-width (moins de moitié du viewport).
-   Card3D 280px, QR 120px, texte serré, tout avec word-break. */
+   Inline `padding: 40`, grille `1.2fr 1fr`, et <Card3D width={420}/>
+   débordent largement sur mobile. La grille s'écroule déjà à 1 col
+   ≤900px (règle inline 2-col globale), il reste à compacter padding,
+   gap, taille de la carte 3D et du QR, plus permettre le scroll. */
 @media (max-width: 700px) {
-  .present-modal-bg { padding: 8px !important; }
+  .present-modal-bg { padding: 12px !important; }
   .present-modal {
-    padding: 16px 12px !important;
-    gap: 12px !important;
-    max-width: 300px !important;
-    max-height: calc(100vh - 16px) !important;
+    padding: 22px 18px !important;
+    gap: 18px !important;
+    max-height: calc(100vh - 24px) !important;
     overflow-y: auto !important;
-    overflow-x: hidden !important;
     -webkit-overflow-scrolling: touch;
-    word-break: break-word;
   }
   .present-modal .card-3d,
   .present-modal .card-floater {
     width: 100% !important;
-    max-width: 280px !important;
+    max-width: 340px !important;
     height: auto !important;
     aspect-ratio: 100 / 63;
   }
-  /* Textes compactés */
-  .present-modal .serif { font-size: 16px !important; line-height: 1.2; }
-  .present-modal .dim { font-size: 12px !important; }
-  .present-modal .eyebrow { font-size: 11px !important; }
-  /* QR beaucoup plus petit */
+  /* Titre du nom de carte plus contenu */
+  .present-modal .serif { font-size: 20px !important; }
+  /* QR un peu plus petit */
   .present-modal svg[width="180"] {
-    width: 120px !important;
-    height: 120px !important;
-  }
-  /* Boutons à partager : réduire */
-  .present-modal .btn { font-size: 12px !important; padding: 8px 10px !important; }
-}
-@media (max-width: 420px) {
-  .present-modal {
-    padding: 14px 10px !important;
-    max-width: 280px !important;
-  }
-  .present-modal svg[width="180"] {
-    width: 110px !important;
-    height: 110px !important;
-  }
-}
-
-/* — Modal Stats : overlay dédié avec close button (X) ──────────────────
-   CardStatsModal n'utilise plus <Modal/> mais ce conteneur custom pour
-   pouvoir devenir fullscreen sur mobile sans risque de débordement. */
-.stats-modal-bg {
-  position: fixed; inset: 0; z-index: 1000;
-  background: rgba(20, 16, 8, 0.32);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  display: flex; align-items: center; justify-content: center;
-  padding: 24px;
-  animation: fade-in 200ms ease;
-}
-.stats-modal-content {
-  position: relative;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--r-xl);
-  box-shadow: var(--shadow-3);
-  max-width: 600px; width: 100%;
-  max-height: calc(100vh - 48px);
-  padding: 32px;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  animation: fade-up 300ms ease;
-}
-.stats-modal-close {
-  position: absolute; top: 12px; right: 12px;
-  background: rgba(0,0,0,0.04); border: none;
-  width: 36px; height: 36px; border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; color: var(--ink-2);
-  transition: background 150ms, color 150ms;
-  z-index: 2;
-}
-.stats-modal-close:hover { background: rgba(0,0,0,0.08); color: var(--ink); }
-
-/* Sur mobile : fullscreen total (pas de débordement possible) */
-@media (max-width: 700px) {
-  .stats-modal-bg { padding: 0 !important; }
-  .stats-modal-content {
-    max-width: 100% !important;
-    width: 100% !important;
-    height: 100vh !important;
-    max-height: 100vh !important;
-    border-radius: 0 !important;
-    border: none !important;
-    padding: 56px 18px 24px !important;
-  }
-  .stats-modal-close {
-    top: 10px !important; right: 10px !important;
-    width: 40px; height: 40px;
-    background: var(--surface-2);
-  }
-  .stats-modal-content h2.serif {
-    font-size: 22px !important;
-    word-break: break-word;
-    line-height: 1.15;
-  }
-  /* Gros chiffres compactés */
-  .stats-modal-content .serif[style*="font-size: 32"] {
-    font-size: 26px !important;
+    width: 150px !important;
+    height: 150px !important;
   }
 }
 @media (max-width: 420px) {
-  .stats-modal-content {
-    padding: 52px 14px 24px !important;
-  }
-  .stats-modal-content h2.serif { font-size: 19px !important; }
-  .stats-modal-content .serif[style*="font-size: 32"] {
-    font-size: 22px !important;
+  .present-modal { padding: 18px 14px !important; }
+  .present-modal svg[width="180"] {
+    width: 130px !important;
+    height: 130px !important;
   }
 }
 
-/* — Modal générique <Modal/> (autres modals : ajout carte, modale code) ─ */
+/* — Modal générique <Modal/> (utilisé par CardStatsModal, etc.) ─────────
+   Pas de max-height par défaut → le contenu déborde verticalement et se
+   fait couper en bas de l'écran. On ajoute scroll interne + compactage
+   du titre et des gros chiffres serif. */
 @media (max-width: 700px) {
   .modal {
     max-height: calc(100vh - 24px);
@@ -933,10 +846,17 @@ img, video, svg { max-width: 100%; height: auto; }
     word-break: break-word;
     line-height: 1.2;
   }
+  /* Boîtes "Enregistrements" / "Clics totaux" : gros nombres compactés */
+  .modal .serif[style*="font-size: 32"] {
+    font-size: 26px !important;
+  }
 }
 @media (max-width: 420px) {
   .modal { padding: 18px !important; }
   .modal h3.serif { font-size: 17px !important; }
+  .modal .serif[style*="font-size: 32"] {
+    font-size: 22px !important;
+  }
 }
 
 /* ════════════════════════════════════════════════════════════════════════ */

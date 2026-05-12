@@ -463,7 +463,7 @@ function CardListItem({ card, onCustomize, onShare, onDelete, role }) {
   };
 
   return (
-    <div className="card card-list-item fade-up" style={{ padding: 24, display: "flex", flexDirection: "column", gap: 18 }}>
+    <div className="card fade-up" style={{ padding: 24, display: "flex", flexDirection: "column", gap: 18 }}>
       <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
         <div className="col gap-1">
           <div className="row gap-2" style={{ alignItems: "center", flexWrap: "wrap" }}>
@@ -545,46 +545,46 @@ function CardStatsModal({ open, onClose, card }) {
   const max = Math.max(...channels.map(c => c.clicks));
 
   return (
-    <div className="stats-modal-bg" onClick={onClose}>
-      <div className="stats-modal-content" onClick={(e) => e.stopPropagation()}>
-        <button className="stats-modal-close" onClick={onClose} aria-label="Fermer"><Icon.X size={20} /></button>
-        <h2 className="serif" style={{ fontSize: 24, margin: "0 0 8px", letterSpacing: "-0.01em" }}>{`Statistiques — ${card.nom_carte}`}</h2>
-        <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>Performance des 30 derniers jours.</p>
+    <Modal open={open} onClose={onClose} title={`Statistiques — ${card.nom_carte}`}>
+      <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>Performance des 30 derniers jours.</p>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 8 }}>
-          <div className="card" style={{ padding: 16, background: "linear-gradient(135deg, #fdf3df, #f1deb6)", borderColor: "var(--gold)" }}>
-            <div className="eyebrow" style={{ marginBottom: 6 }}>Enregistrements</div>
-            <div className="serif" style={{ fontSize: 32, lineHeight: 1, letterSpacing: "-0.02em" }}>{saves}</div>
-            <div className="dim" style={{ fontSize: 11, marginTop: 4 }}>contacts ajoutés au répertoire</div>
-          </div>
-          <div className="card" style={{ padding: 16 }}>
-            <div className="eyebrow" style={{ marginBottom: 6 }}>Clics totaux</div>
-            <div className="serif" style={{ fontSize: 32, lineHeight: 1, letterSpacing: "-0.02em" }}>{totalClicks}</div>
-            <div className="dim" style={{ fontSize: 11, marginTop: 4 }}>tous canaux confondus</div>
-          </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 8 }}>
+        <div className="card" style={{ padding: 16, background: "linear-gradient(135deg, #fdf3df, #f1deb6)", borderColor: "var(--gold)" }}>
+          <div className="eyebrow" style={{ marginBottom: 6 }}>Enregistrements</div>
+          <div className="serif" style={{ fontSize: 32, lineHeight: 1, letterSpacing: "-0.02em" }}>{saves}</div>
+          <div className="dim" style={{ fontSize: 11, marginTop: 4 }}>contacts ajoutés au répertoire</div>
         </div>
-
-        <div className="col gap-2" style={{ marginTop: 18 }}>
-          <div className="eyebrow">Détail par canal</div>
-          <div className="col gap-3" style={{ marginTop: 4 }}>
-            {channels.map(ch => (
-              <div key={ch.key} className="col gap-1">
-                <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-                  <div className="row gap-2" style={{ alignItems: "center" }}>
-                    <div style={{ width: 26, height: 26, borderRadius: 7, background: "var(--surface-2)", color: ch.color, display: "flex", alignItems: "center", justifyContent: "center" }}>{ch.icon}</div>
-                    <div style={{ fontSize: 13, fontWeight: 500 }}>{ch.label}</div>
-                  </div>
-                  <div className="serif" style={{ fontSize: 18 }}>{ch.clicks}</div>
-                </div>
-                <div style={{ height: 4, background: "var(--surface-2)", borderRadius: 999, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${(ch.clicks / max) * 100}%`, background: ch.color, borderRadius: 999, transition: "width 400ms" }} />
-                </div>
-              </div>
-            ))}
-          </div>
+        <div className="card" style={{ padding: 16 }}>
+          <div className="eyebrow" style={{ marginBottom: 6 }}>Clics totaux</div>
+          <div className="serif" style={{ fontSize: 32, lineHeight: 1, letterSpacing: "-0.02em" }}>{totalClicks}</div>
+          <div className="dim" style={{ fontSize: 11, marginTop: 4 }}>tous canaux confondus</div>
         </div>
       </div>
-    </div>
+
+      <div className="col gap-2" style={{ marginTop: 18 }}>
+        <div className="eyebrow">Détail par canal</div>
+        <div className="col gap-3" style={{ marginTop: 4 }}>
+          {channels.map(ch => (
+            <div key={ch.key} className="col gap-1">
+              <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+                <div className="row gap-2" style={{ alignItems: "center" }}>
+                  <div style={{ width: 26, height: 26, borderRadius: 7, background: "var(--surface-2)", color: ch.color, display: "flex", alignItems: "center", justifyContent: "center" }}>{ch.icon}</div>
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>{ch.label}</div>
+                </div>
+                <div className="serif" style={{ fontSize: 18 }}>{ch.clicks}</div>
+              </div>
+              <div style={{ height: 4, background: "var(--surface-2)", borderRadius: 999, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${(ch.clicks / max) * 100}%`, background: ch.color, borderRadius: 999, transition: "width 400ms" }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="row gap-3" style={{ justifyContent: "flex-end", marginTop: 20 }}>
+        <button className="btn btn-sm" onClick={onClose}>Fermer</button>
+      </div>
+    </Modal>
   );
 }
 
