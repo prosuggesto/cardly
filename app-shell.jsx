@@ -688,6 +688,23 @@ function PresentCardModal({ card, onClose }) {
   const design = window.CARTALIS_DATA.cardDesigns.find(d => d.front === card.frontImageUrl)
     || { front: card.frontImageUrl || null, back: card.backImageUrl || null };
   const [flipped, setFlipped] = useStateP(false);
+  const [nfcActive, setNfcActive] = useStateP(false);
+
+  // Vérifie en DB si l'utilisateur a une carte NFC liée à cette carte spécifiquement
+  React.useEffect(() => {
+    if (!window.CardlyAPI || !window.sb) return;
+    (async () => {
+      try {
+        const { data: { user } } = await window.sb.auth.getUser();
+        if (!user) return;
+        const entId = window.CARTALIS_DATA?.entreprise?.id;
+        if (!entId) return;
+        const { data } = await window.CardlyAPI.getNFCCards(user.id, entId);
+        // Actif seulement si une ligne NFC existe ET est liée à cette carte précise
+        setNfcActive((data || []).some(n => n.carte_uuid === card.id && n.nfc_uuid));
+      } catch (_) {}
+    })();
+  }, [card.id]);
 
   const shareLink = () => {
     const url = window.location.origin + window.location.pathname + `#/card?id=${card.id}`;
@@ -761,19 +778,21 @@ function PresentCardModal({ card, onClose }) {
             <RealQR url={window.location.origin + window.location.pathname + '#/card?id=' + card.id} size={qrSize} />
           </div>
 
-          <div className="row gap-2 present-modal-nfc" style={{ alignItems: "center" }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: 10,
-              background: "var(--gold-3)", display: "flex",
-              alignItems: "center", justifyContent: "center", flexShrink: 0,
-            }}>
-              <Icon.Sparkle size={16} />
+          {nfcActive && (
+            <div className="row gap-2 present-modal-nfc" style={{ alignItems: "center" }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: 10,
+                background: "var(--gold-3)", display: "flex",
+                alignItems: "center", justifyContent: "center", flexShrink: 0,
+              }}>
+                <Icon.Sparkle size={16} />
+              </div>
+              <div className="col" style={{ gap: 2 }}>
+                <div style={{ fontSize: 13, fontWeight: 500 }}>NFC actif</div>
+                <div className="dim" style={{ fontSize: 12 }}>Le client peut aussi approcher son téléphone de votre carte physique.</div>
+              </div>
             </div>
-            <div className="col" style={{ gap: 2 }}>
-              <div style={{ fontSize: 13, fontWeight: 500 }}>NFC actif</div>
-              <div className="dim" style={{ fontSize: 12 }}>Le client peut aussi approcher son téléphone de votre carte physique.</div>
-            </div>
-          </div>
+          )}
 
           {/* Share button — Download removed per user request */}
           <div className="row gap-2" style={{ marginTop: 4 }}>
