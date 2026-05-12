@@ -639,7 +639,10 @@ function DashboardPage({ role, trialExpired, onUpgrade }) {
         </>
       )}
 
-      <CollabStatsModal collab={statsCollab} onClose={() => setStatsCollab(null)} />
+      {statsCollab && ReactDOM.createPortal(
+        <CollabStatsModal collab={statsCollab} onClose={() => setStatsCollab(null)} />,
+        document.body
+      )}
     </div>
   );
 }
@@ -647,6 +650,8 @@ window.DashboardPage = DashboardPage;
 
 function CollabStatsModal({ collab, onClose }) {
   if (!collab) return null;
+  const vw = typeof window !== 'undefined' ? window.innerWidth : 1024;
+  const isMobile = vw < 700;
   const s = collab.stats || {};
   const totalLeads = s.total_leads || 0;
   const totalAddContact = s.total_clic_add_contact || 0;
@@ -663,51 +668,59 @@ function CollabStatsModal({ collab, onClose }) {
   const totalClicks = channels.filter(c => !c.isScans).reduce((sum, c) => sum + c.clicks, 0);
   const max = Math.max(...channels.map(c => c.clicks), 1);
 
+  // Même structure CSS que CardStatsModal → plein écran sur mobile automatiquement
   return (
-    <Modal open={!!collab} onClose={onClose} title={`Détail — ${collab.prenom} ${collab.nom}`}>
-      <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>{collab.poste || "Collaborateur"} · Période sélectionnée</p>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginTop: 8 }}>
-        <div className="card" style={{ padding: 14 }}>
-          <div className="eyebrow" style={{ marginBottom: 4 }}>Leads</div>
-          <div className="serif" style={{ fontSize: 26, lineHeight: 1, letterSpacing: "-0.02em" }}>{totalLeads}</div>
-        </div>
-        <div className="card" style={{ padding: 14, background: "linear-gradient(135deg, #fdf3df, #f1deb6)", borderColor: "var(--gold)" }}>
-          <div className="eyebrow" style={{ marginBottom: 4 }}>Add contact</div>
-          <div className="serif" style={{ fontSize: 26, lineHeight: 1, letterSpacing: "-0.02em" }}>{totalAddContact}</div>
-          <div className="dim" style={{ fontSize: 11, marginTop: 4 }}>clics sur le bouton</div>
-        </div>
-        <div className="card" style={{ padding: 14 }}>
-          <div className="eyebrow" style={{ marginBottom: 4 }}>Clics canaux</div>
-          <div className="serif" style={{ fontSize: 26, lineHeight: 1, letterSpacing: "-0.02em" }}>{totalClicks}</div>
-        </div>
-      </div>
-      <div className="col gap-2" style={{ marginTop: 18 }}>
-        <div className="eyebrow">Détail par canal</div>
-        <div className="col gap-3" style={{ marginTop: 4 }}>
-          {channels.map(ch => (
-            <div key={ch.key} className="col gap-1">
-              <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-                <div className="row gap-2" style={{ alignItems: "center" }}>
-                  <div style={{ width: 26, height: 26, borderRadius: 7, background: "var(--surface-2)", color: ch.color, display: "flex", alignItems: "center", justifyContent: "center" }}>{ch.icon}</div>
-                  <div style={{ fontSize: 13, fontWeight: 500 }}>{ch.label}</div>
-                </div>
-                <div className="row gap-2" style={{ alignItems: "baseline" }}>
-                  {!ch.isScans && totalClicks > 0 && <span className="dim" style={{ fontSize: 11 }}>{Math.round((ch.clicks / totalClicks) * 100)}%</span>}
-                  <span className="serif" style={{ fontSize: 18 }}>{ch.clicks}</span>
-                </div>
-              </div>
-              <div style={{ height: 4, background: "var(--surface-2)", borderRadius: 999, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${(ch.clicks / max) * 100}%`, background: ch.color, borderRadius: 999, transition: "width 400ms" }} />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+    <div className="stats-modal-bg" onClick={onClose}>
+      <div className="stats-modal-content" onClick={(e) => e.stopPropagation()}>
+        <button className="stats-modal-close" onClick={onClose} aria-label="Fermer">
+          <Icon.X size={isMobile ? 20 : 16} />
+        </button>
 
-      <div className="row gap-3" style={{ justifyContent: "flex-end", marginTop: 20 }}>
-        <button className="btn btn-sm" onClick={onClose}>Fermer</button>
+        <h3 className="serif stats-modal-title" style={{ fontSize: 24, margin: "0 0 4px", letterSpacing: "-0.01em" }}>
+          {collab.prenom} {collab.nom}
+        </h3>
+        <p className="muted" style={{ marginTop: 0, marginBottom: 14, fontSize: 13 }}>{collab.poste || "Collaborateur"}</p>
+
+        <div className="stats-cards-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+          <div className="card stats-big-card" style={{ padding: 14 }}>
+            <div className="eyebrow" style={{ marginBottom: 4 }}>Leads</div>
+            <div className="serif stats-big-number" style={{ fontSize: 26, lineHeight: 1, letterSpacing: "-0.02em" }}>{totalLeads}</div>
+          </div>
+          <div className="card stats-big-card" style={{ padding: 14, background: "linear-gradient(135deg, #fdf3df, #f1deb6)", borderColor: "var(--gold)" }}>
+            <div className="eyebrow" style={{ marginBottom: 4 }}>Add contact</div>
+            <div className="serif stats-big-number" style={{ fontSize: 26, lineHeight: 1, letterSpacing: "-0.02em" }}>{totalAddContact}</div>
+            <div className="dim" style={{ fontSize: 11, marginTop: 4 }}>clics bouton</div>
+          </div>
+          <div className="card stats-big-card" style={{ padding: 14 }}>
+            <div className="eyebrow" style={{ marginBottom: 4 }}>Clics canaux</div>
+            <div className="serif stats-big-number" style={{ fontSize: 26, lineHeight: 1, letterSpacing: "-0.02em" }}>{totalClicks}</div>
+          </div>
+        </div>
+
+        <div className="col gap-2" style={{ marginTop: 18 }}>
+          <div className="eyebrow">Détail par canal</div>
+          <div className="col gap-3" style={{ marginTop: 4 }}>
+            {channels.map(ch => (
+              <div key={ch.key} className="col gap-1">
+                <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+                  <div className="row gap-2" style={{ alignItems: "center" }}>
+                    <div style={{ width: 26, height: 26, borderRadius: 7, background: "var(--surface-2)", color: ch.color, display: "flex", alignItems: "center", justifyContent: "center" }}>{ch.icon}</div>
+                    <div style={{ fontSize: 13, fontWeight: 500 }}>{ch.label}</div>
+                  </div>
+                  <div className="row gap-2" style={{ alignItems: "baseline" }}>
+                    {!ch.isScans && totalClicks > 0 && <span className="dim" style={{ fontSize: 11 }}>{Math.round((ch.clicks / totalClicks) * 100)}%</span>}
+                    <span className="serif" style={{ fontSize: 18 }}>{ch.clicks}</span>
+                  </div>
+                </div>
+                <div style={{ height: 4, background: "var(--surface-2)", borderRadius: 999, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${(ch.clicks / max) * 100}%`, background: ch.color, borderRadius: 999, transition: "width 400ms" }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
-    </Modal>
+    </div>
   );
 }
 
